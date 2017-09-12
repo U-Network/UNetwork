@@ -57,6 +57,17 @@ func (cxt *ContractContext) Add(contract *Contract, index int, parameter []byte)
 	return nil
 }
 
+func (cxt *ContractContext) MyAdd(contract *Contract, i int, parameter []byte) error {
+	if cxt.Codes[i] == nil {
+		cxt.Codes[i] = contract.Code
+	}
+	if cxt.Parameters[i] == nil {
+		cxt.Parameters[i] = make([][]byte, len(contract.Parameters))
+	}
+	cxt.Parameters[i][0] = parameter
+	return nil
+}
+
 func (cxt *ContractContext) AddContract(contract *Contract, pubkey *crypto.PubKey, parameter []byte) error {
 	log.Debug()
 	if contract.GetType() == MultiSigContract {

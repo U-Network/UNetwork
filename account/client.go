@@ -40,6 +40,7 @@ type Client interface {
 	Sign(context *ct.ContractContext) bool
 	ContainsAccount(pubKey *crypto.PubKey) bool
 	GetAccount(pubKey *crypto.PubKey) (*Account, error)
+	GetAccountByProgramHash(programHash Uint160) *Account
 	GetAccounts() []*Account
 	GetDefaultAccount() (*Account, error)
 	GetCoins() map[*transaction.UTXOTxInput]*Coin
@@ -71,7 +72,6 @@ func Create(path string, passwordKey []byte) (*ClientImpl, error) {
 	if client == nil {
 		return nil, errors.New("client nil")
 	}
-
 	account, err := client.CreateAccount()
 	if err != nil {
 		return nil, err
@@ -80,6 +80,14 @@ func Create(path string, passwordKey []byte) (*ClientImpl, error) {
 		return nil, err
 	}
 	client.mainAccount = account.ProgramHash
+
+	account1, err := client.CreateAccount()
+	if err != nil {
+		return nil, err
+	}
+	if err := client.CreateContract(account1); err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -136,6 +144,9 @@ func Recover(path string, password []byte, privateKeyHex string) (*ClientImpl, e
 }
 
 func (client *ClientImpl) ProcessBlock(v interface{}) {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+
 	if block, ok := v.(*ledger.Block); ok {
 		blockHash := block.Hash()
 		savedBlock, _ := ledger.DefaultLedger.GetBlockWithHash(blockHash)
@@ -159,9 +170,11 @@ func (client *ClientImpl) ProcessBlock(v interface{}) {
 		// spent coins
 		for _, tx := range savedBlock.Transactions {
 			for _, input := range tx.UTXOInputs {
-				if _, ok := client.coins[input]; ok {
-					delete(client.coins, input)
-					needUpdate = true
+				for k := range client.coins {
+					if k.ReferTxOutputIndex == input.ReferTxOutputIndex && k.ReferTxID == input.ReferTxID {
+						delete(client.coins, k)
+						needUpdate = true
+					}
 				}
 			}
 		}
