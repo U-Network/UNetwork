@@ -7,7 +7,9 @@ import (
 	"UGCNetwork/common/log"
 	"UGCNetwork/core/ledger"
 	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/core/transaction/payload"
 	. "UGCNetwork/errors"
+	"UGCNetwork/sdk"
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
@@ -15,7 +17,9 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strconv"
+	"time"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 const (
@@ -277,102 +281,6 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 	return UgcNetworkRpc(ToHexString(hash.ToArray()))
 }
 
-func getUnspendOutput(params []interface{}) map[string]interface{} {
-	if len(params) < 2 {
-		return UgcNetworkRpcNil
-	}
-	var programHash Uint160
-	var assetHash Uint256
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
-		if err != nil {
-			return UgcNetworkRpcInvalidParameter
-		}
-		if err := programHash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return UgcNetworkRpcInvalidHash
-		}
-	default:
-		return UgcNetworkRpcInvalidParameter
-	}
-
-	switch params[1].(type) {
-	case string:
-		str := params[1].(string)
-		hex, err := hex.DecodeString(str)
-		if err != nil {
-			return UgcNetworkRpcInvalidParameter
-		}
-		if err := assetHash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return UgcNetworkRpcInvalidHash
-		}
-	default:
-		return UgcNetworkRpcInvalidParameter
-	}
-	type TxOutputInfo struct {
-		AssetID     string
-		Value       int64
-		ProgramHash string
-	}
-	outputs := make(map[string]*TxOutputInfo)
-	height := ledger.DefaultLedger.GetLocalBlockChainHeight()
-	var i uint32
-	// construct global UTXO table
-	for i = 0; i <= height; i++ {
-		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
-		if err != nil {
-			return UgcNetworkRpcInternalError
-		}
-		// skip the bookkeeping transaction
-		for _, t := range block.Transactions[1:] {
-			// skip the register transaction
-			if t.TxType == tx.RegisterAsset {
-				continue
-			}
-			txHash := t.Hash()
-			txHashHex := ToHexString(txHash.ToArray())
-			for i, output := range t.Outputs {
-				if output.AssetID.CompareTo(assetHash) == 0 &&
-					output.ProgramHash.CompareTo(programHash) == 0 {
-					key := txHashHex + ":" + strconv.Itoa(i)
-					asset := ToHexString(output.AssetID.ToArray())
-					pHash := ToHexString(output.ProgramHash.ToArray())
-					value := int64(output.Value)
-					info := &TxOutputInfo{
-						asset,
-						value,
-						pHash,
-					}
-					outputs[key] = info
-				}
-			}
-		}
-	}
-	// delete spent output from global UTXO table
-	height = ledger.DefaultLedger.GetLocalBlockChainHeight()
-	for i = 0; i <= height; i++ {
-		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
-		if err != nil {
-			return UgcNetworkRpcInternalError
-		}
-		// skip the bookkeeping transaction
-		for _, t := range block.Transactions[1:] {
-			// skip the register transaction
-			if t.TxType == tx.RegisterAsset {
-				continue
-			}
-			for _, input := range t.UTXOInputs {
-				refer := ToHexString(input.ReferTxID.ToArray())
-				index := strconv.Itoa(int(input.ReferTxOutputIndex))
-				key := refer + ":" + index
-				delete(outputs, key)
-			}
-		}
-	}
-	return UgcNetworkRpc(outputs)
-}
-
 func getTxout(params []interface{}) map[string]interface{} {
 	//TODO
 	return UgcNetworkRpcUnsupported
@@ -619,4 +527,398 @@ func getDataFile(params []interface{}) map[string]interface{} {
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
+}
+
+func searchTransactions(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return UgcNetworkRpcNil
+	}
+	var programHash string
+	switch params[0].(type) {
+	case string:
+		programHash = params[0].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+
+	resp := make(map[string]string)
+	height := ledger.DefaultLedger.GetLocalBlockChainHeight()
+	var i uint32
+	for i = 1; i <= height; i++ {
+		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
+		if err != nil {
+			return UgcNetworkRpcInternalError
+		}
+		// skip the bookkeeping transaction
+		for _, t := range block.Transactions[1:] {
+			switch t.TxType {
+			case tx.RegisterAsset:
+				regPayload := t.Payload.(*payload.RegisterAsset)
+				controller := ToHexString(regPayload.Controller.ToArray())
+				if controller == programHash {
+					txHash := t.Hash()
+					txid := ToHexString(txHash.ToArray())
+					resp[txid] = "registration"
+				}
+			case tx.IssueAsset:
+				for _, v := range t.Outputs {
+					regTxn, err := ledger.DefaultLedger.Store.GetTransaction(v.AssetID)
+					if err != nil {
+						log.Warn("Can not find asset")
+						continue
+
+					}
+					regPayload := regTxn.Payload.(*payload.RegisterAsset)
+					controller := ToHexString(regPayload.Controller.ToArray())
+					if controller == programHash {
+						txHash := t.Hash()
+						txid := ToHexString(txHash.ToArray())
+						resp[txid] = "issuance"
+					}
+				}
+			case tx.TransferAsset:
+				transferTxnProgram := t.GetPrograms()[0]
+				transferTxnProgramHash, _ := ToCodeHash(transferTxnProgram.Code)
+				transferTxnProgramHashStr := ToHexString(transferTxnProgramHash.ToArray())
+				fmt.Println(transferTxnProgramHashStr)
+				if programHash == transferTxnProgramHashStr {
+					txHash := t.Hash()
+					txid := ToHexString(txHash.ToArray())
+					resp[txid] = "transfer"
+				}
+			default:
+				continue
+			}
+		}
+	}
+
+	return UgcNetworkRpc(resp)
+}
+
+var walletInstance *account.ClientImpl
+
+func getWalletDir() string {
+	home, _ := homedir.Dir()
+	return home + "/.wallet/"
+}
+
+func createWallet(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return UgcNetworkRpcNil
+	}
+	var password []byte
+	switch params[0].(type) {
+	case string:
+		password = []byte(params[0].(string))
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	walletDir := getWalletDir()
+	if !FileExisted(walletDir) {
+		err := os.MkdirAll(walletDir, 0755)
+		if err != nil {
+			return UgcNetworkRpcInternalError
+		}
+	}
+	walletPath := walletDir + "wallet.dat"
+	if FileExisted(walletPath) {
+		return UgcNetworkRpcWalletAlreadyExists
+	}
+	_, err := account.Create(walletPath, password)
+	if err != nil {
+		return UgcNetworkRpcFailed
+	}
+	return UgcNetworkRpcSuccess
+}
+
+func openWallet(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return UgcNetworkRpcNil
+	}
+	var password []byte
+	switch params[0].(type) {
+	case string:
+		password = []byte(params[0].(string))
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	resp := make(map[string]string)
+	walletPath := getWalletDir() + "wallet.dat"
+	if !FileExisted(walletPath) {
+		resp["success"] = "false"
+		resp["message"] = "wallet doesn't exist"
+		return UgcNetworkRpc(resp)
+	}
+	wallet, err := account.Open(walletPath, password)
+	if err != nil {
+		resp["success"] = "false"
+		resp["message"] = "password wrong"
+		return UgcNetworkRpc(resp)
+	}
+	walletInstance = wallet
+	programHash, err := wallet.LoadStoredData("ProgramHash")
+	if err != nil {
+		resp["success"] = "false"
+		resp["message"] = "wallet file broken"
+		return UgcNetworkRpc(resp)
+	}
+	resp["success"] = "true"
+	resp["message"] = ToHexString(programHash)
+	return UgcNetworkRpc(resp)
+}
+
+func closeWallet(params []interface{}) map[string]interface{} {
+	walletInstance = nil
+	return UgcNetworkRpcSuccess
+}
+
+func recoverWallet(params []interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return UgcNetworkRpcNil
+	}
+	var privateKey string
+	var walletPassword string
+	switch params[0].(type) {
+	case string:
+		privateKey = params[0].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[1].(type) {
+	case string:
+		walletPassword = params[1].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	walletDir := getWalletDir()
+	if !FileExisted(walletDir) {
+		err := os.MkdirAll(walletDir, 0755)
+		if err != nil {
+			return UgcNetworkRpcInternalError
+		}
+	}
+	walletName := fmt.Sprintf("wallet-%s-recovered.dat", time.Now().Format("2006-01-02-15-04-05"))
+	walletPath := walletDir + walletName
+	if FileExisted(walletPath) {
+		return UgcNetworkRpcWalletAlreadyExists
+	}
+	_, err := account.Recover(walletPath, []byte(walletPassword), privateKey)
+	if err != nil {
+		return UgcNetworkRpc("wallet recovery failed")
+	}
+
+	return UgcNetworkRpcSuccess
+}
+
+func getWalletKey(params []interface{}) map[string]interface{} {
+	if walletInstance == nil {
+		return UgcNetworkRpc("open wallet first")
+	}
+	account, _ := walletInstance.GetDefaultAccount()
+	encodedPublickKey, _ := account.PublicKey.EncodePoint(true)
+	resp := make(map[string]string)
+	resp["PublicKey"] = ToHexString(encodedPublickKey)
+	resp["PrivateKey"] = ToHexString(account.PrivateKey)
+	resp["ProgramHash"] = ToHexString(account.ProgramHash.ToArray())
+
+	return UgcNetworkRpc(resp)
+}
+
+func addAccount(params []interface{}) map[string]interface{} {
+	if walletInstance == nil {
+		return UgcNetworkRpc("open wallet first")
+	}
+	account, err := walletInstance.CreateAccount()
+	if err != nil {
+		return UgcNetworkRpc("create account error:" + err.Error())
+	}
+
+	if err := walletInstance.CreateContract(account); err != nil {
+		return UgcNetworkRpc("create contract error:" + err.Error())
+	}
+
+	return UgcNetworkRpc(ToHexString(account.ProgramHash.ToArray()))
+}
+
+func deleteAccount(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return UgcNetworkRpcNil
+	}
+	var programHash string
+	switch params[0].(type) {
+	case string:
+		programHash = params[0].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	if walletInstance == nil {
+		return UgcNetworkRpc("open wallet first")
+	}
+	phBytes, _ := HexToBytes(programHash)
+	pbUint160, _ := Uint160ParseFromBytes(phBytes)
+	if err := walletInstance.DeleteAccount(pbUint160); err != nil {
+		return UgcNetworkRpc("Delete account error:" + err.Error())
+	}
+	if err := walletInstance.DeleteContract(pbUint160); err != nil {
+		return UgcNetworkRpc("Delete contract error:" + err.Error())
+	}
+	if err := walletInstance.DeleteCoins(pbUint160); err != nil {
+		return UgcNetworkRpc("Delete coins error:" + err.Error())
+	}
+
+	return UgcNetworkRpc(true)
+}
+
+func makeRegTxn(params []interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return UgcNetworkRpcNil
+	}
+	var assetName string
+	var assetValue Fixed64
+	switch params[0].(type) {
+	case string:
+		assetName = params[0].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[1].(type) {
+	case float64:
+		assetValue = Fixed64(params[1].(float64))
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	if walletInstance == nil {
+		return UgcNetworkRpc("open wallet first")
+	}
+
+	regTxn, err := sdk.MakeRegTransaction(walletInstance, assetName, assetValue)
+	if err != nil {
+		return UgcNetworkRpcInternalError
+	}
+
+	if errCode := VerifyAndSendTx(regTxn); errCode != ErrNoError {
+		return UgcNetworkRpcInvalidTransaction
+	}
+	return UgcNetworkRpc(true)
+}
+
+func makeIssueTxn(params []interface{}) map[string]interface{} {
+	if len(params) < 3 {
+		return UgcNetworkRpcNil
+	}
+	var asset string
+	var value Fixed64
+	var to string
+	switch params[0].(type) {
+	case string:
+		asset = params[0].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[1].(type) {
+	case float64:
+		value = Fixed64(params[1].(float64))
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[2].(type) {
+	case string:
+		to = params[2].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	if walletInstance == nil {
+		return UgcNetworkRpc("open wallet first")
+	}
+	assetID, _ := StringToUint256(asset)
+	programHash, _ := StringToUint160(to)
+	issueTxn, err := sdk.MakeIssueTransaction(walletInstance, assetID, programHash, value)
+	if err != nil {
+		return UgcNetworkRpcInternalError
+	}
+
+	if errCode := VerifyAndSendTx(issueTxn); errCode != ErrNoError {
+		return UgcNetworkRpcInvalidTransaction
+	}
+
+	return UgcNetworkRpc(true)
+}
+
+func makeTransferTxn(params []interface{}) map[string]interface{} {
+	if len(params) < 3 {
+		return UgcNetworkRpcNil
+	}
+	var asset string
+	var value Fixed64
+	var to string
+	switch params[0].(type) {
+	case string:
+		asset = params[0].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[1].(type) {
+	case float64:
+		value = Fixed64(params[1].(float64))
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[2].(type) {
+	case string:
+		to = params[2].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+
+	if walletInstance == nil {
+		return UgcNetworkRpc("open wallet first")
+	}
+	assetID, _ := StringToUint256(asset)
+	programHash, _ := StringToUint160(to)
+	txn, err := sdk.MakeTransferTransaction(walletInstance, assetID, programHash, value)
+	if err != nil {
+		return UgcNetworkRpcInternalError
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return UgcNetworkRpcInvalidTransaction
+	}
+
+	return UgcNetworkRpc(true)
+}
+
+func getBalance(params []interface{}) map[string]interface{} {
+	if walletInstance == nil {
+		return UgcNetworkRpc("open wallet first")
+	}
+	type AssetInfo struct {
+		AssetID string
+		Value   Fixed64
+	}
+	balances := make(map[string]interface{})
+	accounts := walletInstance.GetAccounts()
+	coins := walletInstance.GetCoins()
+	for _, account := range accounts {
+		assetList := []*AssetInfo{}
+		programHash := account.ProgramHash
+		for _, coin := range coins {
+			if programHash == coin.Output.ProgramHash {
+				var existed bool
+				assetString := ToHexString(coin.Output.AssetID.ToArray())
+				for _, info := range assetList {
+					if info.AssetID == assetString {
+						info.Value += coin.Output.Value
+						existed = true
+						break
+					}
+				}
+				if !existed {
+					assetList = append(assetList, &AssetInfo{AssetID: assetString, Value: coin.Output.Value})
+				}
+			}
+		}
+		balances[ToHexString(programHash.ToArray())] = assetList
+	}
+
+	return UgcNetworkRpc(balances)
 }

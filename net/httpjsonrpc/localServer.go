@@ -1,10 +1,11 @@
 package httpjsonrpc
 
 import (
-	"UGCNetwork/common/log"
-	. "UGCNetwork/common/config"
 	"net/http"
 	"strconv"
+
+	. "UGCNetwork/common/config"
+	"UGCNetwork/common/log"
 )
 
 const (
@@ -22,6 +23,19 @@ func StartLocalServer() {
 	HandleFunc("stopconsensus", stopConsensus)
 	HandleFunc("sendsampletransaction", sendSampleTransaction)
 	HandleFunc("setdebuginfo", setDebugInfo)
+
+	HandleFunc("searchtransactions", searchTransactions)
+	HandleFunc("createwallet", createWallet)
+	HandleFunc("openwallet", openWallet)
+	HandleFunc("closewallet", closeWallet)
+	HandleFunc("recoverwallet", recoverWallet)
+	HandleFunc("getwalletkey", getWalletKey)
+	HandleFunc("makeregtxn", makeRegTxn)
+	HandleFunc("makeissuetxn", makeIssueTxn)
+	HandleFunc("maketransfertxn", makeTransferTxn)
+	HandleFunc("addaccount", addAccount)
+	HandleFunc("deleteaccount", deleteAccount)
+	HandleFunc("getbalance", getBalance)
 
 	// TODO: only listen to local host
 	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.HttpLocalPort), nil)

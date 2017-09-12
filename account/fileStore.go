@@ -1,29 +1,51 @@
 package account
 
 import (
-	ct "UGCNetwork/core/contract"
-	. "UGCNetwork/errors"
-	"encoding/hex"
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	. "UGCNetwork/common"
+	"UGCNetwork/common/serialization"
+	ct "UGCNetwork/core/contract"
+	"UGCNetwork/core/transaction"
+	. "UGCNetwork/errors"
 )
 
-type FileData struct {
-	PublicKeyHash       string
-	PrivateKeyEncrypted string
+type WalletData struct {
+	PasswordHash string
+	IV           string
+	MasterKey    string
+	Height       uint32
+}
+
+type AccountData struct {
 	Address             string
-	ScriptHash          string
-	RawData             string
-	PasswordHash        string
-	IV                  string
-	MasterKey           string
+	ProgramHash         string
+	PrivateKeyEncrypted string
+	Type                string
+}
+
+type ContractData struct {
+	ProgramHash string //TODO: owner in contract ?
+	RawData     string
+}
+
+type CoinData string
+
+type FileData struct {
+	WalletData
+	Account  []AccountData
+	Contract []ContractData
+	Coins    CoinData
 }
 
 type FileStore struct {
-	fd   FileData
+	data FileData
 	file *os.File
 	path string
 }
@@ -51,7 +73,7 @@ func (cs *FileStore) readDB() ([]byte, error) {
 
 func (cs *FileStore) writeDB(data []byte) error {
 	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY, 0666)
+	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
@@ -72,145 +94,291 @@ func (cs *FileStore) closeDB() {
 }
 
 func (cs *FileStore) BuildDatabase(path string) {
-	err := os.Remove(path)
+	os.Remove(path)
+	jsonBlob, err := json.Marshal(cs.data)
 	if err != nil {
-		//FIXME ignore this error
+		fmt.Println("Build DataBase Error")
+		os.Exit(1)
 	}
-
-	jsonBlob := []byte("{\"PublicKeyHash\":\"\", \"PrivateKeyEncrypted\":\"\", \"Address\":\"\", \"ScriptHash\":\"\", \"RawData\":\"\", \"PasswordHash\":\"\", \"IV\":\"\", \"MasterKey\":\"\"}")
-
 	cs.writeDB(jsonBlob)
 }
 
-func (cs *FileStore) SaveStoredData(name string, value []byte) error {
-	jsondata, err := cs.readDB()
+func (cs *FileStore) SaveAccountData(programHash []byte, encryptedPrivateKey []byte) error {
+	JSONData, err := cs.readDB()
 	if err != nil {
+		return errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return errors.New("error: unmarshal db")
+	}
+
+	var accountType string
+	if len(cs.data.Account) == 0 {
+		accountType = MAINACCOUNT
+	} else {
+		accountType = SUBACCOUNT
+	}
+
+	a := AccountData{
+		Address:             "",
+		ProgramHash:         ToHexString(programHash),
+		PrivateKeyEncrypted: ToHexString(encryptedPrivateKey),
+		Type:                accountType,
+	}
+	cs.data.Account = append(cs.data.Account, a)
+
+	JSONBlob, err := json.Marshal(cs.data)
+	if err != nil {
+		return errors.New("error: marshal db")
+	}
+	cs.writeDB(JSONBlob)
+
+	return nil
+}
+
+func (cs *FileStore) DeleteAccountData(programHash string) error {
+	JSONData, err := cs.readDB()
+	if err != nil {
+		return errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return errors.New("error: unmarshal db")
+	}
+
+	for i, v := range cs.data.Account {
+		if programHash == v.ProgramHash {
+			if v.Type == MAINACCOUNT {
+				return errors.New("Can't remove main account")
+			}
+			cs.data.Account = append(cs.data.Account[:i], cs.data.Account[i+1:]...)
+		}
+	}
+
+	JSONBlob, err := json.Marshal(cs.data)
+	if err != nil {
+		return errors.New("error: marshal db")
+	}
+	cs.writeDB(JSONBlob)
+
+	return nil
+}
+
+func (cs *FileStore) LoadAccountData() ([]AccountData, error) {
+	JSONData, err := cs.readDB()
+	if err != nil {
+		return nil, errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return nil, errors.New("error: unmarshal db")
+	}
+	return cs.data.Account, nil
+}
+
+func (cs *FileStore) SaveContractData(ct *ct.Contract) error {
+	JSONData, err := cs.readDB()
+	if err != nil {
+		return errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return errors.New("error: unmarshal db")
+	}
+	c := ContractData{
+		ProgramHash: ToHexString(ct.ProgramHash.ToArray()),
+		RawData:     ToHexString(ct.ToArray()),
+	}
+	cs.data.Contract = append(cs.data.Contract, c)
+
+	JSONBlob, err := json.Marshal(cs.data)
+	if err != nil {
+		return errors.New("error: marshal db")
+	}
+	cs.writeDB(JSONBlob)
+
+	return nil
+}
+
+func (cs *FileStore) DeleteContractData(programHash string) error {
+	JSONData, err := cs.readDB()
+	if err != nil {
+		return errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return errors.New("error: unmarshal db")
+	}
+
+	for i, v := range cs.data.Contract {
+		if programHash == v.ProgramHash {
+			cs.data.Contract = append(cs.data.Contract[:i], cs.data.Contract[i+1:]...)
+		}
+	}
+
+	JSONBlob, err := json.Marshal(cs.data)
+	if err != nil {
+		return errors.New("error: marshal db")
+	}
+	cs.writeDB(JSONBlob)
+
+	return nil
+}
+
+func (cs *FileStore) LoadContractData() ([]ContractData, error) {
+	JSONData, err := cs.readDB()
+	if err != nil {
+		return nil, errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return nil, errors.New("error: unmarshal db")
+	}
+
+	return cs.data.Contract, nil
+}
+
+func (cs *FileStore) SaveCoins(coins map[*transaction.UTXOTxInput]*Coin) error {
+	JSONData, err := cs.readDB()
+	if err != nil {
+		return errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return errors.New("error: unmarshal db")
+	}
+
+	length := uint32(len(coins))
+	if length == 0 {
+		cs.data.Coins = ""
+	} else {
+		w := new(bytes.Buffer)
+		serialization.WriteUint32(w, uint32(len(coins)))
+		for k, v := range coins {
+			k.Serialize(w)
+			v.Serialize(w)
+		}
+		cs.data.Coins = CoinData(ToHexString(w.Bytes()))
+	}
+
+	JSONBlob, err := json.Marshal(cs.data)
+	if err != nil {
+		return errors.New("error: marshal db")
+	}
+	cs.writeDB(JSONBlob)
+
+	return nil
+}
+
+func (cs *FileStore) DeleteCoins(programHash Uint160) error {
+	JSONData, err := cs.readDB()
+	if err != nil {
+		return errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return errors.New("error: unmarshal db")
+	}
+	if cs.data.Coins == "" {
+		return nil
+	}
+
+	coins := make(map[*transaction.UTXOTxInput]*Coin)
+	rawCoins, _ := HexToBytes(string(cs.data.Coins))
+	r := bytes.NewReader(rawCoins)
+	num, _ := serialization.ReadUint32(r)
+	for i := 0; i < int(num); i++ {
+		input := new(transaction.UTXOTxInput)
+		if err := input.Deserialize(r); err != nil {
+			return err
+		}
+		coin := new(Coin)
+		if err := coin.Deserialize(r); err != nil {
+			return err
+		}
+		if coin.Output.ProgramHash != programHash {
+			coins[input] = coin
+		}
+	}
+	if err := cs.SaveCoins(coins); err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(jsondata, &cs.fd)
+	return nil
+}
+
+func (cs *FileStore) LoadCoins() (map[*transaction.UTXOTxInput]*Coin, error) {
+	JSONData, err := cs.readDB()
 	if err != nil {
-		fmt.Println("error:", err)
+		return nil, errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return nil, errors.New("error: unmarshal db")
+	}
+	coins := make(map[*transaction.UTXOTxInput]*Coin)
+	rawCoins, _ := HexToBytes(string(cs.data.Coins))
+	r := bytes.NewReader(rawCoins)
+	num, _ := serialization.ReadUint32(r)
+	for i := 0; i < int(num); i++ {
+		input := new(transaction.UTXOTxInput)
+		if err := input.Deserialize(r); err != nil {
+			return nil, err
+		}
+		coin := new(Coin)
+		if err := coin.Deserialize(r); err != nil {
+			return nil, err
+		}
+		coins[input] = coin
 	}
 
-	if name == "IV" {
-		cs.fd.IV = fmt.Sprintf("%x", value)
-	} else if name == "MasterKey" {
-		cs.fd.MasterKey = fmt.Sprintf("%x", value)
-	} else if name == "PasswordHash" {
-		cs.fd.PasswordHash = fmt.Sprintf("%x", value)
-	}
+	return coins, nil
+}
 
-	jsonblob, err := json.Marshal(cs.fd)
+func (cs *FileStore) SaveStoredData(name string, value []byte) error {
+	JSONData, err := cs.readDB()
 	if err != nil {
-		fmt.Println("error:", err)
+		return errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return errors.New("error: unmarshal db")
 	}
 
-	cs.writeDB(jsonblob)
+	hexValue := ToHexString(value)
+	switch name {
+	case "IV":
+		cs.data.IV = hexValue
+	case "MasterKey":
+		cs.data.MasterKey = hexValue
+	case "PasswordHash":
+		cs.data.PasswordHash = hexValue
+	case "Height":
+		var height uint32
+		bytesBuffer := bytes.NewBuffer(value)
+		binary.Read(bytesBuffer, binary.LittleEndian, &height)
+		cs.data.Height = height
+	}
+	JSONBlob, err := json.Marshal(cs.data)
+	if err != nil {
+		return errors.New("error: marshal db")
+	}
+	cs.writeDB(JSONBlob)
 
 	return nil
 }
 
 func (cs *FileStore) LoadStoredData(name string) ([]byte, error) {
-	jsondata, err := cs.readDB()
+	JSONData, err := cs.readDB()
 	if err != nil {
-		return nil, err
+		return nil, errors.New("error: reading db")
+	}
+	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
+		return nil, errors.New("error: unmarshal db")
+	}
+	switch name {
+	case "IV":
+		return HexToBytes(cs.data.IV)
+	case "MasterKey":
+		return HexToBytes(cs.data.MasterKey)
+	case "PasswordHash":
+		return HexToBytes(cs.data.PasswordHash)
+	case "Height":
+		bytesBuffer := bytes.NewBuffer([]byte{})
+		binary.Write(bytesBuffer, binary.LittleEndian, cs.data.Height)
+		return bytesBuffer.Bytes(), nil
 	}
 
-	err = json.Unmarshal(jsondata, &cs.fd)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	if name == "IV" {
-		return hex.DecodeString(cs.fd.IV)
-	} else if name == "MasterKey" {
-		return hex.DecodeString(cs.fd.MasterKey)
-	} else if name == "PasswordHash" {
-		return hex.DecodeString(cs.fd.PasswordHash)
-	}
-
-	return nil, NewDetailErr(errors.New("Can't find the key: "+name), ErrNoCode, "")
-}
-
-func (cs *FileStore) SaveAccountData(pubkeyhash []byte, prikeyenc []byte) error {
-	jsondata, err := cs.readDB()
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(jsondata, &cs.fd)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	cs.fd.PublicKeyHash = fmt.Sprintf("%x", pubkeyhash)
-	cs.fd.PrivateKeyEncrypted = fmt.Sprintf("%x", prikeyenc)
-
-	jsonblob, err := json.Marshal(cs.fd)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	cs.writeDB(jsonblob)
-	return nil
-}
-
-func (cs *FileStore) LoadAccountData(index int) ([]byte, []byte, error) {
-	jsondata, err := cs.readDB()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	err = json.Unmarshal(jsondata, &cs.fd)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	publickeyHash, err := hex.DecodeString(cs.fd.PublicKeyHash)
-	privatekeyEncrypted, err := hex.DecodeString(cs.fd.PrivateKeyEncrypted)
-
-	return publickeyHash, privatekeyEncrypted, err
-}
-
-func (cs *FileStore) LoadContractData(index int) ([]byte, []byte, []byte, error) {
-	jsondata, err := cs.readDB()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	err = json.Unmarshal(jsondata, &cs.fd)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	scriptHash, err := hex.DecodeString(cs.fd.ScriptHash)
-	publickeyHash, err := hex.DecodeString(cs.fd.PublicKeyHash)
-	rawData, err := hex.DecodeString(cs.fd.RawData)
-
-	return scriptHash, publickeyHash, rawData, err
-}
-
-func (cs *FileStore) SaveContractData(ct *ct.Contract) error {
-	jsondata, err := cs.readDB()
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(jsondata, &cs.fd)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	cs.fd.ScriptHash = fmt.Sprintf("%x", ct.ProgramHash.ToArray())
-	cs.fd.PublicKeyHash = fmt.Sprintf("%x", ct.OwnerPubkeyHash.ToArray())
-	cs.fd.RawData = fmt.Sprintf("%x", ct.ToArray())
-
-	jsonblob, err := json.Marshal(cs.fd)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	cs.writeDB(jsonblob)
-	return nil
+	return nil, errors.New("Can't find the key: " + name)
 }

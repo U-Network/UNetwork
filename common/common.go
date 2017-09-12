@@ -142,3 +142,27 @@ func FileExisted(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
 }
+
+func StringToUint160(s string) (Uint160, error) {
+	b, err := HexToBytes(s)
+	if err != nil {
+		return Uint160{}, err
+	}
+	u, err := Uint160ParseFromBytes(b)
+	if err != nil {
+		return Uint160{}, err
+	}
+
+	return u, nil
+}
+func StringToUint256(s string) (Uint256, error) {
+	b, err := HexToBytes(s)
+	if err != nil {
+		return Uint256{}, err
+	}
+	u, err := Uint256ParseFromBytes(b)
+	if err != nil {
+		return Uint256{}, err
+	}
+	return u, nil
+}
