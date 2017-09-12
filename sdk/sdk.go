@@ -14,10 +14,6 @@ import (
 	"errors"
 )
 
-const (
-	REFERTXHASHLEN = 64
-)
-
 func MakeRegTransaction(wallet account.Client, name string, value Fixed64) (*transaction.Transaction, error) {
 	admin, err := wallet.GetDefaultAccount()
 	if err != nil {
@@ -74,43 +70,37 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, programhash
 	input := []*transaction.UTXOTxInput{}
 	output := []*transaction.TxOutput{}
 	expected := value
+	var transfer Fixed64
 	for ref, coin := range coins {
-		if coin.Output.ProgramHash == programhash {
+		if coin.Output.AssetID == assetID {
 			input = append(input, ref)
 			if coin.Output.Value > expected {
-				transfered := transaction.TxOutput{
-					AssetID:     assetID,
-					Value:       expected,
-					ProgramHash: programhash,
-				}
-				getChanged := transaction.TxOutput{
+				OutOfChange := &transaction.TxOutput{
 					AssetID:     assetID,
 					Value:       coin.Output.Value - expected,
 					ProgramHash: mainAccount.ProgramHash,
 				}
-				output = append(output, &transfered, &getChanged)
+				output = append(output, OutOfChange)
+				transfer += expected
 				expected = 0
 				break
 			} else if coin.Output.Value == expected {
-				transfered := transaction.TxOutput{
-					AssetID:     assetID,
-					Value:       expected,
-					ProgramHash: programhash,
-				}
-				output = append(output, &transfered)
+				transfer += expected
 				expected = 0
 				break
 			} else if coin.Output.Value < expected {
-				transfered := transaction.TxOutput{
-					AssetID:     assetID,
-					Value:       coin.Output.Value,
-					ProgramHash: programhash,
-				}
-				output = append(output, &transfered)
+				transfer += coin.Output.Value
 				expected = expected - coin.Output.Value
 			}
 		}
 	}
+	OutOfTx := &transaction.TxOutput{
+		AssetID:     assetID,
+		Value:       transfer,
+		ProgramHash: programhash,
+	}
+	output = append(output, OutOfTx)
+
 	if expected > 0 {
 		return nil, errors.New("Token is not enough")
 	}
@@ -123,10 +113,29 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, programhash
 	txn.Attributes = make([]*transaction.TxAttribute, 0)
 	txn.Attributes = append(txn.Attributes, &txAttr)
 
-	if err := signTransaction(mainAccount, txn); err != nil {
-		fmt.Println("sign transfer transaction failed")
-		return nil, err
+	// get account
+	accounts := []*account.Account{}
+	for ref, coin := range coins {
+		for _, in := range input {
+			if in.ReferTxID == ref.ReferTxID && in.ReferTxOutputIndex == ref.ReferTxOutputIndex {
+				accounts = append(accounts, wallet.GetAccountByProgramHash(coin.Output.ProgramHash))
+			}
+		}
 	}
+
+	ctx := newContractContextWithoutProgramHashesLen(txn, len(accounts))
+	// get public keys and signatures
+	i := 0
+	for _, account := range accounts {
+		fmt.Println(ToHexString(account.ProgramHash.ToArray()))
+		signature, _ := signature.SignBySigner(txn, account)
+		contract, _ := contract.CreateSignatureContract(account.PublicKey)
+		ctx.MyAdd(contract, i, signature)
+		i++
+	}
+
+	txn.SetPrograms(ctx.GetPrograms())
+
 	return txn, nil
 }
 
@@ -155,5 +164,12 @@ func newContractContextWithoutProgramHashes(data signature.SignableData) *contra
 		Data:       data,
 		Codes:      make([][]byte, 1),
 		Parameters: make([][][]byte, 1),
+	}
+}
+func newContractContextWithoutProgramHashesLen(data signature.SignableData, length int) *contract.ContractContext {
+	return &contract.ContractContext{
+		Data:       data,
+		Codes:      make([][]byte, length),
+		Parameters: make([][][]byte, length),
 	}
 }

@@ -70,12 +70,12 @@ func assetAction(c *cli.Context) error {
 			fmt.Println("missing flag [--asset] or [--to]")
 			return nil
 		}
+		assetID, _ := StringToUint256(asset)
+		programhash, _ := StringToUint160(to)
 		if issue {
-			assetID, _ := StringToUint256(asset)
-			programhash, _ := StringToUint160(to)
 			txn, err = sdk.MakeIssueTransaction(wallet, assetID, programhash, Fixed64(value))
 		} else if transfer {
-			//txHex, err = sdk.MakeTransferTransaction(admin, to, asset, Fixed64(value))
+			txn, err = sdk.MakeTransferTransaction(wallet, assetID, programhash, Fixed64(value))
 		}
 	}
 	if err != nil {

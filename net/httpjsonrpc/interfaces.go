@@ -273,6 +273,9 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 		}
 		hash = txn.Hash()
 		if errCode := VerifyAndSendTx(&txn); errCode != ErrNoError {
+			fmt.Println(errCode)
+			fmt.Println(errCode)
+			fmt.Println(errCode)
 			return UgcNetworkRpcInternalError
 		}
 	default:
