@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"runtime"
+	"time"
+
 	"UGCNetwork/account"
 	"UGCNetwork/common/config"
 	"UGCNetwork/common/log"
@@ -15,9 +19,6 @@ import (
 	"UGCNetwork/net/httpwebsocket"
 	"UGCNetwork/net/httpnodeinfo"
 	"UGCNetwork/net/protocol"
-	"os"
-	"runtime"
-	"time"
 )
 
 const (
@@ -37,6 +38,7 @@ func init() {
 }
 
 func main() {
+	var client account.Client
 	var acct *account.Account
 	var blockChain *ledger.Blockchain
 	var err error
@@ -60,8 +62,17 @@ func main() {
 	transaction.TxStore = ledger.DefaultLedger.Store
 	crypto.SetAlg(config.Parameters.EncryptAlg)
 
-	log.Info("1. Open the account")
-	client := account.GetClient()
+	log.Info("1. BlockChain init")
+	ledger.StandbyBookKeepers = account.GetBookKeepers()
+	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
+	if err != nil {
+		log.Fatal(err, "  BlockChain generate failed")
+		goto ERROR
+	}
+	ledger.DefaultLedger.Blockchain = blockChain
+
+	log.Info("2. Open the account")
+	client = account.GetClient()
 	if client == nil {
 		log.Fatal("Can't get local account.")
 		goto ERROR
@@ -71,27 +82,17 @@ func main() {
 		log.Fatal(err)
 		goto ERROR
 	}
-	log.Debug("The Node's PublicKey ", acct.PublicKey)
-	ledger.StandbyBookKeepers = account.GetBookKeepers()
+	log.Info("The Node's PublicKey ", acct.PublicKey)
 
-	log.Info("3. BlockChain init")
-	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
-	if err != nil {
-		log.Fatal(err, "  BlockChain generate failed")
-		goto ERROR
-	}
-	ledger.DefaultLedger.Blockchain = blockChain
-
-	log.Info("4. Start the P2P networks")
-	// Don't need two return value.
+	log.Info("3. Start the P2P networks")
 	noder = net.StartProtocol(acct.PublicKey)
 	httpjsonrpc.RegistRpcNode(noder)
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 	noder.SyncNodeHeight()
 	noder.WaitForFourPeersStart()
 	noder.WaitForSyncBlkFinish()
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
-		log.Info("5. Start DBFT Services")
+		log.Info("4. Start DBFT Services")
 		dbftServices := dbft.NewDbftService(client, "logdbft", noder)
 		httpjsonrpc.RegistDbftService(dbftServices)
 		go dbftServices.Start()

@@ -20,8 +20,8 @@ func openWallet(name string, passwd []byte) account.Client {
 	if name == account.WalletFileName {
 		fmt.Println("Using default wallet: ", account.WalletFileName)
 	}
-	wallet := account.Open(name, passwd)
-	if wallet == nil {
+	wallet,err := account.Open(name, passwd)
+	if err != nil {
 		fmt.Println("Failed to open wallet: ", name)
 		os.Exit(1)
 	}
@@ -47,7 +47,7 @@ func signTransaction(signer *account.Account, tx *transaction.Transaction) error
 	}
 	transactionContractContext := newContractContextWithoutProgramHashes(tx)
 	if err := transactionContractContext.AddContract(transactionContract, signer.PubKey(), signature); err != nil {
-		fmt.Println("AddContract failed")
+		fmt.Println("saveContract failed")
 		return err
 	}
 	tx.SetPrograms(transactionContractContext.GetPrograms())

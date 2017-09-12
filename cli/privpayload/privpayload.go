@@ -62,7 +62,7 @@ func signTransaction(signer *account.Account, tx *transaction.Transaction) error
 	}
 
 	if err := transactionContractContext.AddContract(transactionContract, signer.PubKey(), signature); err != nil {
-		fmt.Println("AddContract failed")
+		fmt.Println("saveContract failed")
 		return err
 	}
 	tx.SetPrograms(transactionContractContext.GetPrograms())
@@ -80,8 +80,8 @@ func privpayloadAction(c *cli.Context) error {
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
-	wallet := account.Open(c.String("wallet"), WalletPassword(c.String("password")))
-	if wallet == nil {
+	wallet, err := account.Open(c.String("wallet"), WalletPassword(c.String("password")))
+	if err != nil {
 		fmt.Println("Failed to open wallet: ", c.String("wallet"))
 		os.Exit(1)
 	}

@@ -17,5 +17,9 @@ var (
 	UgcNetworkRpcSuccess       = responsePacking(true)
 	UgcNetworkRpcFailed        = responsePacking(false)
 
+	// error code for wallet
+	UgcNetworkRpcWalletAlreadyExists = responsePacking("wallet already exist")
+	UgcNetworkRpcWalletNotExists     = responsePacking("wallet doesn't exist")
+
 	UgcNetworkRpc = responsePacking
 )
