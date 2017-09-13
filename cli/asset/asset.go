@@ -65,17 +65,16 @@ func assetAction(c *cli.Context) error {
 		txn, err = sdk.MakeRegTransaction(wallet, name, Fixed64(value))
 	} else {
 		asset := c.String("asset")
-		to := c.String("to")
-		if asset == "" || to == "" {
+		address := c.String("to")
+		if asset == "" || address == "" {
 			fmt.Println("missing flag [--asset] or [--to]")
 			return nil
 		}
 		assetID, _ := StringToUint256(asset)
-		programhash, _ := StringToUint160(to)
 		if issue {
-			txn, err = sdk.MakeIssueTransaction(wallet, assetID, programhash, Fixed64(value))
+			txn, err = sdk.MakeIssueTransaction(wallet, assetID, address, Fixed64(value))
 		} else if transfer {
-			txn, err = sdk.MakeTransferTransaction(wallet, assetID, programhash, Fixed64(value))
+			txn, err = sdk.MakeTransferTransaction(wallet, assetID, address, Fixed64(value))
 		}
 	}
 	if err != nil {

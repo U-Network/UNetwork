@@ -81,14 +81,6 @@ func Create(path string, passwordKey []byte) (*ClientImpl, error) {
 	}
 	client.mainAccount = account.ProgramHash
 
-	account1, err := client.CreateAccount()
-	if err != nil {
-		return nil, err
-	}
-	if err := client.CreateContract(account1); err != nil {
-		return nil, err
-	}
-
 	return client, nil
 }
 

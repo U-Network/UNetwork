@@ -51,7 +51,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: recoverAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "wallet")
+			PrintError(c, err, "recover")
 			return cli.NewExitError("", 1)
 		},
 	}

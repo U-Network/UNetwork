@@ -808,7 +808,7 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 	}
 	var asset string
 	var value Fixed64
-	var to string
+	var address string
 	switch params[0].(type) {
 	case string:
 		asset = params[0].(string)
@@ -823,7 +823,7 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 	}
 	switch params[2].(type) {
 	case string:
-		to = params[2].(string)
+		address = params[2].(string)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -831,8 +831,7 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpc("open wallet first")
 	}
 	assetID, _ := StringToUint256(asset)
-	programHash, _ := StringToUint160(to)
-	issueTxn, err := sdk.MakeIssueTransaction(walletInstance, assetID, programHash, value)
+	issueTxn, err := sdk.MakeIssueTransaction(walletInstance, assetID, address, value)
 	if err != nil {
 		return UgcNetworkRpcInternalError
 	}
@@ -850,7 +849,7 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 	}
 	var asset string
 	var value Fixed64
-	var to string
+	var address string
 	switch params[0].(type) {
 	case string:
 		asset = params[0].(string)
@@ -865,7 +864,7 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 	}
 	switch params[2].(type) {
 	case string:
-		to = params[2].(string)
+		address = params[2].(string)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -874,8 +873,7 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpc("open wallet first")
 	}
 	assetID, _ := StringToUint256(asset)
-	programHash, _ := StringToUint160(to)
-	txn, err := sdk.MakeTransferTransaction(walletInstance, assetID, programHash, value)
+	txn, err := sdk.MakeTransferTransaction(walletInstance, assetID, address, value)
 	if err != nil {
 		return UgcNetworkRpcInternalError
 	}
