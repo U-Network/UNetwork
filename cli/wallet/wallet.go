@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	"UGCNetwork/account"
 	. "UGCNetwork/cli/common"
@@ -21,27 +20,6 @@ import (
 func walletAction(c *cli.Context) error {
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
-		return nil
-	}
-
-	if c.Bool("recover") {
-		privateKey := c.String("key")
-		if privateKey == "" {
-			fmt.Println("missing -k,--key option")
-			os.Exit(1)
-		}
-		newPassword, err := password.GetConfirmedPassword()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		newWalletName := fmt.Sprintf("wallet-%s-recovered.dat", time.Now().Format("2006-01-02-15-04-05"))
-		_, err = account.Recover(newWalletName, []byte(newPassword), privateKey)
-		if err != nil {
-			fmt.Println("failed to recover wallet from private key")
-			os.Exit(1)
-		}
-		fmt.Println("wallet is recovered successfully")
 		return nil
 	}
 
@@ -156,21 +134,12 @@ func NewCommand() *cli.Command {
 				Usage: "list wallet information",
 			},
 			cli.BoolFlag{
-				Name:  "recover, r",
-				Usage: "recover wallet from private key",
-			},
-			cli.BoolFlag{
 				Name:  "changepassword",
 				Usage: "change wallet password",
 			},
 			cli.StringFlag{
 				Name:  "asset, a",
 				Usage: "asset uniq ID",
-			},
-			//TODO: use WIF instead, now is hex format
-			cli.StringFlag{
-				Name:  "key, k",
-				Usage: "private key",
 			},
 			cli.StringFlag{
 				Name:  "name, n",
