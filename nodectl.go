@@ -13,6 +13,7 @@ import (
 	"UGCNetwork/cli/debug"
 	"UGCNetwork/cli/info"
 	"UGCNetwork/cli/privpayload"
+	"UGCNetwork/cli/recover"
 	"UGCNetwork/cli/test"
 	"UGCNetwork/cli/wallet"
 
@@ -46,6 +47,7 @@ func main() {
 		*privpayload.NewCommand(),
 		*data.NewCommand(),
 		*bookkeeper.NewCommand(),
+		*recover.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 	sort.Sort(cli.FlagsByName(app.Flags))
