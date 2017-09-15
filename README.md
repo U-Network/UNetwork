@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/DNAProject/DNA.svg?branch=master)](https://travis-ci.org/DNAProject/DNA)
+[![Build Status](https://travis-ci.org/UGCNetworkProject/UGCNetwork.svg?branch=master)](https://travis-ci.org/UGCNetworkProject/UGCNetwork)
 
-# DNA (Distributed Networks Architecture)
+# UGCNetwork (Distributed Networks Architecture)
 
- DNA is a decentralized distributed network protocol based on blockchain technology and is implemented in Golang. Through peer-to-peer network, DNA can be used to digitize assets and provide financial service, including asset registration, issuance, transfer, etc.
+ UGCNetwork is a decentralized distributed network protocol based on blockchain technology and is implemented in Golang. Through peer-to-peer network, UGCNetwork can be used to digitize assets and provide financial service, including asset registration, issuance, transfer, etc.
 
 ## Highlight Features
 
@@ -21,16 +21,16 @@
 
 
 # Building
-The requirements to build DNA are:
+The requirements to build UGCNetwork are:
  *	Go version 1.8 or later
  *	Glide (a third-party package management tool)
  *	Properly configured Go environment
  
-Clone the DNA repository into the appropriate $GOPATH/src directory.
+Clone the UGCNetwork repository into the appropriate $GOPATH/src directory.
 
 
 ```shell
-$ git clone https://github.com/DNAProject/DNA.git
+$ git clone https://github.com/UGCNetworkProject/UGCNetwork.git
 
 ```
 
@@ -38,7 +38,7 @@ Fetch the dependent third-party packages with glide.
 
 
 ````shell
-$ cd DNA
+$ cd UGCNetwork
 $ glide install
 ````
 Build the source code with make.
@@ -57,7 +57,7 @@ Follow the procedures in Deployment section to give them a shot!
 
 # Deployment
  
-To run DNA successfully, at least 4 nodes are required. The four nodes can be deployed in the following two way:
+To run UGCNetwork successfully, at least 4 nodes are required. The four nodes can be deployed in the following two way:
 
 * multi-hosts deployment
 * single-host deployment
@@ -245,7 +245,7 @@ $ ./node
 $ - input you wallet password
 ```
 
-## Testing DNA in an open environment
+## Testing UGCNetwork in an open environment
  
  We also provide an open testing environment. It supports the operation below:
 
@@ -289,12 +289,12 @@ IP               PORT
 
 # Contributing
 
-Can I contribute patches to DNA project?
+Can I contribute patches to UGCNetwork project?
 
 Yes! Please open a pull request with signed-off commits. We appreciate your help!
 
 You can also send your patches as emails to the developer mailing list.
-Please join the DNA mailing list or forum and talk to us about it.
+Please join the UGCNetwork mailing list or forum and talk to us about it.
 
 Either way, if you don't sign off your patches, we will not accept them.
 This means adding a line that says "Signed-off-by: Name <email>" at the
@@ -329,27 +329,27 @@ looks like this:
 
 We have a mailing list for developers:
 
-* OnchainDNA@googlegroups.com
+* OnchainUGCNetwork@googlegroups.com
 
 We provide two ways to subscribe:
 
-* Send any contents to the email OnchainDNA+subscribe@googlegroups.com
+* Send any contents to the email OnchainUGCNetwork+subscribe@googlegroups.com
 
-* Sign in https://groups.google.com/forum/#!forum/OnchainDNA
+* Sign in https://groups.google.com/forum/#!forum/OnchainUGCNetwork
 
 
 ## Site
 
-* https://www.DNAproject.org
+* https://www.UGCNetworkproject.org
 
 ## Forum
 
-* https://forum.DNAproject.org
+* https://forum.UGCNetworkproject.org
 
 ## Wiki
 
-* https://wiki.DNAproject.org
+* https://wiki.UGCNetworkproject.org
 
 # License
 
-DNA is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
+UGCNetwork is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.

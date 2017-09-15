@@ -1,7 +1,7 @@
 package vm
 
 import (
-	"DNA/vm/errors"
+	"UGCNetwork/vm/errors"
 	"io"
 	"time"
 )

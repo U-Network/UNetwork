@@ -1,11 +1,11 @@
 package httpjsonrpc
 
 import (
-	. "DNA/common"
-	"DNA/core/asset"
-	. "DNA/core/contract"
-	. "DNA/core/transaction"
-	"DNA/core/transaction/payload"
+	. "UGCNetwork/common"
+	"UGCNetwork/core/asset"
+	. "UGCNetwork/core/contract"
+	. "UGCNetwork/core/transaction"
+	"UGCNetwork/core/transaction/payload"
 	"bytes"
 )
 

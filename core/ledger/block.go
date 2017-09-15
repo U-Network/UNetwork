@@ -1,16 +1,16 @@
 package ledger
 
 import (
-	. "DNA/common"
-	"DNA/common/log"
-	"DNA/common/serialization"
-	"DNA/core/contract/program"
-	sig "DNA/core/signature"
-	tx "DNA/core/transaction"
-	"DNA/core/transaction/payload"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/vm"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/log"
+	"UGCNetwork/common/serialization"
+	"UGCNetwork/core/contract/program"
+	sig "UGCNetwork/core/signature"
+	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/core/transaction/payload"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/vm"
 	"io"
 	"time"
 )

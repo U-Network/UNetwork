@@ -1,8 +1,8 @@
 package common
 
 import (
-	"DNA/common/log"
-	. "DNA/errors"
+	"UGCNetwork/common/log"
+	. "UGCNetwork/errors"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

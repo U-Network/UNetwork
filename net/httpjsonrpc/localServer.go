@@ -1,8 +1,8 @@
 package httpjsonrpc
 
 import (
-	"DNA/common/log"
-	. "DNA/common/config"
+	"UGCNetwork/common/log"
+	. "UGCNetwork/common/config"
 	"net/http"
 	"strconv"
 )

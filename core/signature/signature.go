@@ -1,12 +1,12 @@
 package signature
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	"DNA/core/contract/program"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/vm/interfaces"
+	"UGCNetwork/common"
+	"UGCNetwork/common/log"
+	"UGCNetwork/core/contract/program"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/vm/interfaces"
 	"bytes"
 	"crypto/sha256"
 	"io"

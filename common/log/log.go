@@ -1,7 +1,7 @@
 package log
 
 import (
-	"DNA/common/config"
+	"UGCNetwork/common/config"
 	"bytes"
 	"errors"
 	"fmt"

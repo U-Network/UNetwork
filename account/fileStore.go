@@ -1,8 +1,8 @@
 package account
 
 import (
-	ct "DNA/core/contract"
-	. "DNA/errors"
+	ct "UGCNetwork/core/contract"
+	. "UGCNetwork/errors"
 	"encoding/hex"
 	"encoding/json"
 	"errors"

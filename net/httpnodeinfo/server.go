@@ -1,9 +1,9 @@
 package httpnodeinfo
 
 import (
-	"DNA/common/config"
-	"DNA/core/ledger"
-	. "DNA/net/protocol"
+	"UGCNetwork/common/config"
+	"UGCNetwork/core/ledger"
+	. "UGCNetwork/net/protocol"
 	"fmt"
 	"html/template"
 	"net/http"

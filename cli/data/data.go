@@ -1,12 +1,12 @@
 package data
 
 import (
-	"DNA/account"
-	. "DNA/cli/common"
-	"DNA/core/contract"
-	"DNA/core/signature"
-	"DNA/core/transaction"
-	"DNA/net/httpjsonrpc"
+	"UGCNetwork/account"
+	. "UGCNetwork/cli/common"
+	"UGCNetwork/core/contract"
+	"UGCNetwork/core/signature"
+	"UGCNetwork/core/transaction"
+	"UGCNetwork/net/httpjsonrpc"
 	"bytes"
 	"encoding/hex"
 	"fmt"
@@ -141,7 +141,7 @@ func dataAction(c *cli.Context) error {
 		if name == "" {
 			rbuf := make([]byte, 4)
 			rand.Read(rbuf)
-			name = "DNA-" + hex.EncodeToString(rbuf)
+			name = "UGCNetwork-" + hex.EncodeToString(rbuf)
 		}
 		//create transaction
 		var tx *transaction.Transaction

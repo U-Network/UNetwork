@@ -1,14 +1,14 @@
 package privpayload
 
 import (
-	"DNA/account"
-	. "DNA/cli/common"
-	"DNA/core/contract"
-	"DNA/core/signature"
-	"DNA/core/transaction"
-	"DNA/core/transaction/payload"
-	"DNA/crypto"
-	"DNA/net/httpjsonrpc"
+	"UGCNetwork/account"
+	. "UGCNetwork/cli/common"
+	"UGCNetwork/core/contract"
+	"UGCNetwork/core/signature"
+	"UGCNetwork/core/transaction"
+	"UGCNetwork/core/transaction/payload"
+	"UGCNetwork/crypto"
+	"UGCNetwork/net/httpjsonrpc"
 	"bytes"
 	"encoding/hex"
 	"encoding/json"

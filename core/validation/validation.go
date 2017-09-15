@@ -1,12 +1,12 @@
 package validation
 
 import (
-	. "DNA/common"
-	sig "DNA/core/signature"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/vm"
-	"DNA/vm/interfaces"
+	. "UGCNetwork/common"
+	sig "UGCNetwork/core/signature"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/vm"
+	"UGCNetwork/vm/interfaces"
 	"errors"
 )
 

@@ -1,7 +1,7 @@
 package node
 
 import (
-	. "DNA/net/protocol"
+	. "UGCNetwork/net/protocol"
 	"fmt"
 	"sync"
 )

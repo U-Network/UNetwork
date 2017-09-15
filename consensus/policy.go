@@ -1,7 +1,7 @@
 package consensus
 
 import (
-	. "DNA/common"
+	. "UGCNetwork/common"
 )
 type Policy struct {
 	PolicyLevel PolicyLevel

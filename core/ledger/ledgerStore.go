@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "DNA/common"
-	"DNA/core/account"
-	. "DNA/core/asset"
-	tx "DNA/core/transaction"
-	"DNA/crypto"
+	. "UGCNetwork/common"
+	"UGCNetwork/core/account"
+	. "UGCNetwork/core/asset"
+	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/crypto"
 )
 
 // ILedgerStore provides func with store package.

@@ -1,12 +1,12 @@
 package ledger
 
 import (
-	. "DNA/common"
-	"DNA/common/log"
-	tx "DNA/core/transaction"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/events"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/log"
+	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/events"
 	"sync"
 )
 

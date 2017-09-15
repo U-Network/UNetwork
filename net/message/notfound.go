@@ -1,9 +1,9 @@
 package message
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	. "DNA/net/protocol"
+	"UGCNetwork/common"
+	"UGCNetwork/common/log"
+	. "UGCNetwork/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

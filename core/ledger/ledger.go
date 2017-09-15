@@ -1,20 +1,20 @@
 package ledger
 
 import (
-	"DNA/common"
-	. "DNA/common"
-	"DNA/core/asset"
-	"DNA/core/contract"
-	tx "DNA/core/transaction"
-	"DNA/crypto"
-	. "DNA/errors"
+	"UGCNetwork/common"
+	. "UGCNetwork/common"
+	"UGCNetwork/core/asset"
+	"UGCNetwork/core/contract"
+	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
 	"errors"
 )
 
 var DefaultLedger *Ledger
 var StandbyBookKeepers []*crypto.PubKey
 
-// Ledger - the struct for onchainDNA ledger
+// Ledger - the struct for onchainUGCNetwork ledger
 type Ledger struct {
 	Blockchain *Blockchain
 	State      *State

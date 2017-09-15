@@ -1,6 +1,6 @@
 package vm
 
-import "DNA/vm/utils"
+import "UGCNetwork/vm/utils"
 
 type ExecutionContext struct {
 	Script             []byte

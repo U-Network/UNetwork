@@ -29,7 +29,7 @@ fi
 programhash=$(echo "$output" | grep "program hash" | awk -F : '{print $2}')
 
 # asset registration
-output=$($CMD asset --reg --name DNA --value 10000 --wallet $WALLET --password $PASSWD)
+output=$($CMD asset --reg --name UGCNetwork --value 10000 --wallet $WALLET --password $PASSWD)
 if (( $? != 0 )); then
 	echo "asset registration failed"
 	exit 1

@@ -1,12 +1,12 @@
 package message
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	. "DNA/errors"
-	. "DNA/net/protocol"
+	"UGCNetwork/common"
+	"UGCNetwork/common/log"
+	"UGCNetwork/core/ledger"
+	"UGCNetwork/core/transaction"
+	. "UGCNetwork/errors"
+	. "UGCNetwork/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

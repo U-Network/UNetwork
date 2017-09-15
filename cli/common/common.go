@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"DNA/common/config"
-	"DNA/common/password"
+	"UGCNetwork/common/config"
+	"UGCNetwork/common/password"
 
 	"github.com/urfave/cli"
 )

@@ -1,18 +1,18 @@
 package httpjsonrpc
 
 import (
-	. "DNA/account"
-	. "DNA/common"
-	"DNA/common/log"
-	. "DNA/core/asset"
-	"DNA/core/contract"
-	"DNA/core/signature"
-	"DNA/core/transaction"
+	. "UGCNetwork/account"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/log"
+	. "UGCNetwork/core/asset"
+	"UGCNetwork/core/contract"
+	"UGCNetwork/core/signature"
+	"UGCNetwork/core/transaction"
 	"strconv"
 )
 
 const (
-	ASSETPREFIX = "DNA"
+	ASSETPREFIX = "UGCNetwork"
 )
 
 func NewRegTx(rand string, index int, admin, issuer *Account) *transaction.Transaction {

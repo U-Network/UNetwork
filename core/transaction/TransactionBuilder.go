@@ -1,11 +1,11 @@
 package transaction
 
 import (
-	"DNA/common"
-	"DNA/core/asset"
-	"DNA/core/contract/program"
-	"DNA/core/transaction/payload"
-	"DNA/crypto"
+	"UGCNetwork/common"
+	"UGCNetwork/core/asset"
+	"UGCNetwork/core/contract/program"
+	"UGCNetwork/core/transaction/payload"
+	"UGCNetwork/crypto"
 )
 
 //initial a new transaction with asset registration payload

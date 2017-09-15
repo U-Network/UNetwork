@@ -1,8 +1,8 @@
 package dbft
 
 import (
-	"DNA/common/log"
-	ser "DNA/common/serialization"
+	"UGCNetwork/common/log"
+	ser "UGCNetwork/common/serialization"
 	"bytes"
 	"errors"
 	"io"

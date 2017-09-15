@@ -1,7 +1,7 @@
 package transaction
 
 import (
-. "DNA/common"
+. "UGCNetwork/common"
 )
 
 // ILedgerStore provides func with store package.

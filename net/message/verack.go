@@ -1,8 +1,8 @@
 package message
 
 import (
-	"DNA/common/log"
-	. "DNA/net/protocol"
+	"UGCNetwork/common/log"
+	. "UGCNetwork/net/protocol"
 	"encoding/hex"
 	"errors"
 	"strconv"

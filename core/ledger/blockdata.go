@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "DNA/common"
-	"DNA/common/serialization"
-	"DNA/core/contract/program"
-	sig "DNA/core/signature"
-	. "DNA/errors"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/serialization"
+	"UGCNetwork/core/contract/program"
+	sig "UGCNetwork/core/signature"
+	. "UGCNetwork/errors"
 	"crypto/sha256"
 	"errors"
 	"io"

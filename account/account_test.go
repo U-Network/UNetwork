@@ -1,7 +1,7 @@
 package account
 
 import (
-	"DNA/crypto"
+	"UGCNetwork/crypto"
 	"fmt"
 	"os"
 	"path"

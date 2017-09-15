@@ -2,7 +2,7 @@ package consensus
 
 import (
 	"fmt"
-	"DNA/common/log"
+	"UGCNetwork/common/log"
 	"time"
 )
 

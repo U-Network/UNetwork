@@ -7,13 +7,13 @@ import (
 	"io"
 	"sort"
 
-	. "DNA/common"
-	"DNA/common/serialization"
-	"DNA/core/contract"
-	"DNA/core/contract/program"
-	sig "DNA/core/signature"
-	"DNA/core/transaction/payload"
-	. "DNA/errors"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/serialization"
+	"UGCNetwork/core/contract"
+	"UGCNetwork/core/contract/program"
+	sig "UGCNetwork/core/signature"
+	"UGCNetwork/core/transaction/payload"
+	. "UGCNetwork/errors"
 )
 
 //for different transaction types with different payload format

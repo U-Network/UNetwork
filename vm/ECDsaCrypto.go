@@ -1,9 +1,9 @@
 package vm
 
 import (
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/common/log"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/common/log"
 	"errors"
 )
 

@@ -1,10 +1,10 @@
 package message
 
 import (
-	"DNA/common/log"
-	"DNA/common/serialization"
-	"DNA/core/ledger"
-	. "DNA/net/protocol"
+	"UGCNetwork/common/log"
+	"UGCNetwork/common/serialization"
+	"UGCNetwork/core/ledger"
+	. "UGCNetwork/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

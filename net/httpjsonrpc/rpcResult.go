@@ -1,21 +1,21 @@
 package httpjsonrpc
 
 var (
-	DnaRpcInvalidHash        = responsePacking("invalid hash")
-	DnaRpcInvalidBlock       = responsePacking("invalid block")
-	DnaRpcInvalidTransaction = responsePacking("invalid transaction")
-	DnaRpcInvalidParameter   = responsePacking("invalid parameter")
+	UgcNetworkRpcInvalidHash        = responsePacking("invalid hash")
+	UgcNetworkRpcInvalidBlock       = responsePacking("invalid block")
+	UgcNetworkRpcInvalidTransaction = responsePacking("invalid transaction")
+	UgcNetworkRpcInvalidParameter   = responsePacking("invalid parameter")
 
-	DnaRpcUnknownBlock       = responsePacking("unknown block")
-	DnaRpcUnknownTransaction = responsePacking("unknown transaction")
+	UgcNetworkRpcUnknownBlock       = responsePacking("unknown block")
+	UgcNetworkRpcUnknownTransaction = responsePacking("unknown transaction")
 
-	DnaRpcNil           = responsePacking(nil)
-	DnaRpcUnsupported   = responsePacking("Unsupported")
-	DnaRpcInternalError = responsePacking("internal error")
-	DnaRpcIOError       = responsePacking("internal IO error")
-	DnaRpcAPIError      = responsePacking("internal API error")
-	DnaRpcSuccess       = responsePacking(true)
-	DnaRpcFailed        = responsePacking(false)
+	UgcNetworkRpcNil           = responsePacking(nil)
+	UgcNetworkRpcUnsupported   = responsePacking("Unsupported")
+	UgcNetworkRpcInternalError = responsePacking("internal error")
+	UgcNetworkRpcIOError       = responsePacking("internal IO error")
+	UgcNetworkRpcAPIError      = responsePacking("internal API error")
+	UgcNetworkRpcSuccess       = responsePacking(true)
+	UgcNetworkRpcFailed        = responsePacking(false)
 
-	DnaRpc = responsePacking
+	UgcNetworkRpc = responsePacking
 )

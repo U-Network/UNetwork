@@ -1,8 +1,8 @@
 package program
 
 import (
-	. "DNA/common"
-	"DNA/vm"
+	. "UGCNetwork/common"
+	"UGCNetwork/vm"
 	"bytes"
 	"math/big"
 )

@@ -1,13 +1,13 @@
 package httpjsonrpc
 
 import (
-	"DNA/account"
-	. "DNA/common"
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
+	"UGCNetwork/account"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/config"
+	"UGCNetwork/common/log"
+	"UGCNetwork/core/ledger"
+	tx "UGCNetwork/core/transaction"
+	. "UGCNetwork/errors"
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
@@ -114,7 +114,7 @@ func getCurrentDirectory() string {
 }
 func getBestBlockHash(params []interface{}) map[string]interface{} {
 	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
-	return DnaRpc(ToHexString(hash.ToArray()))
+	return UgcNetworkRpc(ToHexString(hash.ToArray()))
 }
 
 // Input JSON string examples for getblock method as following:
@@ -122,7 +122,7 @@ func getBestBlockHash(params []interface{}) map[string]interface{} {
 //   {"jsonrpc": "2.0", "method": "getblock", "params": ["aabbcc.."], "id": 0}
 func getBlock(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	var err error
 	var hash Uint256
@@ -132,25 +132,25 @@ func getBlock(params []interface{}) map[string]interface{} {
 		index := uint32(params[0].(float64))
 		hash, err = ledger.DefaultLedger.Store.GetBlockHash(index)
 		if err != nil {
-			return DnaRpcUnknownBlock
+			return UgcNetworkRpcUnknownBlock
 		}
 	// block hash
 	case string:
 		str := params[0].(string)
 		hex, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		if err := hash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return DnaRpcInvalidTransaction
+			return UgcNetworkRpcInvalidTransaction
 		}
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 
 	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
-		return DnaRpcUnknownBlock
+		return UgcNetworkRpcUnknownBlock
 	}
 
 	blockHead := &BlockHead{
@@ -178,34 +178,34 @@ func getBlock(params []interface{}) map[string]interface{} {
 		BlockData:    blockHead,
 		Transactions: trans,
 	}
-	return DnaRpc(b)
+	return UgcNetworkRpc(b)
 }
 
 func getBlockCount(params []interface{}) map[string]interface{} {
-	return DnaRpc(ledger.DefaultLedger.Blockchain.BlockHeight + 1)
+	return UgcNetworkRpc(ledger.DefaultLedger.Blockchain.BlockHeight + 1)
 }
 
 // A JSON example for getblockhash method as following:
 //   {"jsonrpc": "2.0", "method": "getblockhash", "params": [1], "id": 0}
 func getBlockHash(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	switch params[0].(type) {
 	case float64:
 		height := uint32(params[0].(float64))
 		hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
 		if err != nil {
-			return DnaRpcUnknownBlock
+			return UgcNetworkRpcUnknownBlock
 		}
-		return DnaRpc(fmt.Sprintf("%016x", hash))
+		return UgcNetworkRpc(fmt.Sprintf("%016x", hash))
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 }
 
 func getConnectionCount(params []interface{}) map[string]interface{} {
-	return DnaRpc(node.GetConnectionCnt())
+	return UgcNetworkRpc(node.GetConnectionCnt())
 }
 
 func getRawMemPool(params []interface{}) map[string]interface{} {
@@ -215,37 +215,37 @@ func getRawMemPool(params []interface{}) map[string]interface{} {
 		txs = append(txs, TransArryByteToHexString(t))
 	}
 	if len(txs) == 0 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
-	return DnaRpc(txs)
+	return UgcNetworkRpc(txs)
 }
 
 // A JSON example for getrawtransaction method as following:
 //   {"jsonrpc": "2.0", "method": "getrawtransaction", "params": ["transactioin hash in hex"], "id": 0}
 func getRawTransaction(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
 		hex, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		var hash Uint256
 		err = hash.Deserialize(bytes.NewReader(hex))
 		if err != nil {
-			return DnaRpcInvalidTransaction
+			return UgcNetworkRpcInvalidTransaction
 		}
 		tx, err := ledger.DefaultLedger.Store.GetTransaction(hash)
 		if err != nil {
-			return DnaRpcUnknownTransaction
+			return UgcNetworkRpcUnknownTransaction
 		}
 		tran := TransArryByteToHexString(tx)
-		return DnaRpc(tran)
+		return UgcNetworkRpc(tran)
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 }
 
@@ -253,7 +253,7 @@ func getRawTransaction(params []interface{}) map[string]interface{} {
 //   {"jsonrpc": "2.0", "method": "sendrawtransaction", "params": ["raw transactioin in hex"], "id": 0}
 func sendRawTransaction(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	var hash Uint256
 	switch params[0].(type) {
@@ -261,25 +261,25 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 		str := params[0].(string)
 		hex, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		var txn tx.Transaction
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
-			return DnaRpcInvalidTransaction
+			return UgcNetworkRpcInvalidTransaction
 		}
 		hash = txn.Hash()
 		if errCode := VerifyAndSendTx(&txn); errCode != ErrNoError {
-			return DnaRpcInternalError
+			return UgcNetworkRpcInternalError
 		}
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
-	return DnaRpc(ToHexString(hash.ToArray()))
+	return UgcNetworkRpc(ToHexString(hash.ToArray()))
 }
 
 func getUnspendOutput(params []interface{}) map[string]interface{} {
 	if len(params) < 2 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	var programHash Uint160
 	var assetHash Uint256
@@ -288,13 +288,13 @@ func getUnspendOutput(params []interface{}) map[string]interface{} {
 		str := params[0].(string)
 		hex, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		if err := programHash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return DnaRpcInvalidHash
+			return UgcNetworkRpcInvalidHash
 		}
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 
 	switch params[1].(type) {
@@ -302,13 +302,13 @@ func getUnspendOutput(params []interface{}) map[string]interface{} {
 		str := params[1].(string)
 		hex, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		if err := assetHash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return DnaRpcInvalidHash
+			return UgcNetworkRpcInvalidHash
 		}
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 	type TxOutputInfo struct {
 		AssetID     string
@@ -322,7 +322,7 @@ func getUnspendOutput(params []interface{}) map[string]interface{} {
 	for i = 0; i <= height; i++ {
 		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
 		if err != nil {
-			return DnaRpcInternalError
+			return UgcNetworkRpcInternalError
 		}
 		// skip the bookkeeping transaction
 		for _, t := range block.Transactions[1:] {
@@ -354,7 +354,7 @@ func getUnspendOutput(params []interface{}) map[string]interface{} {
 	for i = 0; i <= height; i++ {
 		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
 		if err != nil {
-			return DnaRpcInternalError
+			return UgcNetworkRpcInternalError
 		}
 		// skip the bookkeeping transaction
 		for _, t := range block.Transactions[1:] {
@@ -370,19 +370,19 @@ func getUnspendOutput(params []interface{}) map[string]interface{} {
 			}
 		}
 	}
-	return DnaRpc(outputs)
+	return UgcNetworkRpc(outputs)
 }
 
 func getTxout(params []interface{}) map[string]interface{} {
 	//TODO
-	return DnaRpcUnsupported
+	return UgcNetworkRpcUnsupported
 }
 
 // A JSON example for submitblock method as following:
 //   {"jsonrpc": "2.0", "method": "submitblock", "params": ["raw block in hex"], "id": 0}
 func submitBlock(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	switch params[0].(type) {
 	case string:
@@ -390,23 +390,23 @@ func submitBlock(params []interface{}) map[string]interface{} {
 		hex, _ := hex.DecodeString(str)
 		var block ledger.Block
 		if err := block.Deserialize(bytes.NewReader(hex)); err != nil {
-			return DnaRpcInvalidBlock
+			return UgcNetworkRpcInvalidBlock
 		}
 		if err := ledger.DefaultLedger.Blockchain.AddBlock(&block); err != nil {
-			return DnaRpcInvalidBlock
+			return UgcNetworkRpcInvalidBlock
 		}
 		if err := node.Xmit(&block); err != nil {
-			return DnaRpcInternalError
+			return UgcNetworkRpcInternalError
 		}
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
-	return DnaRpcSuccess
+	return UgcNetworkRpcSuccess
 }
 
 func getNeighbor(params []interface{}) map[string]interface{} {
 	addr, _ := node.GetNeighborAddrs()
-	return DnaRpc(addr)
+	return UgcNetworkRpc(addr)
 }
 
 func getNodeState(params []interface{}) map[string]interface{} {
@@ -422,38 +422,38 @@ func getNodeState(params []interface{}) map[string]interface{} {
 		TxnCnt:   node.GetTxnCnt(),
 		RxTxnCnt: node.GetRxTxnCnt(),
 	}
-	return DnaRpc(n)
+	return UgcNetworkRpc(n)
 }
 
 func startConsensus(params []interface{}) map[string]interface{} {
 	if err := dBFT.Start(); err != nil {
-		return DnaRpcFailed
+		return UgcNetworkRpcFailed
 	}
-	return DnaRpcSuccess
+	return UgcNetworkRpcSuccess
 }
 
 func stopConsensus(params []interface{}) map[string]interface{} {
 	if err := dBFT.Halt(); err != nil {
-		return DnaRpcFailed
+		return UgcNetworkRpcFailed
 	}
-	return DnaRpcSuccess
+	return UgcNetworkRpcSuccess
 }
 
 func sendSampleTransaction(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	var txType string
 	switch params[0].(type) {
 	case string:
 		txType = params[0].(string)
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 
 	issuer, err := account.NewAccount()
 	if err != nil {
-		return DnaRpc("Failed to create account")
+		return UgcNetworkRpc("Failed to create account")
 	}
 	admin := issuer
 
@@ -473,35 +473,35 @@ func sendSampleTransaction(params []interface{}) map[string]interface{} {
 			SignTx(admin, regTx)
 			VerifyAndSendTx(regTx)
 		}
-		return DnaRpc(fmt.Sprintf("%d transaction(s) was sent", num))
+		return UgcNetworkRpc(fmt.Sprintf("%d transaction(s) was sent", num))
 	default:
-		return DnaRpc("Invalid transacion type")
+		return UgcNetworkRpc("Invalid transacion type")
 	}
 }
 
 func setDebugInfo(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 	switch params[0].(type) {
 	case float64:
 		level := params[0].(float64)
 		if err := log.Log.SetDebugLevel(int(level)); err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
-	return DnaRpcSuccess
+	return UgcNetworkRpcSuccess
 }
 
 func getVersion(params []interface{}) map[string]interface{} {
-	return DnaRpc(config.Version)
+	return UgcNetworkRpc(config.Version)
 }
 
 func uploadDataFile(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 
 	rbuf := make([]byte, 4)
@@ -512,27 +512,27 @@ func uploadDataFile(params []interface{}) map[string]interface{} {
 
 	data, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 	f, err := os.OpenFile(tmpname, os.O_WRONLY|os.O_CREATE, 0664)
 	if err != nil {
-		return DnaRpcIOError
+		return UgcNetworkRpcIOError
 	}
 	defer f.Close()
 	f.Write(data)
 
 	refpath, err := AddFileIPFS(tmpname, true)
 	if err != nil {
-		return DnaRpcAPIError
+		return UgcNetworkRpcAPIError
 	}
 
-	return DnaRpc(refpath)
+	return UgcNetworkRpc(refpath)
 
 }
 
 func regDataFile(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	var hash Uint256
 	switch params[0].(type) {
@@ -540,71 +540,71 @@ func regDataFile(params []interface{}) map[string]interface{} {
 		str := params[0].(string)
 		hex, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		var txn tx.Transaction
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
-			return DnaRpcInvalidTransaction
+			return UgcNetworkRpcInvalidTransaction
 		}
 
 		hash = txn.Hash()
 		if errCode := VerifyAndSendTx(&txn); errCode != ErrNoError {
-			return DnaRpcInternalError
+			return UgcNetworkRpcInternalError
 		}
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
-	return DnaRpc(ToHexString(hash.ToArray()))
+	return UgcNetworkRpc(ToHexString(hash.ToArray()))
 }
 
 func catDataRecord(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
 		b, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		var hash Uint256
 		err = hash.Deserialize(bytes.NewReader(b))
 		if err != nil {
-			return DnaRpcInvalidTransaction
+			return UgcNetworkRpcInvalidTransaction
 		}
 		tx, err := ledger.DefaultLedger.Store.GetTransaction(hash)
 		if err != nil {
-			return DnaRpcUnknownTransaction
+			return UgcNetworkRpcUnknownTransaction
 		}
 		tran := TransArryByteToHexString(tx)
 		info := tran.Payload.(*DataFileInfo)
 		//ref := string(record.RecordData[:])
-		return DnaRpc(info)
+		return UgcNetworkRpc(info)
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 }
 
 func getDataFile(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return DnaRpcNil
+		return UgcNetworkRpcNil
 	}
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
 		hex, err := hex.DecodeString(str)
 		if err != nil {
-			return DnaRpcInvalidParameter
+			return UgcNetworkRpcInvalidParameter
 		}
 		var hash Uint256
 		err = hash.Deserialize(bytes.NewReader(hex))
 		if err != nil {
-			return DnaRpcInvalidTransaction
+			return UgcNetworkRpcInvalidTransaction
 		}
 		tx, err := ledger.DefaultLedger.Store.GetTransaction(hash)
 		if err != nil {
-			return DnaRpcUnknownTransaction
+			return UgcNetworkRpcUnknownTransaction
 		}
 
 		tran := TransArryByteToHexString(tx)
@@ -612,11 +612,11 @@ func getDataFile(params []interface{}) map[string]interface{} {
 
 		err = GetFileIPFS(info.IPFSPath, info.Filename)
 		if err != nil {
-			return DnaRpcAPIError
+			return UgcNetworkRpcAPIError
 		}
 		//TODO: shoud return download address
-		return DnaRpcSuccess
+		return UgcNetworkRpcSuccess
 	default:
-		return DnaRpcInvalidParameter
+		return UgcNetworkRpcInvalidParameter
 	}
 }

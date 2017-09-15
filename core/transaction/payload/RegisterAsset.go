@@ -1,10 +1,10 @@
 package payload
 
 import (
-	"DNA/common"
-	"DNA/core/asset"
-	"DNA/crypto"
-	. "DNA/errors"
+	"UGCNetwork/common"
+	"UGCNetwork/core/asset"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
 	"io"
 )
 

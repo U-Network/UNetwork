@@ -1,11 +1,11 @@
 package common
 
 import (
-	. "DNA/common"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
-	. "DNA/net/httpjsonrpc"
-	Err "DNA/net/httprestful/error"
+	. "UGCNetwork/common"
+	tx "UGCNetwork/core/transaction"
+	. "UGCNetwork/errors"
+	. "UGCNetwork/net/httpjsonrpc"
+	Err "UGCNetwork/net/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"time"

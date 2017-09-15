@@ -1,11 +1,11 @@
 package restful
 
 import (
-	. "DNA/common/config"
-	"DNA/common/log"
-	. "DNA/net/httprestful/common"
-	Err "DNA/net/httprestful/error"
-	"DNA/net/httpwebsocket"
+	. "UGCNetwork/common/config"
+	"UGCNetwork/common/log"
+	. "UGCNetwork/net/httprestful/common"
+	Err "UGCNetwork/net/httprestful/error"
+	"UGCNetwork/net/httpwebsocket"
 	"context"
 	"crypto/tls"
 	"encoding/json"

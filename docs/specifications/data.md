@@ -1,4 +1,4 @@
-# Onchain DNA Data Model Specification
+# Onchain UGCNetwork Data Model Specification
 
 * [Introduction](#introduction)
 * [Definitions](#definitions)
@@ -15,14 +15,14 @@
 
 ## Introduction
 
-This document describes the serialization format for the data structures used in the Onchain DNA.
+This document describes the serialization format for the data structures used in the Onchain UGCNetwork.
 
 ## Definitions
 
 ### Ledger
 
 The ledger Contains the BlockChain, current state and the store interface of the ledger. which is maintained by each peer.
-DNA is designed to support muti Ledger, but now is only allowed one ledger.
+UGCNetwork is designed to support muti Ledger, but now is only allowed one ledger.
 
 
 Field               | Type              | Description

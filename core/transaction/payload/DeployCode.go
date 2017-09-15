@@ -1,8 +1,8 @@
 package payload
 
 import (
-	"DNA/common/serialization"
-	. "DNA/core/code"
+	"UGCNetwork/common/serialization"
+	. "UGCNetwork/core/code"
 	"io"
 )
 

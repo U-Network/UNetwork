@@ -1,14 +1,14 @@
 package net
 
 import (
-	. "DNA/common"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/events"
-	"DNA/net/node"
-	"DNA/net/protocol"
+	. "UGCNetwork/common"
+	"UGCNetwork/core/ledger"
+	"UGCNetwork/core/transaction"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/events"
+	"UGCNetwork/net/node"
+	"UGCNetwork/net/protocol"
 )
 
 type Neter interface {

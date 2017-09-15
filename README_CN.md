@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/DNAProject/DNA.svg?branch=master)](https://travis-ci.org/DNAProject/DNA)
+[![Build Status](https://travis-ci.org/UGCNetworkProject/UGCNetwork.svg?branch=master)](https://travis-ci.org/UGCNetworkProject/UGCNetwork)
 
-# DNA (Distributed Networks Architecture)
+# UGCNetwork (Distributed Networks Architecture)
 
-DNA是go语言实现的基于区块链技术的去中心化的分布式网络协议。可以用来数字化资产和金融相关业务包括资产注册，发行，转账等。
+UGCNetwork是go语言实现的基于区块链技术的去中心化的分布式网络协议。可以用来数字化资产和金融相关业务包括资产注册，发行，转账等。
 
 ## 特性
 
@@ -20,24 +20,24 @@ DNA是go语言实现的基于区块链技术的去中心化的分布式网络协
 * 可配置的分区共识(进行中)
 
 # 编译
-成功编译DNA需要以下准备：
+成功编译UGCNetwork需要以下准备：
 
 * Go版本在1.8及以上
 * 安装第三方包管理工具glide
 * 正确的Go语言开发环境
 
-克隆DNA仓库到$GOPATH/src目录
+克隆UGCNetwork仓库到$GOPATH/src目录
 
 
 ```shell
-$ git clone https://github.com/DNAProject/DNA.git
+$ git clone https://github.com/UGCNetworkProject/UGCNetwork.git
 ```
 
 用第三方包管理工具glide拉取依赖库
 
 
 ````shell
-$ cd DNA
+$ cd UGCNetwork
 $ glide install
 ````
 
@@ -54,7 +54,7 @@ $ make
 
 # 部署
 
-成功运行DNA需要至少4个节点，可以通过两种方式进行部署
+成功运行UGCNetwork需要至少4个节点，可以通过两种方式进行部署
 
 * 多机部署
 * 单机部署
@@ -265,7 +265,7 @@ $ - 输入你的钱包口令
 
 ## 测试环境
 
-我们在云上部署了DNA供大家使用
+我们在云上部署了UGCNetwork供大家使用
 
 主要功能包括：
 1. 区块链相关信息查询
@@ -280,7 +280,7 @@ $ - 输入你的钱包口令
 
 使用方式参见：
 
-[forum.DNAProject.com/DNA节点控制工具](https://forum.dnaproject.org/t/dna-nodectl/57)
+[forum.UGCNetworkProject.com/UGCNetwork节点控制工具](https://forum.dnaproject.org/t/dna-nodectl/57)
 
 可用节点如下：
 ```
@@ -299,7 +299,7 @@ IP               PORT
 # 贡献代码
 
 请您以签过名的commit发送pull request请求，我们期待您的加入！
-您也可以通过邮件的方式发送你的代码到开发者邮件列表，欢迎加入DNA邮件列表和开发者论坛。
+您也可以通过邮件的方式发送你的代码到开发者邮件列表，欢迎加入UGCNetwork邮件列表和开发者论坛。
 
 另外，在您想为本项目贡献代码时请提供详细的提交信息，格式参考如下：
 
@@ -328,27 +328,27 @@ IP               PORT
 
 我们为开发者提供了一下邮件列表
 
-- OnchainDNA@googlegroups.com
+- OnchainUGCNetwork@googlegroups.com
 
 可以通过两种方式订阅并参与讨论
 
-- 发送任何内容到邮箱地址 OnchainDNA+subscribe@googlegroups.com
+- 发送任何内容到邮箱地址 OnchainUGCNetwork+subscribe@googlegroups.com
 
-- 登录 https://groups.google.com/forum/#!forum/OnchainDNA 
+- 登录 https://groups.google.com/forum/#!forum/OnchainUGCNetwork 
 
 
 ## 网站
 
-- https://www.DNAproject.org
+- https://www.UGCNetworkproject.org
 
 ## 论坛
 
-- https://forum.DNAproject.org
+- https://forum.UGCNetworkproject.org
 
 ## Wiki
 
-- https://wiki.DNAproject.org
+- https://wiki.UGCNetworkproject.org
 
 # 许可证
 
-DNA遵守Apache License, 版本2.0。 详细信息请查看项目根目录下的LICENSE文件。
+UGCNetwork遵守Apache License, 版本2.0。 详细信息请查看项目根目录下的LICENSE文件。

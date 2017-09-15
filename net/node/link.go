@@ -1,11 +1,11 @@
 package node
 
 import (
-	. "DNA/common/config"
-	"DNA/common/log"
-	"DNA/events"
-	msg "DNA/net/message"
-	. "DNA/net/protocol"
+	. "UGCNetwork/common/config"
+	"UGCNetwork/common/log"
+	"UGCNetwork/events"
+	msg "UGCNetwork/net/message"
+	. "UGCNetwork/net/protocol"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"

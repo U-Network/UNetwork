@@ -1,10 +1,10 @@
 package code
 
 import (
-	"DNA/common/log"
-	. "DNA/common"
-	. "DNA/core/contract"
-	"DNA/common/serialization"
+	"UGCNetwork/common/log"
+	. "UGCNetwork/common"
+	. "UGCNetwork/core/contract"
+	"UGCNetwork/common/serialization"
 	"fmt"
 	"io"
 )

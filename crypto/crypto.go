@@ -1,10 +1,10 @@
 package crypto
 
 import (
-	"DNA/common/serialization"
-	"DNA/crypto/p256r1"
-	"DNA/crypto/sm2"
-	"DNA/crypto/util"
+	"UGCNetwork/common/serialization"
+	"UGCNetwork/crypto/p256r1"
+	"UGCNetwork/crypto/sm2"
+	"UGCNetwork/crypto/util"
 	"crypto/sha256"
 	"errors"
 	"fmt"

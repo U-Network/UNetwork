@@ -1,14 +1,14 @@
 package asset
 
 import (
-	"DNA/account"
-	. "DNA/cli/common"
-	. "DNA/common"
-	. "DNA/core/asset"
-	"DNA/core/contract"
-	"DNA/core/signature"
-	"DNA/core/transaction"
-	"DNA/net/httpjsonrpc"
+	"UGCNetwork/account"
+	. "UGCNetwork/cli/common"
+	. "UGCNetwork/common"
+	. "UGCNetwork/core/asset"
+	"UGCNetwork/core/contract"
+	"UGCNetwork/core/signature"
+	"UGCNetwork/core/transaction"
+	"UGCNetwork/net/httpjsonrpc"
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
@@ -261,7 +261,7 @@ func assetAction(c *cli.Context) error {
 		if name == "" {
 			rbuf := make([]byte, RANDBYTELEN)
 			rand.Read(rbuf)
-			name = "DNA-" + ToHexString(rbuf)
+			name = "UGCNetwork-" + ToHexString(rbuf)
 		}
 		issuer := admin
 		description := "description"

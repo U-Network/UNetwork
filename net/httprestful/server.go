@@ -1,12 +1,12 @@
 package httprestful
 
 import (
-	. "DNA/common/config"
-	"DNA/core/ledger"
-	"DNA/events"
-	"DNA/net/httprestful/common"
-	. "DNA/net/httprestful/restful"
-	. "DNA/net/protocol"
+	. "UGCNetwork/common/config"
+	"UGCNetwork/core/ledger"
+	"UGCNetwork/events"
+	"UGCNetwork/net/httprestful/common"
+	. "UGCNetwork/net/httprestful/restful"
+	. "UGCNetwork/net/protocol"
 	"strconv"
 )
 

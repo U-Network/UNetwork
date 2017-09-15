@@ -5,10 +5,10 @@ import (
 	"errors"
 	"io"
 
-	. "DNA/common"
-	"DNA/common/serialization"
-	. "DNA/errors"
-	"DNA/vm"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/serialization"
+	. "UGCNetwork/errors"
+	"UGCNetwork/vm"
 )
 
 //Contract address is the hash of contract program .

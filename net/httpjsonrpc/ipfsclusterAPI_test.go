@@ -1,7 +1,7 @@
 package httpjsonrpc
 
 import (
-	"DNA/common/log"
+	"UGCNetwork/common/log"
 	"fmt"
 	"os"
 	"os/exec"

@@ -1,14 +1,14 @@
 package node
 
 import (
-	"DNA/common"
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	"DNA/core/transaction/payload"
-	va "DNA/core/validation"
-	. "DNA/errors"
+	"UGCNetwork/common"
+	"UGCNetwork/common/config"
+	"UGCNetwork/common/log"
+	"UGCNetwork/core/ledger"
+	"UGCNetwork/core/transaction"
+	"UGCNetwork/core/transaction/payload"
+	va "UGCNetwork/core/validation"
+	. "UGCNetwork/errors"
 	"fmt"
 	"sync"
 )

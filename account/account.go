@@ -1,10 +1,10 @@
 package account
 
 import (
-	. "DNA/common"
-	"DNA/core/contract"
-	"DNA/crypto"
-	. "DNA/errors"
+	. "UGCNetwork/common"
+	"UGCNetwork/core/contract"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
 	"errors"
 )
 

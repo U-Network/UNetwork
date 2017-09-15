@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"DNA/common"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/events"
+	"UGCNetwork/common"
+	"UGCNetwork/core/ledger"
+	"UGCNetwork/core/transaction"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/events"
 	"bytes"
 	"encoding/binary"
 	"time"

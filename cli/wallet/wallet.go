@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
-	"DNA/account"
-	. "DNA/cli/common"
-	. "DNA/common"
-	"DNA/common/password"
-	"DNA/core/contract"
-	"DNA/net/httpjsonrpc"
+	"UGCNetwork/account"
+	. "UGCNetwork/cli/common"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/password"
+	"UGCNetwork/core/contract"
+	"UGCNetwork/net/httpjsonrpc"
 
 	"github.com/urfave/cli"
 )

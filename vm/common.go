@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"DNA/vm/errors"
-	"DNA/vm/types"
+	"UGCNetwork/vm/errors"
+	"UGCNetwork/vm/types"
 	"encoding/binary"
 	"math/big"
 	"reflect"

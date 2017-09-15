@@ -1,11 +1,11 @@
 package node
 
 import (
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	. "DNA/net/message"
-	. "DNA/net/protocol"
+	"UGCNetwork/common/config"
+	"UGCNetwork/common/log"
+	"UGCNetwork/core/ledger"
+	. "UGCNetwork/net/message"
+	. "UGCNetwork/net/protocol"
 	"math/rand"
 	"net"
 	"strconv"

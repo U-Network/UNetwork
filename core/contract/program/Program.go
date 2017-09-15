@@ -1,8 +1,8 @@
 package program
 
 import (
-	"DNA/common/serialization"
-	. "DNA/errors"
+	"UGCNetwork/common/serialization"
+	. "UGCNetwork/errors"
 	"io"
 )
 

@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"DNA/common"
-	"DNA/common/serialization"
+	"UGCNetwork/common"
+	"UGCNetwork/common/serialization"
 	"io"
 )
 

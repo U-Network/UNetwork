@@ -1,11 +1,11 @@
 package main
 
 import (
-	"DNA/crypto"
-	"DNA/core/ledger"
-	"DNA/core/store"
-	."DNA/common"
-	"DNA/common/log"
+	"UGCNetwork/crypto"
+	"UGCNetwork/core/ledger"
+	"UGCNetwork/core/store"
+	."UGCNetwork/common"
+	"UGCNetwork/common/log"
 	"encoding/hex"
 	"os"
 	"fmt"

@@ -1,11 +1,11 @@
 package contract
 
 import (
-	. "DNA/common"
-	pg "DNA/core/contract/program"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/vm"
+	. "UGCNetwork/common"
+	pg "UGCNetwork/core/contract/program"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/vm"
 	"math/big"
 	"sort"
 )

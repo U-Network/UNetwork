@@ -1,8 +1,8 @@
 package asset
 
 import (
-	"DNA/common/serialization"
-	. "DNA/errors"
+	"UGCNetwork/common/serialization"
+	. "UGCNetwork/errors"
 	"errors"
 	"io"
 )
@@ -24,13 +24,13 @@ const (
 
 type AssetRecordType byte
 
-//onchain DNA is planed to support UTXO and Balance
+//onchain UGCNetwork is planed to support UTXO and Balance
 const (
 	UTXO    AssetRecordType = 0x00
 	Balance AssetRecordType = 0x01
 )
 
-//define the asset stucture in onchain DNA
+//define the asset stucture in onchain UGCNetwork
 //registered asset will be assigned to contract address
 type Asset struct {
 	Name        string

@@ -1,15 +1,15 @@
 package dbft
 
 import (
-	cl "DNA/account"
-	. "DNA/common"
-	"DNA/common/log"
-	ser "DNA/common/serialization"
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	"DNA/crypto"
-	"DNA/net"
-	msg "DNA/net/message"
+	cl "UGCNetwork/account"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/log"
+	ser "UGCNetwork/common/serialization"
+	"UGCNetwork/core/ledger"
+	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/crypto"
+	"UGCNetwork/net"
+	msg "UGCNetwork/net/message"
 	"fmt"
 	"sync"
 )

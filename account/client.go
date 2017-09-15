@@ -13,17 +13,17 @@ import (
 	"sync"
 	"time"
 
-	. "DNA/common"
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/common/password"
-	"DNA/core/contract"
-	ct "DNA/core/contract"
-	"DNA/core/ledger"
-	sig "DNA/core/signature"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/net/protocol"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/config"
+	"UGCNetwork/common/log"
+	"UGCNetwork/common/password"
+	"UGCNetwork/core/contract"
+	ct "UGCNetwork/core/contract"
+	"UGCNetwork/core/ledger"
+	sig "UGCNetwork/core/signature"
+	"UGCNetwork/crypto"
+	. "UGCNetwork/errors"
+	"UGCNetwork/net/protocol"
 )
 
 const (

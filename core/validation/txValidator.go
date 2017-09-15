@@ -1,13 +1,13 @@
 package validation
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	"DNA/core/asset"
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	"DNA/core/transaction/payload"
-	. "DNA/errors"
+	"UGCNetwork/common"
+	"UGCNetwork/common/log"
+	"UGCNetwork/core/asset"
+	"UGCNetwork/core/ledger"
+	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/core/transaction/payload"
+	. "UGCNetwork/errors"
 	"errors"
 	"fmt"
 	"math"

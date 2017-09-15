@@ -1,9 +1,9 @@
 package validation
 
 import (
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
+	"UGCNetwork/core/ledger"
+	tx "UGCNetwork/core/transaction"
+	. "UGCNetwork/errors"
 	"errors"
 	"fmt"
 )

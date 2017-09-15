@@ -1,11 +1,11 @@
 package dbft
 
 import (
-	. "DNA/common"
-	"DNA/common/log"
-	ser "DNA/common/serialization"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/log"
+	ser "UGCNetwork/common/serialization"
+	tx "UGCNetwork/core/transaction"
+	. "UGCNetwork/errors"
 	"io"
 )
 

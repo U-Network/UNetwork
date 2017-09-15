@@ -1,8 +1,8 @@
 package crypto
 
 import (
-	. "DNA/common"
-	. "DNA/errors"
+	. "UGCNetwork/common"
+	. "UGCNetwork/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"
