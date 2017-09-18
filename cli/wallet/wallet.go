@@ -79,6 +79,36 @@ func showVerboseInfo(wallet account.Client) {
 	}
 }
 
+func getPassword(passwd string) []byte {
+	var tmp []byte
+	var err error
+	if passwd != "" {
+		tmp = []byte(passwd)
+	} else {
+		tmp, err = password.GetPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	return tmp
+}
+
+func getConfirmedPassword(passwd string) []byte {
+	var tmp []byte
+	var err error
+	if passwd != "" {
+		tmp = []byte(passwd)
+	} else {
+		tmp, err = password.GetConfirmedPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	return tmp
+}
+
 func walletAction(c *cli.Context) error {
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
@@ -98,18 +128,7 @@ func walletAction(c *cli.Context) error {
 			fmt.Printf("CAUTION: '%s' already exists!\n", name)
 			os.Exit(1)
 		} else {
-			var tmp []byte
-			var err error
-			if passwd != "" {
-				tmp = []byte(passwd)
-			} else {
-				tmp, err = password.GetConfirmedPassword()
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
-					os.Exit(1)
-				}
-			}
-			wallet, err := account.Create(name, tmp)
+			wallet, err := account.Create(name, getConfirmedPassword(passwd))
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -125,22 +144,11 @@ func walletAction(c *cli.Context) error {
 			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose]")
 			os.Exit(1)
 		} else {
-			var tmp []byte
-			var err error
-			if passwd != "" {
-				tmp = []byte(passwd)
-			} else {
-				tmp, err = password.GetPassword()
-				if err != nil {
-					os.Exit(1)
-				}
-			}
-			wallet, err := account.Open(name, tmp)
+			wallet, err := account.Open(name, getPassword(passwd))
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-
 			switch item {
 			case "account":
 				showAccountsInfo(wallet)
@@ -172,18 +180,23 @@ func walletAction(c *cli.Context) error {
 		return nil
 	}
 
-	if num := c.Int("addaccount"); num > 0 {
-		var tmp []byte
-		var err error
-		if passwd != "" {
-			tmp = []byte(passwd)
-		} else {
-			tmp, err = password.GetPassword()
-			if err != nil {
-				os.Exit(1)
-			}
+	// rebuild index
+	if c.Bool("reset") {
+		wallet, err := account.Open(name, getPassword(passwd))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
-		wallet, err := account.Open(name, tmp)
+		if err := wallet.Rebuild(); err != nil {
+			fmt.Fprintln(os.Stderr, "delete coins info from wallet file error")
+			os.Exit(1)
+		}
+		return nil
+	}
+
+	// add accounts
+	if num := c.Int("addaccount"); num > 0 {
+		wallet, err := account.Open(name, getPassword(passwd))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -229,6 +242,10 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "changepassword",
 				Usage: "change wallet password",
+			},
+			cli.BoolFlag{
+				Name:  "reset",
+				Usage: "reset wallet",
 			},
 			cli.StringFlag{
 				Name:  "name, n",

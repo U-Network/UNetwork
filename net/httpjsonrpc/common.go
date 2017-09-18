@@ -50,9 +50,9 @@ type BalanceTxInputInfo struct {
 }
 
 type TxoutputInfo struct {
-	AssetID     string
-	Value       Fixed64
-	ProgramHash string
+	AssetID string
+	Value   float64
+	Address string
 }
 
 type TxoutputMap struct {
