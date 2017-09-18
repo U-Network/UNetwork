@@ -24,9 +24,8 @@ import (
 	"UGCNetwork/core/transaction"
 	"UGCNetwork/crypto"
 	. "UGCNetwork/errors"
-	"UGCNetwork/events"
 	"UGCNetwork/net/protocol"
-	//"encoding/binary"
+	"encoding/binary"
 )
 
 const (
@@ -63,8 +62,6 @@ type ClientImpl struct {
 
 	FileStore
 	isRunning bool
-
-	newBlockSaved events.Subscriber
 }
 
 func Create(path string, passwordKey []byte) (*ClientImpl, error) {
@@ -89,22 +86,14 @@ func Open(path string, passwordKey []byte) (*ClientImpl, error) {
 	if client == nil {
 		return nil, errors.New("client nil")
 	}
-
-	client.accounts = client.LoadAccounts()
-	if client.accounts == nil {
+	if err := client.LoadAccounts(); err != nil {
 		return nil, errors.New("Load accounts failure")
 	}
-	client.contracts = client.LoadContracts()
-	if client.contracts == nil {
+	if err := client.LoadContracts(); err != nil {
 		return nil, errors.New("Load contracts failure")
 	}
-
-	loadedCoin, err := client.LoadCoins()
-	if err != nil {
-		return nil, err
-	}
-	for input, coin := range loadedCoin {
-		client.coins[input] = coin
+	if err := client.LoadCoins(); err != nil {
+		return nil, errors.New("Load coins failure")
 	}
 
 	return client, nil
@@ -135,53 +124,68 @@ func Recover(path string, password []byte, privateKeyHex string) (*ClientImpl, e
 	return client, nil
 }
 
-func (client *ClientImpl) ProcessBlock(v interface{}) {
+func (client *ClientImpl) ProcessBlocks() {
+	time.Sleep(time.Second)
+	for client.isRunning {
+		for true {
+			blockHeight := ledger.DefaultLedger.GetLocalBlockChainHeight()
+			if client.currentHeight > blockHeight {
+				break
+			}
+			block, err := ledger.DefaultLedger.GetBlockWithHeight(client.currentHeight)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "fatal error: syncing failed, block missing, height %d", client.currentHeight)
+				break
+			}
+			client.ProcessOneBlock(block)
+		}
+		time.Sleep(6 * time.Second)
+	}
+}
+
+func (client *ClientImpl) ProcessOneBlock(block *ledger.Block) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
 
-	if block, ok := v.(*ledger.Block); ok {
-		blockHash := block.Hash()
-		savedBlock, _ := ledger.DefaultLedger.GetBlockWithHash(blockHash)
-
-		var needUpdate bool
-		// received coins
-		for _, tx := range savedBlock.Transactions {
-			for index, output := range tx.Outputs {
-				if _, ok := client.contracts[output.ProgramHash]; ok {
-					input := &transaction.UTXOTxInput{ReferTxID: tx.Hash(), ReferTxOutputIndex: uint16(index)}
-					if _, ok := client.coins[input]; !ok {
-						newCoin := &Coin{Output: output}
-						client.coins[input] = newCoin
-						needUpdate = true
-					}
+	var needUpdate bool
+	// received coins
+	for _, tx := range block.Transactions {
+		for index, output := range tx.Outputs {
+			if _, ok := client.contracts[output.ProgramHash]; ok {
+				input := &transaction.UTXOTxInput{ReferTxID: tx.Hash(), ReferTxOutputIndex: uint16(index)}
+				if _, ok := client.coins[input]; !ok {
+					newCoin := &Coin{Output: output}
+					client.coins[input] = newCoin
+					needUpdate = true
 				}
 			}
 		}
-
-		// spent coins
-		for _, tx := range savedBlock.Transactions {
-			for _, input := range tx.UTXOInputs {
-				for k := range client.coins {
-					if k.ReferTxOutputIndex == input.ReferTxOutputIndex && k.ReferTxID == input.ReferTxID {
-						delete(client.coins, k)
-						needUpdate = true
-					}
-				}
-			}
-		}
-
-		// update wallet store
-		if needUpdate {
-			if err := client.SaveCoins(client.coins); err != nil {
-				fmt.Println("save coin error")
-			}
-		}
-
-		// update height
-		client.currentHeight++
-
-		//client.SaveStoredData("Height", )
 	}
+
+	// spent coins
+	for _, tx := range block.Transactions {
+		for _, input := range tx.UTXOInputs {
+			for k := range client.coins {
+				if k.ReferTxOutputIndex == input.ReferTxOutputIndex && k.ReferTxID == input.ReferTxID {
+					delete(client.coins, k)
+					needUpdate = true
+				}
+			}
+		}
+	}
+
+	// update wallet store
+	if needUpdate {
+		if err := client.SaveCoins(); err != nil {
+			fmt.Fprintf(os.Stderr, "saving coins error")
+		}
+	}
+
+	// update height
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	binary.Write(bytesBuffer, binary.LittleEndian, &client.currentHeight)
+	client.SaveStoredData("Height", bytesBuffer.Bytes())
+	client.currentHeight++
 }
 
 func NewClient(path string, password []byte, create bool) *ClientImpl {
@@ -193,12 +197,6 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 		currentHeight: 0,
 		FileStore:     FileStore{path: path},
 		isRunning:     true,
-		newBlockSaved: nil,
-	}
-	//TODO: use isRunning instead
-	if ledger.DefaultLedger != nil && ledger.DefaultLedger.Blockchain != nil {
-		client.newBlockSaved = ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, client.ProcessBlock)
-		client.currentHeight = ledger.DefaultLedger.GetLocalBlockChainHeight()
 	}
 
 	passwordKey := crypto.ToAesKey(password)
@@ -230,11 +228,6 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 			return nil
 		}
 
-		//if err := client.SaveHeight(client.currentHeight); err != nil {
-		//	log.Error(err)
-		//	return nil
-		//}
-
 		aesmk, err := crypto.AesEncrypt(client.masterKey[:], passwordKey, client.iv)
 		if err != nil {
 			log.Error(err)
@@ -244,6 +237,17 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 			log.Error(err)
 			return nil
 		}
+
+		// if has local blockchain database, then update wallet block height. Otherwise, wallet block height is 0 by default
+		if ledger.DefaultLedger != nil && ledger.DefaultLedger.Blockchain != nil {
+			client.currentHeight = ledger.DefaultLedger.GetLocalBlockChainHeight()
+			bytesBuffer := bytes.NewBuffer([]byte{})
+			binary.Write(bytesBuffer, binary.LittleEndian, &client.currentHeight)
+			if err := client.SaveStoredData("Height", bytesBuffer.Bytes()); err != nil {
+				return nil
+			}
+		}
+
 	} else {
 		if ok := client.verifyPasswordKey(passwordKey); !ok {
 			return nil
@@ -264,8 +268,21 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 			fmt.Println("error: failed to decrypt master key")
 			return nil
 		}
+		tmp, err := client.LoadStoredData("Height")
+		if err != nil {
+			return nil
+		}
+		bytesBuffer := bytes.NewBuffer(tmp)
+		var height uint32
+		binary.Read(bytesBuffer, binary.LittleEndian, &height)
+		client.currentHeight = height
 	}
 	ClearBytes(passwordKey, len(passwordKey))
+
+	// if has local blockchain database and running flag is set, then sync wallet data
+	if ledger.DefaultLedger != nil && ledger.DefaultLedger.Blockchain != nil && client.isRunning {
+		go client.ProcessBlocks()
+	}
 
 	return client
 }
@@ -494,13 +511,12 @@ func (cl *ClientImpl) SaveAccount(ac *Account) error {
 }
 
 // LoadAccounts loads all accounts from db to memory
-func (cl *ClientImpl) LoadAccounts() map[Uint160]*Account {
+func (cl *ClientImpl) LoadAccounts() error {
 	accounts := map[Uint160]*Account{}
 
 	account, err := cl.LoadAccountData()
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return err
 	}
 	for _, a := range account {
 		if a.Type == MAINACCOUNT {
@@ -518,7 +534,8 @@ func (cl *ClientImpl) LoadAccounts() map[Uint160]*Account {
 		accounts[ac.ProgramHash] = ac
 	}
 
-	return accounts
+	cl.accounts = accounts
+	return nil
 }
 
 // CreateContract create a new contract then save it
@@ -555,13 +572,12 @@ func (cl *ClientImpl) SaveContract(ct *contract.Contract) error {
 }
 
 // LoadContracts loads all contracts from db to memory
-func (cl *ClientImpl) LoadContracts() map[Uint160]*ct.Contract {
+func (cl *ClientImpl) LoadContracts() error {
 	contracts := map[Uint160]*ct.Contract{}
 
 	contract, err := cl.LoadContractData()
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return err
 	}
 	for _, c := range contract {
 		rawdata, _ := HexToBytes(c.RawData)
@@ -575,7 +591,38 @@ func (cl *ClientImpl) LoadContracts() map[Uint160]*ct.Contract {
 		contracts[ct.ProgramHash] = ct
 	}
 
-	return contracts
+	cl.contracts = contracts
+	return nil
+}
+
+func (client *ClientImpl) LoadCoins() error {
+	loadedCoin, err := client.LoadCoinsData()
+	if err != nil {
+		return err
+	}
+	for input, coin := range loadedCoin {
+		client.coins[input] = coin
+	}
+	return nil
+}
+func (client *ClientImpl) SaveCoins() error {
+	if err := client.SaveCoinsData(client.coins); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (client *ClientImpl) DeleteCoins() error {
+	for in, coin := range client.coins {
+		// remove from memory
+		delete(client.coins, in)
+		// remove from db
+		if err := client.DeleteCoinsData(coin.Output.ProgramHash); err != nil {
+			fmt.Fprintf(os.Stderr, "delete coin error")
+			continue
+		}
+	}
+	return nil
 }
 
 func clientIsDefaultBookKeeper(publicKey string) bool {
@@ -646,4 +693,22 @@ func (client *ClientImpl) GetAccounts() []*Account {
 		accounts = append(accounts, v)
 	}
 	return accounts
+}
+
+func (client *ClientImpl) Rebuild() error {
+	// reset wallet block height
+	client.currentHeight = 0
+	var height uint32 = 0
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	binary.Write(bytesBuffer, binary.LittleEndian, &height)
+	if err := client.SaveStoredData("Height", bytesBuffer.Bytes()); err != nil {
+		return err
+	}
+
+	// reset coins
+	if err := client.DeleteCoins(); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -52,7 +52,7 @@ type FileStore struct {
 
 func (cs *FileStore) readDB() ([]byte, error) {
 	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_RDONLY, 0666)
+	cs.file, err = os.OpenFile(cs.path, os.O_RDONLY|os.O_SYNC, 0666)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,6 @@ func (cs *FileStore) readDB() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		return data, nil
 
 	} else {
@@ -73,7 +72,7 @@ func (cs *FileStore) readDB() ([]byte, error) {
 
 func (cs *FileStore) writeDB(data []byte) error {
 	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_SYNC|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
@@ -233,7 +232,7 @@ func (cs *FileStore) LoadContractData() ([]ContractData, error) {
 	return cs.data.Contract, nil
 }
 
-func (cs *FileStore) SaveCoins(coins map[*transaction.UTXOTxInput]*Coin) error {
+func (cs *FileStore) SaveCoinsData(coins map[*transaction.UTXOTxInput]*Coin) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
 		return errors.New("error: reading db")
@@ -264,7 +263,7 @@ func (cs *FileStore) SaveCoins(coins map[*transaction.UTXOTxInput]*Coin) error {
 	return nil
 }
 
-func (cs *FileStore) DeleteCoins(programHash Uint160) error {
+func (cs *FileStore) DeleteCoinsData(programHash Uint160) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
 		return errors.New("error: reading db")
@@ -293,14 +292,14 @@ func (cs *FileStore) DeleteCoins(programHash Uint160) error {
 			coins[input] = coin
 		}
 	}
-	if err := cs.SaveCoins(coins); err != nil {
+	if err := cs.SaveCoinsData(coins); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (cs *FileStore) LoadCoins() (map[*transaction.UTXOTxInput]*Coin, error) {
+func (cs *FileStore) LoadCoinsData() (map[*transaction.UTXOTxInput]*Coin, error) {
 	JSONData, err := cs.readDB()
 	if err != nil {
 		return nil, errors.New("error: reading db")

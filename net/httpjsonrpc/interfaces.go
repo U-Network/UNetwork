@@ -1,15 +1,6 @@
 package httpjsonrpc
 
 import (
-	"UGCNetwork/account"
-	. "UGCNetwork/common"
-	"UGCNetwork/common/config"
-	"UGCNetwork/common/log"
-	"UGCNetwork/core/ledger"
-	tx "UGCNetwork/core/transaction"
-	"UGCNetwork/core/transaction/payload"
-	. "UGCNetwork/errors"
-	"UGCNetwork/sdk"
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
@@ -18,6 +9,17 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"UGCNetwork/account"
+	. "UGCNetwork/common"
+	"UGCNetwork/common/config"
+	"UGCNetwork/common/log"
+	"UGCNetwork/core/asset"
+	"UGCNetwork/core/ledger"
+	tx "UGCNetwork/core/transaction"
+	"UGCNetwork/core/transaction/payload"
+	. "UGCNetwork/errors"
+	"UGCNetwork/sdk"
 
 	"github.com/mitchellh/go-homedir"
 )
@@ -62,8 +64,9 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
 	for _, v := range ptx.Outputs {
 		trans.Outputs[n].AssetID = ToHexString(v.AssetID.ToArray())
-		trans.Outputs[n].Value = v.Value
-		trans.Outputs[n].ProgramHash = ToHexString(v.ProgramHash.ToArray())
+		trans.Outputs[n].Value = float64(v.Value) / asset.AssetPrecisionExpand
+		address, _ := v.ProgramHash.ToAddress()
+		trans.Outputs[n].Address = address
 		n++
 	}
 
@@ -82,8 +85,9 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		trans.AssetOutputs[n].Txout = make([]TxoutputInfo, len(v))
 		for m := 0; m < len(v); m++ {
 			trans.AssetOutputs[n].Txout[m].AssetID = ToHexString(v[m].AssetID.ToArray())
-			trans.AssetOutputs[n].Txout[m].Value = v[m].Value
-			trans.AssetOutputs[n].Txout[m].ProgramHash = ToHexString(v[m].ProgramHash.ToArray())
+			trans.AssetOutputs[n].Txout[m].Value = float64(v[m].Value) / asset.AssetPrecisionExpand
+			address, _ := v[m].ProgramHash.ToAddress()
+			trans.AssetOutputs[n].Txout[m].Address = address
 		}
 		n += 1
 	}
@@ -762,7 +766,7 @@ func deleteAccount(params []interface{}) map[string]interface{} {
 	if err := walletInstance.DeleteContract(pbUint160); err != nil {
 		return UgcNetworkRpc("Delete contract error:" + err.Error())
 	}
-	if err := walletInstance.DeleteCoins(pbUint160); err != nil {
+	if err := walletInstance.DeleteCoinsData(pbUint160); err != nil {
 		return UgcNetworkRpc("Delete coins error:" + err.Error())
 	}
 

@@ -22,6 +22,8 @@ const (
 	MinPrecision = 0
 )
 
+const AssetPrecisionExpand = 100000000
+
 type AssetRecordType byte
 
 //onchain UGCNetwork is planed to support UTXO and Balance

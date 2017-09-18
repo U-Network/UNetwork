@@ -1,23 +1,30 @@
 package asset
 
 import (
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	. "UGCNetwork/common"
-	"UGCNetwork/net/httpjsonrpc"
-	"UGCNetwork/sdk"
+	"bytes"
 	"fmt"
 	"math/rand"
 	"os"
 
+	"UGCNetwork/account"
+	. "UGCNetwork/cli/common"
+	. "UGCNetwork/common"
+	"UGCNetwork/core/asset"
 	"UGCNetwork/core/transaction"
-	"bytes"
+	"UGCNetwork/net/httpjsonrpc"
+	"UGCNetwork/sdk"
+
 	"github.com/urfave/cli"
 )
 
 const (
 	RANDBYTELEN = 4
 )
+
+func valuetoFixed64(value float64) Fixed64 {
+	value *= asset.AssetPrecisionExpand
+	return Fixed64(value)
+}
 
 func openWallet(name string, passwd []byte) account.Client {
 	if name == account.WalletFileName {
@@ -43,18 +50,16 @@ func assetAction(c *cli.Context) error {
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
-
-	wallet := openWallet(c.String("wallet"), WalletPassword(c.String("password")))
-	value := c.Int64("value")
+	value := valuetoFixed64(c.Float64("value"))
 	if value == 0 {
 		fmt.Println("invalid value [--value]")
 		return nil
 	}
 
+	wallet := openWallet(c.String("wallet"), WalletPassword(c.String("password")))
 	var txn *transaction.Transaction
 	var buffer bytes.Buffer
 	var err error
-
 	if reg {
 		name := c.String("name")
 		if name == "" {
@@ -62,7 +67,7 @@ func assetAction(c *cli.Context) error {
 			rand.Read(rbuf)
 			name = "UGCNetwork-" + ToHexString(rbuf)
 		}
-		txn, err = sdk.MakeRegTransaction(wallet, name, Fixed64(value))
+		txn, err = sdk.MakeRegTransaction(wallet, name, value)
 	} else {
 		asset := c.String("asset")
 		address := c.String("to")
@@ -72,9 +77,9 @@ func assetAction(c *cli.Context) error {
 		}
 		assetID, _ := StringToUint256(asset)
 		if issue {
-			txn, err = sdk.MakeIssueTransaction(wallet, assetID, address, Fixed64(value))
+			txn, err = sdk.MakeIssueTransaction(wallet, assetID, address, value)
 		} else if transfer {
-			txn, err = sdk.MakeTransferTransaction(wallet, assetID, address, Fixed64(value))
+			txn, err = sdk.MakeTransferTransaction(wallet, assetID, address, value)
 		}
 	}
 	if err != nil {
@@ -135,9 +140,9 @@ func NewCommand() *cli.Command {
 				Name:  "to",
 				Usage: "asset to whom",
 			},
-			cli.Int64Flag{
+			cli.Float64Flag{
 				Name:  "value, v",
-				Usage: "asset ammount",
+				Usage: "asset amount",
 			},
 		},
 		Action: assetAction,

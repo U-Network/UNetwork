@@ -21,7 +21,6 @@ type sortedAccounts []*account.Account
 func (sa sortedAccounts) Len() int      { return len(sa) }
 func (sa sortedAccounts) Swap(i, j int) { sa[i], sa[j] = sa[j], sa[i] }
 func (sa sortedAccounts) Less(i, j int) bool {
-
 	if sa[i].ProgramHash.CompareTo(sa[j].ProgramHash) > 0 {
 		return false
 	} else {
