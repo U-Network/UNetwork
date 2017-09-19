@@ -59,7 +59,7 @@ func sortCoinsByValue(coins map[*transaction.UTXOTxInput]*account.Coin) sortedCo
 	return coinList
 }
 
-func MakeRegTransaction(wallet account.Client, name string, value Fixed64) (*transaction.Transaction, error) {
+func MakeRegTransaction(wallet account.Client, name string, value float64) (*transaction.Transaction, error) {
 	admin, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func MakeRegTransaction(wallet account.Client, name string, value Fixed64) (*tra
 		fmt.Println("CreateSignatureContract failed")
 		return nil, err
 	}
-	tx, _ := transaction.NewRegisterAssetTransaction(asset, value, issuer.PubKey(), transactionContract.ProgramHash)
+	tx, _ := transaction.NewRegisterAssetTransaction(asset, AssetValuetoFixed64(value), issuer.PubKey(), transactionContract.ProgramHash)
 	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
 	tx.Attributes = make([]*transaction.TxAttribute, 0)
 	tx.Attributes = append(tx.Attributes, &txAttr)
@@ -83,7 +83,7 @@ func MakeRegTransaction(wallet account.Client, name string, value Fixed64) (*tra
 	return tx, nil
 }
 
-func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string, value Fixed64) (*transaction.Transaction, error) {
+func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string, value float64) (*transaction.Transaction, error) {
 	admin, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string
 	}
 	issueTxOutput := &transaction.TxOutput{
 		AssetID:     assetID,
-		Value:       value,
+		Value:       AssetValuetoFixed64(value),
 		ProgramHash: programHash,
 	}
 	outputs := []*transaction.TxOutput{issueTxOutput}
@@ -109,7 +109,7 @@ func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string
 	return tx, nil
 }
 
-func MakeTransferTransaction(wallet account.Client, assetID Uint256, address string, value Fixed64) (*transaction.Transaction, error) {
+func MakeTransferTransaction(wallet account.Client, assetID Uint256, address string, value float64) (*transaction.Transaction, error) {
 	mainAccount, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, address str
 	coins := wallet.GetCoins()
 	input := []*transaction.UTXOTxInput{}
 	output := []*transaction.TxOutput{}
-	expected := value
+	expected := AssetValuetoFixed64(value)
 	var transfer Fixed64
 
 	sorted := sortCoinsByValue(coins)

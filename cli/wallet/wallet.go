@@ -191,6 +191,8 @@ func walletAction(c *cli.Context) error {
 			fmt.Fprintln(os.Stderr, "delete coins info from wallet file error")
 			os.Exit(1)
 		}
+		fmt.Printf("%s was reset successfully\n", name)
+
 		return nil
 	}
 
