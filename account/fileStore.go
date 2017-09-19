@@ -118,8 +118,16 @@ func (cs *FileStore) SaveAccountData(programHash []byte, encryptedPrivateKey []b
 		accountType = SUBACCOUNT
 	}
 
+	pHash, err := Uint160ParseFromBytes(programHash)
+	if err != nil {
+		return errors.New("invalid program hash")
+	}
+	addr, err := pHash.ToAddress()
+	if err != nil {
+		return errors.New("invalid address")
+	}
 	a := AccountData{
-		Address:             "",
+		Address:             addr,
 		ProgramHash:         ToHexString(programHash),
 		PrivateKeyEncrypted: ToHexString(encryptedPrivateKey),
 		Type:                accountType,

@@ -109,7 +109,7 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 	case *payload.RegisterAsset:
 		obj := new(RegisterAssetInfo)
 		obj.Asset = object.Asset
-		obj.Amount = float64(object.Amount) / 100000000
+		obj.Amount = asset.Fixed64toAssetValue(object.Amount)
 		obj.Issuer.X = object.Issuer.X.String()
 		obj.Issuer.Y = object.Issuer.Y.String()
 		obj.Controller = ToHexString(object.Controller.ToArray())

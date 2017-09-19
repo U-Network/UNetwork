@@ -64,7 +64,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
 	for _, v := range ptx.Outputs {
 		trans.Outputs[n].AssetID = ToHexString(v.AssetID.ToArray())
-		trans.Outputs[n].Value = float64(v.Value) / asset.AssetPrecisionExpand
+		trans.Outputs[n].Value = asset.Fixed64toAssetValue(v.Value)
 		address, _ := v.ProgramHash.ToAddress()
 		trans.Outputs[n].Address = address
 		n++
@@ -85,7 +85,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		trans.AssetOutputs[n].Txout = make([]TxoutputInfo, len(v))
 		for m := 0; m < len(v); m++ {
 			trans.AssetOutputs[n].Txout[m].AssetID = ToHexString(v[m].AssetID.ToArray())
-			trans.AssetOutputs[n].Txout[m].Value = float64(v[m].Value) / asset.AssetPrecisionExpand
+			trans.AssetOutputs[n].Txout[m].Value = asset.Fixed64toAssetValue(v[m].Value)
 			address, _ := v[m].ProgramHash.ToAddress()
 			trans.AssetOutputs[n].Txout[m].Address = address
 		}
@@ -778,7 +778,7 @@ func makeRegTxn(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpcNil
 	}
 	var assetName string
-	var assetValue Fixed64
+	var assetValue float64
 	switch params[0].(type) {
 	case string:
 		assetName = params[0].(string)
@@ -787,7 +787,7 @@ func makeRegTxn(params []interface{}) map[string]interface{} {
 	}
 	switch params[1].(type) {
 	case float64:
-		assetValue = Fixed64(params[1].(float64))
+		assetValue = params[1].(float64)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -811,7 +811,7 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpcNil
 	}
 	var asset string
-	var value Fixed64
+	var value float64
 	var address string
 	switch params[0].(type) {
 	case string:
@@ -821,7 +821,7 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 	}
 	switch params[1].(type) {
 	case float64:
-		value = Fixed64(params[1].(float64))
+		value = params[1].(float64)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -852,7 +852,7 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpcNil
 	}
 	var asset string
-	var value Fixed64
+	var value float64
 	var address string
 	switch params[0].(type) {
 	case string:
@@ -862,7 +862,7 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 	}
 	switch params[1].(type) {
 	case float64:
-		value = Fixed64(params[1].(float64))
+		value = params[1].(float64)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -895,9 +895,9 @@ func getBalance(params []interface{}) map[string]interface{} {
 	}
 	type AssetInfo struct {
 		AssetID string
-		Value   Fixed64
+		Value   float64
 	}
-	balances := make(map[string]interface{})
+	balances := make(map[string][]*AssetInfo)
 	accounts := walletInstance.GetAccounts()
 	coins := walletInstance.GetCoins()
 	for _, account := range accounts {
@@ -909,17 +909,18 @@ func getBalance(params []interface{}) map[string]interface{} {
 				assetString := ToHexString(coin.Output.AssetID.ToArray())
 				for _, info := range assetList {
 					if info.AssetID == assetString {
-						info.Value += coin.Output.Value
+						info.Value += asset.Fixed64toAssetValue(coin.Output.Value)
 						existed = true
 						break
 					}
 				}
 				if !existed {
-					assetList = append(assetList, &AssetInfo{AssetID: assetString, Value: coin.Output.Value})
+					assetList = append(assetList, &AssetInfo{AssetID: assetString, Value: asset.Fixed64toAssetValue(coin.Output.Value)})
 				}
 			}
 		}
-		balances[ToHexString(programHash.ToArray())] = assetList
+		address, _ := programHash.ToAddress()
+		balances[address] = assetList
 	}
 
 	return UgcNetworkRpc(balances)

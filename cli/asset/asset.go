@@ -9,7 +9,6 @@ import (
 	"UGCNetwork/account"
 	. "UGCNetwork/cli/common"
 	. "UGCNetwork/common"
-	"UGCNetwork/core/asset"
 	"UGCNetwork/core/transaction"
 	"UGCNetwork/net/httpjsonrpc"
 	"UGCNetwork/sdk"
@@ -20,11 +19,6 @@ import (
 const (
 	RANDBYTELEN = 4
 )
-
-func valuetoFixed64(value float64) Fixed64 {
-	value *= asset.AssetPrecisionExpand
-	return Fixed64(value)
-}
 
 func openWallet(name string, passwd []byte) account.Client {
 	if name == account.WalletFileName {
@@ -50,8 +44,8 @@ func assetAction(c *cli.Context) error {
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
-	value := valuetoFixed64(c.Float64("value"))
-	if value == 0 {
+	value := c.Float64("value")
+	if value == 0.0 {
 		fmt.Println("invalid value [--value]")
 		return nil
 	}

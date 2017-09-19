@@ -24,7 +24,6 @@ func StartLocalServer() {
 	HandleFunc("sendsampletransaction", sendSampleTransaction)
 	HandleFunc("setdebuginfo", setDebugInfo)
 
-	HandleFunc("searchtransactions", searchTransactions)
 	HandleFunc("createwallet", createWallet)
 	HandleFunc("openwallet", openWallet)
 	HandleFunc("closewallet", closeWallet)
@@ -36,6 +35,7 @@ func StartLocalServer() {
 	HandleFunc("addaccount", addAccount)
 	HandleFunc("deleteaccount", deleteAccount)
 	HandleFunc("getbalance", getBalance)
+	HandleFunc("searchtransactions", searchTransactions)
 
 	// TODO: only listen to local host
 	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.HttpLocalPort), nil)
