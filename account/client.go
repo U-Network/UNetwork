@@ -3,14 +3,17 @@ package account
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"os/signal"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	. "UGCNetwork/common"
@@ -24,8 +27,8 @@ import (
 	"UGCNetwork/core/transaction"
 	"UGCNetwork/crypto"
 	. "UGCNetwork/errors"
+	"UGCNetwork/events/signalset"
 	"UGCNetwork/net/protocol"
-	"encoding/binary"
 )
 
 const (
@@ -33,6 +36,7 @@ const (
 	WalletFileName         = "wallet.dat"
 	MAINACCOUNT            = "main-account"
 	SUBACCOUNT             = "sub-account"
+	MaxSignalQueueLen      = 5
 )
 
 type Client interface {
@@ -134,7 +138,7 @@ func (client *ClientImpl) ProcessBlocks() {
 			}
 			block, err := ledger.DefaultLedger.GetBlockWithHeight(client.currentHeight)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "fatal error: syncing failed, block missing, height %d", client.currentHeight)
+				fmt.Fprintf(os.Stderr, "fatal error: syncing failed, block missing, height %d\n", client.currentHeight)
 				break
 			}
 			client.ProcessOneBlock(block)
@@ -177,7 +181,7 @@ func (client *ClientImpl) ProcessOneBlock(block *ledger.Block) {
 	// update wallet store
 	if needUpdate {
 		if err := client.SaveCoins(); err != nil {
-			fmt.Fprintf(os.Stderr, "saving coins error")
+			fmt.Fprintf(os.Stderr, "saving coins error: %v\n", err)
 		}
 	}
 
@@ -186,6 +190,33 @@ func (client *ClientImpl) ProcessOneBlock(block *ledger.Block) {
 	binary.Write(bytesBuffer, binary.LittleEndian, &client.currentHeight)
 	client.SaveStoredData("Height", bytesBuffer.Bytes())
 	client.currentHeight++
+}
+
+func (client *ClientImpl) ProcessSignals() {
+	clientSignalHandler := func(signal os.Signal, v interface{}) {
+		switch signal {
+		case syscall.SIGINT:
+			log.Trace("Caught interrupt signal, program exits.")
+		case syscall.SIGTERM:
+			log.Trace("Caught termination signal, program exits.")
+		}
+		// hold the mutex lock to prevent any wallet db changes
+		client.FileStore.Lock()
+		os.Exit(0)
+	}
+	signalSet := signalset.New()
+	signalSet.Register(syscall.SIGINT, clientSignalHandler)
+	signalSet.Register(syscall.SIGTERM, clientSignalHandler)
+	sigChan := make(chan os.Signal, MaxSignalQueueLen)
+	signal.Notify(sigChan)
+	for {
+		select {
+		case sig := <-sigChan:
+			signalSet.Handle(sig, nil)
+		default:
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 func NewClient(path string, password []byte, create bool) *ClientImpl {
@@ -198,6 +229,8 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 		FileStore:     FileStore{path: path},
 		isRunning:     true,
 	}
+
+	go client.ProcessSignals()
 
 	passwordKey := crypto.ToAesKey(password)
 	if create {
@@ -618,7 +651,7 @@ func (client *ClientImpl) DeleteCoins() error {
 		delete(client.coins, in)
 		// remove from db
 		if err := client.DeleteCoinsData(coin.Output.ProgramHash); err != nil {
-			fmt.Fprintf(os.Stderr, "delete coin error")
+			fmt.Fprintf(os.Stderr, "delete coin error: %v\n", err)
 			continue
 		}
 	}
