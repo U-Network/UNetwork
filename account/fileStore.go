@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 
 	. "UGCNetwork/common"
 	"UGCNetwork/common/serialization"
@@ -45,18 +46,25 @@ type FileData struct {
 }
 
 type FileStore struct {
+	// this lock could be hold by readDB, writeDB and interrupt signals.
+	sync.Mutex
+
 	data FileData
 	file *os.File
 	path string
 }
 
+// Caller holds the lock and reads bytes from DB, then close the DB and release the lock
 func (cs *FileStore) readDB() ([]byte, error) {
+	cs.Lock()
+	defer cs.Unlock()
+	defer cs.closeDB()
+
 	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_RDONLY|os.O_SYNC, 0666)
+	cs.file, err = os.OpenFile(cs.path, os.O_RDONLY, 0666)
 	if err != nil {
 		return nil, err
 	}
-	defer cs.closeDB()
 
 	if cs.file != nil {
 		data, err := ioutil.ReadAll(cs.file)
@@ -64,19 +72,22 @@ func (cs *FileStore) readDB() ([]byte, error) {
 			return nil, err
 		}
 		return data, nil
-
 	} else {
 		return nil, NewDetailErr(errors.New("[readDB] file handle is nil"), ErrNoCode, "")
 	}
 }
 
+// Caller holds the lock and writes bytes to DB, then close the DB and release the lock
 func (cs *FileStore) writeDB(data []byte) error {
+	cs.Lock()
+	defer cs.Unlock()
+	defer cs.closeDB()
+
 	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_SYNC|os.O_TRUNC, 0666)
+	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
-	defer cs.closeDB()
 
 	if cs.file != nil {
 		cs.file.Write(data)
