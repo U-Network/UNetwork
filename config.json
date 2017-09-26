@@ -25,6 +25,7 @@
     "NoticeServerUrl":"",
     "OauthServerUrl":"",
     "NodePort": 20338,
+    "NodeType": "service",
     "PrintLevel": 1,
     "IsTLS": false,
     "CertPath": "./sample-cert.pem",

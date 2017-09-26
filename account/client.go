@@ -28,7 +28,6 @@ import (
 	"UGCNetwork/crypto"
 	. "UGCNetwork/errors"
 	"UGCNetwork/events/signalset"
-	"UGCNetwork/net/protocol"
 )
 
 const (
@@ -665,14 +664,6 @@ func clientIsDefaultBookKeeper(publicKey string) bool {
 		}
 	}
 	return false
-}
-
-func nodeType(typeName string) int {
-	if "service" == config.Parameters.NodeType {
-		return protocol.SERVICENODE
-	} else {
-		return protocol.VERIFYNODE
-	}
 }
 
 func GetClient() Client {

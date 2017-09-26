@@ -15,9 +15,9 @@ import (
 	"UGCNetwork/crypto"
 	"UGCNetwork/net"
 	"UGCNetwork/net/httpjsonrpc"
+	"UGCNetwork/net/httpnodeinfo"
 	"UGCNetwork/net/httprestful"
 	"UGCNetwork/net/httpwebsocket"
-	"UGCNetwork/net/httpnodeinfo"
 	"UGCNetwork/net/protocol"
 )
 
@@ -71,16 +71,25 @@ func main() {
 	}
 	ledger.DefaultLedger.Blockchain = blockChain
 
-	log.Info("2. Open the account")
-	client = account.GetClient()
-	if client == nil {
-		log.Fatal("Can't get local account.")
-		goto ERROR
-	}
-	acct, err = client.GetDefaultAccount()
-	if err != nil {
-		log.Fatal(err)
-		goto ERROR
+	if protocol.DATANODENAME == config.Parameters.NodeType {
+		// Generate a new account for data node
+		acct, err = account.NewAccount()
+		if err != nil {
+			log.Fatal("Can't create local account.")
+			goto ERROR
+		}
+	} else {
+		log.Info("2. Open the account")
+		client = account.GetClient()
+		if client == nil {
+			log.Fatal("Can't get local account.")
+			goto ERROR
+		}
+		acct, err = client.GetDefaultAccount()
+		if err != nil {
+			log.Fatal(err)
+			goto ERROR
+		}
 	}
 	log.Info("The Node's PublicKey ", acct.PublicKey)
 
@@ -91,7 +100,7 @@ func main() {
 	noder.SyncNodeHeight()
 	noder.WaitForFourPeersStart()
 	noder.WaitForSyncBlkFinish()
-	if protocol.SERVICENODENAME != config.Parameters.NodeType {
+	if protocol.VERIFYNODENAME == config.Parameters.NodeType {
 		log.Info("4. Start DBFT Services")
 		dbftServices := dbft.NewDbftService(client, "logdbft", noder)
 		httpjsonrpc.RegistDbftService(dbftServices)
@@ -107,7 +116,6 @@ func main() {
 	if config.Parameters.HttpInfoStart {
 		go httpnodeinfo.StartServer(noder)
 	}
-
 
 	for {
 		time.Sleep(dbft.GenBlockTime)
