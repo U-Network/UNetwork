@@ -20,15 +20,18 @@ type NodeAddr struct {
 	ID       uint64 // Unique ID
 }
 
-// The node capability type
+// The enum flags for node type
 const (
 	VERIFYNODE  = 1
 	SERVICENODE = 2
+	DATANODE    = 3
 )
 
+// The enum strings for node type
 const (
 	VERIFYNODENAME  = "verify"
 	SERVICENODENAME = "service"
+	DATANODENAME    = "data"
 )
 
 const (
