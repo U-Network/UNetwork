@@ -73,7 +73,11 @@ func assetAction(c *cli.Context) error {
 		if issue {
 			txn, err = sdk.MakeIssueTransaction(wallet, assetID, address, value)
 		} else if transfer {
-			txn, err = sdk.MakeTransferTransaction(wallet, assetID, address, value)
+			batchOut := sdk.BatchOut{
+				Address: address,
+				Value:   value,
+			}
+			txn, err = sdk.MakeTransferTransaction(wallet, assetID, batchOut)
 		}
 	}
 	if err != nil {

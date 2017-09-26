@@ -15,6 +15,11 @@ import (
 	"UGCNetwork/core/transaction"
 )
 
+type BatchOut struct {
+	Address string
+	Value   float64
+}
+
 // sortedAccounts used for sequential constructing program hash for verification
 type sortedAccounts []*account.Account
 
@@ -109,56 +114,64 @@ func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string
 	return tx, nil
 }
 
-func MakeTransferTransaction(wallet account.Client, assetID Uint256, address string, value float64) (*transaction.Transaction, error) {
+func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
+	// get main account which is used to receive changes
 	mainAccount, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}
-	receiverProgramHash, err := ToScriptHash(address)
-	if err != nil {
-		return nil, err
-	}
-	coins := wallet.GetCoins()
+
+	// construct transaction outputs
+	var transferred Fixed64
+	var expected Fixed64
 	input := []*transaction.UTXOTxInput{}
 	output := []*transaction.TxOutput{}
-	expected := AssetValuetoFixed64(value)
-	var transfer Fixed64
+	for _, o := range batchOut {
+		expected += AssetValuetoFixed64(o.Value)
+		address, err := ToScriptHash(o.Address)
+		if err != nil {
+			return nil, err
+		}
+		tmp := &transaction.TxOutput{
+			AssetID:     assetID,
+			Value:       AssetValuetoFixed64(o.Value),
+			ProgramHash: address,
+		}
+		output = append(output, tmp)
+	}
 
+	// construct transaction inputs and changes
+	coins := wallet.GetCoins()
 	sorted := sortCoinsByValue(coins)
 	for _, coinItem := range sorted {
 		if coinItem.coin.Output.AssetID == assetID {
 			input = append(input, coinItem.input)
 			if coinItem.coin.Output.Value > expected {
-				OutOfChange := &transaction.TxOutput{
+				changes := &transaction.TxOutput{
 					AssetID:     assetID,
 					Value:       coinItem.coin.Output.Value - expected,
 					ProgramHash: mainAccount.ProgramHash,
 				}
-				output = append(output, OutOfChange)
-				transfer += expected
+				// if any, the changes output of transaction will be the last one
+				output = append(output, changes)
+				transferred += expected
 				expected = 0
 				break
 			} else if coinItem.coin.Output.Value == expected {
-				transfer += expected
+				transferred += expected
 				expected = 0
 				break
 			} else if coinItem.coin.Output.Value < expected {
-				transfer += coinItem.coin.Output.Value
+				transferred += coinItem.coin.Output.Value
 				expected = expected - coinItem.coin.Output.Value
 			}
 		}
 	}
-	OutOfTx := &transaction.TxOutput{
-		AssetID:     assetID,
-		Value:       transfer,
-		ProgramHash: receiverProgramHash,
-	}
-	output = append(output, OutOfTx)
-
 	if expected > 0 {
-		return nil, errors.New("Token is not enough")
+		return nil, errors.New("token is not enough")
 	}
 
+	// construct transaction
 	txn, err := transaction.NewTransferAssetTransaction(input, output)
 	if err != nil {
 		return nil, err
@@ -167,7 +180,7 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, address str
 	txn.Attributes = make([]*transaction.TxAttribute, 0)
 	txn.Attributes = append(txn.Attributes, &txAttr)
 
-	// get account
+	// get sorted singer's account
 	var accounts sortedAccounts
 	for ref, coin := range coins {
 		for _, in := range input {
@@ -186,10 +199,10 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, address str
 			}
 		}
 	}
-
-	ctx := newContractContextWithoutProgramHashes(txn, len(accounts))
-	// get public keys and signatures
 	sort.Sort(accounts)
+
+	// sign transaction
+	ctx := newContractContextWithoutProgramHashes(txn, len(accounts))
 	i := 0
 	for _, account := range accounts {
 		signature, _ := signature.SignBySigner(txn, account)
@@ -197,7 +210,6 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, address str
 		ctx.MyAdd(contract, i, signature)
 		i++
 	}
-
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
