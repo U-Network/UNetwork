@@ -876,8 +876,13 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 	if walletInstance == nil {
 		return UgcNetworkRpc("open wallet first")
 	}
+
+	batchOut := sdk.BatchOut{
+		Address: address,
+		Value:   value,
+	}
 	assetID, _ := StringToUint256(asset)
-	txn, err := sdk.MakeTransferTransaction(walletInstance, assetID, address, value)
+	txn, err := sdk.MakeTransferTransaction(walletInstance, assetID, batchOut)
 	if err != nil {
 		return UgcNetworkRpcInternalError
 	}
