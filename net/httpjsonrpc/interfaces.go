@@ -277,7 +277,7 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 		}
 		hash = txn.Hash()
 		if errCode := VerifyAndSendTx(&txn); errCode != ErrNoError {
-			return UgcNetworkRpcInternalError
+			return UgcNetworkRpc(errCode.Error())
 		}
 	default:
 		return UgcNetworkRpcInvalidParameter
