@@ -394,9 +394,22 @@ func (ds *DbftService) PrepareRequestReceived(payload *msg.ConsensusPayload, mes
 		log.Warn("PrepareRequestReceived VerifySignature failed.", err)
 		return
 	}
-
 	ds.context.Signatures = make([][]byte, len(ds.context.BookKeepers))
 	ds.context.Signatures[payload.BookKeeperIndex] = message.Signature
+
+	//check if there's double spent transaction in prepare request message
+	inputs := make(map[string]bool)
+	for _, txn := range ds.context.Transactions {
+		if txn.TxType == tx.TransferAsset {
+			for _, utxoInput := range txn.UTXOInputs {
+				if _, ok := inputs[utxoInput.ToString()]; ok {
+					log.Warn("PrepareRequestReceived failed, double spent transaction detected")
+					return
+				}
+				inputs[utxoInput.ToString()] = true
+			}
+		}
+	}
 
 	//check if the transactions received are verified. If it already exists in transaction pool
 	//then no need to verify it again. Otherwise, verify it.
