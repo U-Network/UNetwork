@@ -33,7 +33,7 @@ func (this *TXNPool) init() {
 
 //append transaction to txnpool when check ok.
 //1.check transaction. 2.check with ledger(db) 3.check with pool
-func (this *TXNPool) AppendTxnPool(txn *transaction.Transaction) ErrCode {
+func (this *TXNPool) AppendTxnPool(txn *transaction.Transaction, poolVerify bool) ErrCode {
 	//verify transaction with Concurrency
 	if errCode := va.VerifyTransaction(txn); errCode != ErrNoError {
 		log.Info("Transaction verification failed", txn.Hash())
@@ -43,11 +43,14 @@ func (this *TXNPool) AppendTxnPool(txn *transaction.Transaction) ErrCode {
 		log.Info("Transaction verification with ledger failed", txn.Hash())
 		return errCode
 	}
-	//verify transaction by pool with lock
-	if errCode := this.verifyTransactionWithTxnPool(txn); errCode != ErrNoError {
-		log.Info("Transaction verification with transaction pool failed", txn.Hash())
-		return errCode
+	if poolVerify {
+		//verify transaction by pool with lock
+		if errCode := this.verifyTransactionWithTxnPool(txn); errCode != ErrNoError {
+			log.Info("Transaction verification with transaction pool failed", txn.Hash())
+			return errCode
+		}
 	}
+
 	//add the transaction to process scope
 	this.addtxnList(txn)
 	return ErrNoError
