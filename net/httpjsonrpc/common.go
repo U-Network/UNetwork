@@ -271,7 +271,7 @@ func Call(address string, method string, id interface{}, params []interface{}) (
 
 func VerifyAndSendTx(txn *tx.Transaction) ErrCode {
 	// if transaction is verified unsucessfully then will not put it into transaction pool
-	if errCode := node.AppendTxnPool(txn); errCode != ErrNoError {
+	if errCode := node.AppendTxnPool(txn, true); errCode != ErrNoError {
 		log.Warn("Can NOT add the transaction to TxnPool")
 		log.Info("[httpjsonrpc] VerifyTransaction failed when AppendTxnPool.")
 		return errCode
