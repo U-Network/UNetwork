@@ -275,6 +275,9 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
 			return UgcNetworkRpcInvalidTransaction
 		}
+		if txn.TxType != tx.TransferAsset && txn.TxType != tx.BookKeeper {
+			return UgcNetworkRpc("invalid transaction type")
+		}
 		hash = txn.Hash()
 		if errCode := VerifyAndSendTx(&txn); errCode != ErrNoError {
 			return UgcNetworkRpc(errCode.Error())

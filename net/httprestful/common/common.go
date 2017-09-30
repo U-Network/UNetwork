@@ -455,6 +455,10 @@ func SendRawTransaction(cmd map[string]interface{}) map[string]interface{} {
 		resp["Error"] = Err.INVALID_TRANSACTION
 		return resp
 	}
+	if txn.TxType != tx.TransferAsset {
+		resp["Error"] = Err.INVALID_TRANSACTION
+		return resp
+	}
 	var hash Uint256
 	hash = txn.Hash()
 	if errCode := VerifyAndSendTx(&txn); errCode != ErrNoError {
