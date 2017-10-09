@@ -14,7 +14,6 @@ import (
 	. "UGCNetwork/common"
 	"UGCNetwork/common/config"
 	"UGCNetwork/common/log"
-	"UGCNetwork/core/asset"
 	"UGCNetwork/core/ledger"
 	tx "UGCNetwork/core/transaction"
 	"UGCNetwork/core/transaction/payload"
@@ -64,7 +63,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
 	for _, v := range ptx.Outputs {
 		trans.Outputs[n].AssetID = ToHexString(v.AssetID.ToArray())
-		trans.Outputs[n].Value = asset.Fixed64toAssetValue(v.Value)
+		trans.Outputs[n].Value = v.Value.String()
 		address, _ := v.ProgramHash.ToAddress()
 		trans.Outputs[n].Address = address
 		n++
@@ -85,7 +84,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		trans.AssetOutputs[n].Txout = make([]TxoutputInfo, len(v))
 		for m := 0; m < len(v); m++ {
 			trans.AssetOutputs[n].Txout[m].AssetID = ToHexString(v[m].AssetID.ToArray())
-			trans.AssetOutputs[n].Txout[m].Value = asset.Fixed64toAssetValue(v[m].Value)
+			trans.AssetOutputs[n].Txout[m].Value = v[m].Value.String()
 			address, _ := v[m].ProgramHash.ToAddress()
 			trans.AssetOutputs[n].Txout[m].Address = address
 		}
@@ -903,7 +902,7 @@ func getBalance(params []interface{}) map[string]interface{} {
 	}
 	type AssetInfo struct {
 		AssetID string
-		Value   float64
+		Value   string
 	}
 	balances := make(map[string][]*AssetInfo)
 	accounts := walletInstance.GetAccounts()
@@ -917,13 +916,13 @@ func getBalance(params []interface{}) map[string]interface{} {
 				assetString := ToHexString(coin.Output.AssetID.ToArray())
 				for _, info := range assetList {
 					if info.AssetID == assetString {
-						info.Value += asset.Fixed64toAssetValue(coin.Output.Value)
+						info.Value += coin.Output.Value.String()
 						existed = true
 						break
 					}
 				}
 				if !existed {
-					assetList = append(assetList, &AssetInfo{AssetID: assetString, Value: asset.Fixed64toAssetValue(coin.Output.Value)})
+					assetList = append(assetList, &AssetInfo{AssetID: assetString, Value: coin.Output.Value.String()})
 				}
 			}
 		}
