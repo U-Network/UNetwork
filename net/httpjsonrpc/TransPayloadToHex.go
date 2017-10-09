@@ -41,7 +41,7 @@ type IssuerInfo struct {
 //implement PayloadInfo define RegisterAssetInfo
 type RegisterAssetInfo struct {
 	Asset      *asset.Asset
-	Amount     float64
+	Amount     string
 	Issuer     IssuerInfo
 	Controller string
 }
@@ -109,7 +109,7 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 	case *payload.RegisterAsset:
 		obj := new(RegisterAssetInfo)
 		obj.Asset = object.Asset
-		obj.Amount = asset.Fixed64toAssetValue(object.Amount)
+		obj.Amount = object.Amount.String()
 		obj.Issuer.X = object.Issuer.X.String()
 		obj.Issuer.Y = object.Issuer.Y.String()
 		obj.Controller = ToHexString(object.Controller.ToArray())

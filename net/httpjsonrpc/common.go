@@ -51,7 +51,7 @@ type BalanceTxInputInfo struct {
 
 type TxoutputInfo struct {
 	AssetID string
-	Value   float64
+	Value   string
 	Address string
 }
 
