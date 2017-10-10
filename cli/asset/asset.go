@@ -44,9 +44,9 @@ func assetAction(c *cli.Context) error {
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
-	value := c.Float64("value")
-	if value == 0.0 {
-		fmt.Println("invalid value [--value]")
+	value := c.String("value")
+	if value == "" {
+		fmt.Println("asset amount is required with [--value]")
 		return nil
 	}
 
@@ -138,9 +138,10 @@ func NewCommand() *cli.Command {
 				Name:  "to",
 				Usage: "asset to whom",
 			},
-			cli.Float64Flag{
+			cli.StringFlag{
 				Name:  "value, v",
 				Usage: "asset amount",
+				Value: "",
 			},
 		},
 		Action: assetAction,

@@ -700,7 +700,10 @@ func (bd *ChainStore) persist(b *Block) error {
 
 	// generate value
 	w := bytes.NewBuffer(nil)
-	var sysfee uint64 = 0xFFFFFFFFFFFFFFFF
+	var sysfee uint64
+	for _, v := range b.Transactions[0].Outputs {
+		sysfee += uint64(v.Value)
+	}
 	serialization.WriteUint64(w, sysfee)
 	b.Trim(w)
 

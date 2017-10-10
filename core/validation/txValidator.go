@@ -2,6 +2,7 @@ package validation
 
 import (
 	"UGCNetwork/common"
+	"UGCNetwork/common/config"
 	"UGCNetwork/common/log"
 	"UGCNetwork/core/asset"
 	"UGCNetwork/core/ledger"
@@ -199,7 +200,7 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 func CheckTransactionBalance(Tx *tx.Transaction) error {
 	for _, v := range Tx.Outputs {
 		if v.Value <= common.Fixed64(0) {
-			return errors.New("Invalide transaction UTXO output.")
+			return errors.New("Invalid transaction UTXO output.")
 		}
 	}
 	if Tx.TxType == tx.IssueAsset {
@@ -213,9 +214,23 @@ func CheckTransactionBalance(Tx *tx.Transaction) error {
 		return err
 	}
 	for k, v := range results {
-		if v != 0 {
-			log.Debug(fmt.Sprintf("AssetID %x in Transfer transactions %x , Input/output UTXO not equal.", k, Tx.Hash()))
-			return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x , Input/output UTXO not equal.", k, Tx.Hash()))
+		// if transaction fee is not configured, input amount must equal to output
+		if fee, ok := config.Parameters.TransactionFee["Transfer"]; !ok {
+			if v != 0 {
+				return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x, balance unmatched when fee is not set.", k, Tx.Hash()))
+			}
+		} else {
+			switch fee {
+			case 0.0:
+				if v != 0 {
+					return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x, balance unmatched when fee is 0.", k, Tx.Hash()))
+				}
+			default:
+				// due to non-zero transaction fee, the input amount must > output amount
+				if v <= 0 {
+					return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x, output >= input.", k, Tx.Hash()))
+				}
+			}
 		}
 	}
 	return nil

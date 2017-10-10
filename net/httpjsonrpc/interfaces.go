@@ -779,8 +779,7 @@ func makeRegTxn(params []interface{}) map[string]interface{} {
 	if len(params) < 2 {
 		return UgcNetworkRpcNil
 	}
-	var assetName string
-	var assetValue float64
+	var assetName, assetValue string
 	switch params[0].(type) {
 	case string:
 		assetName = params[0].(string)
@@ -788,8 +787,8 @@ func makeRegTxn(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpcInvalidParameter
 	}
 	switch params[1].(type) {
-	case float64:
-		assetValue = params[1].(float64)
+	case string:
+		assetValue = params[1].(string)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -812,9 +811,7 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 	if len(params) < 3 {
 		return UgcNetworkRpcNil
 	}
-	var asset string
-	var value float64
-	var address string
+	var asset, value, address string
 	switch params[0].(type) {
 	case string:
 		asset = params[0].(string)
@@ -823,7 +820,7 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 	}
 	switch params[1].(type) {
 	case float64:
-		value = params[1].(float64)
+		value = params[1].(string)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -853,9 +850,7 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 	if len(params) < 3 {
 		return UgcNetworkRpcNil
 	}
-	var asset string
-	var value float64
-	var address string
+	var asset, value, address string
 	switch params[0].(type) {
 	case string:
 		asset = params[0].(string)
@@ -864,7 +859,7 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 	}
 	switch params[1].(type) {
 	case float64:
-		value = params[1].(float64)
+		value = params[1].(string)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
