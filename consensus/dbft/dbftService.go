@@ -168,7 +168,7 @@ func (ds *DbftService) CheckSignatures() error {
 	return nil
 }
 
-func (ds *DbftService) CreateBookkeepingTransaction(nonce uint64) *tx.Transaction {
+func (ds *DbftService) CreateBookkeepingTransaction(txnFeeOutputs []*tx.TxOutput, nonce uint64) *tx.Transaction {
 	log.Debug()
 	//TODO: sysfee
 	bookKeepingPayload := &payload.BookKeeping{
@@ -181,7 +181,7 @@ func (ds *DbftService) CreateBookkeepingTransaction(nonce uint64) *tx.Transactio
 		Attributes:     []*tx.TxAttribute{},
 		UTXOInputs:     []*tx.UTXOTxInput{},
 		BalanceInputs:  []*tx.BalanceTxInput{},
-		Outputs:        []*tx.TxOutput{},
+		Outputs:        txnFeeOutputs,
 		Programs:       []*program.Program{},
 	}
 }
@@ -564,7 +564,27 @@ func (ds *DbftService) Timeout() {
 			//TODO: add policy
 			//TODO: add max TX limitation
 
-			txBookkeeping := ds.CreateBookkeepingTransaction(ds.context.Nonce)
+			account, _ := ds.Client.GetAccount(ds.context.BookKeepers[ds.context.BookKeeperIndex]) //TODO: handle error
+			txnFeeOutputs := []*tx.TxOutput{}
+			// calculate transaction fee when fee is configured and doesn't equal to 0.0,
+			if fee, ok := config.Parameters.TransactionFee["Transfer"]; ok && (fee != 0.0) {
+				for _, txn := range transactionsPool {
+					txnResult, _ := txn.GetTransactionResults()
+					for assetID, value := range txnResult {
+						//TODO: check system assetID
+						if value > 0 {
+							tmpOutput := tx.TxOutput{
+								AssetID:     assetID,
+								Value:       value,
+								ProgramHash: account.ProgramHash,
+							}
+							txnFeeOutputs = append(txnFeeOutputs, &tmpOutput)
+						}
+					}
+				}
+			}
+
+			txBookkeeping := ds.CreateBookkeepingTransaction(txnFeeOutputs, ds.context.Nonce)
 			//add book keeping transaction first
 			ds.context.Transactions = append(ds.context.Transactions, txBookkeeping)
 			//add transactions from transaction pool
@@ -574,7 +594,6 @@ func (ds *DbftService) Timeout() {
 			ds.context.header = nil
 			//build block and sign
 			block := ds.context.MakeHeader()
-			account, _ := ds.Client.GetAccount(ds.context.BookKeepers[ds.context.BookKeeperIndex]) //TODO: handle error
 			ds.context.Signatures[ds.context.BookKeeperIndex], _ = sig.SignBySigner(block, account)
 		}
 		payload := ds.context.MakePrepareRequest()
