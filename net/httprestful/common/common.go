@@ -59,7 +59,7 @@ func GetBlockHash(cmd map[string]interface{}) map[string]interface{} {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
 	}
-	resp["Result"] = ToHexString(hash.ToArrayReverse())
+	resp["Result"] = BytesToHexString(hash.ToArrayReverse())
 	return resp
 }
 func GetTotalIssued(cmd map[string]interface{}) map[string]interface{} {
@@ -71,7 +71,7 @@ func GetTotalIssued(cmd map[string]interface{}) map[string]interface{} {
 	}
 	var assetHash Uint256
 
-	bys, err := HexToBytesReverse(assetid)
+	bys, err := HexStringToBytesReverse(assetid)
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
@@ -92,17 +92,17 @@ func GetBlockInfo(block *ledger.Block) BlockInfo {
 	hash := block.Hash()
 	blockHead := &BlockHead{
 		Version:          block.Blockdata.Version,
-		PrevBlockHash:    ToHexString(block.Blockdata.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: ToHexString(block.Blockdata.TransactionsRoot.ToArrayReverse()),
+		PrevBlockHash:    BytesToHexString(block.Blockdata.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: BytesToHexString(block.Blockdata.TransactionsRoot.ToArrayReverse()),
 		Timestamp:        block.Blockdata.Timestamp,
 		Height:           block.Blockdata.Height,
 		ConsensusData:    block.Blockdata.ConsensusData,
-		NextBookKeeper:   ToHexString(block.Blockdata.NextBookKeeper.ToArrayReverse()),
+		NextBookKeeper:   BytesToHexString(block.Blockdata.NextBookKeeper.ToArrayReverse()),
 		Program: ProgramInfo{
-			Code:      ToHexString(block.Blockdata.Program.Code),
-			Parameter: ToHexString(block.Blockdata.Program.Parameter),
+			Code:      BytesToHexString(block.Blockdata.Program.Code),
+			Parameter: BytesToHexString(block.Blockdata.Program.Parameter),
 		},
-		Hash: ToHexString(hash.ToArrayReverse()),
+		Hash: BytesToHexString(hash.ToArrayReverse()),
 	}
 
 	trans := make([]*Transactions, len(block.Transactions))
@@ -111,7 +111,7 @@ func GetBlockInfo(block *ledger.Block) BlockInfo {
 	}
 
 	b := BlockInfo{
-		Hash:         ToHexString(hash.ToArrayReverse()),
+		Hash:         BytesToHexString(hash.ToArrayReverse()),
 		BlockData:    blockHead,
 		Transactions: trans,
 	}
@@ -121,7 +121,7 @@ func GetBlockTransactions(block *ledger.Block) interface{} {
 	trans := make([]string, len(block.Transactions))
 	for i := 0; i < len(block.Transactions); i++ {
 		h := block.Transactions[i].Hash()
-		trans[i] = ToHexString(h.ToArrayReverse())
+		trans[i] = BytesToHexString(h.ToArrayReverse())
 	}
 	hash := block.Hash()
 	type BlockTransactions struct {
@@ -130,7 +130,7 @@ func GetBlockTransactions(block *ledger.Block) interface{} {
 		Transactions []string
 	}
 	b := BlockTransactions{
-		Hash:         ToHexString(hash.ToArrayReverse()),
+		Hash:         BytesToHexString(hash.ToArrayReverse()),
 		Height:       block.Blockdata.Height,
 		Transactions: trans,
 	}
@@ -144,7 +144,7 @@ func getBlock(hash Uint256, getTxBytes bool) (interface{}, int64) {
 	if getTxBytes {
 		w := bytes.NewBuffer(nil)
 		block.Serialize(w)
-		return ToHexString(w.Bytes()), Err.SUCCESS
+		return BytesToHexString(w.Bytes()), Err.SUCCESS
 	}
 	return GetBlockInfo(block), Err.SUCCESS
 }
@@ -160,7 +160,7 @@ func GetBlockByHash(cmd map[string]interface{}) map[string]interface{} {
 		getTxBytes = true
 	}
 	var hash Uint256
-	hex, err := HexToBytesReverse(param)
+	hex, err := HexStringToBytesReverse(param)
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
@@ -233,7 +233,7 @@ func GetAssetByHash(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(Err.SUCCESS)
 
 	str := cmd["Hash"].(string)
-	hex, err := HexToBytesReverse(str)
+	hex, err := HexStringToBytesReverse(str)
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
@@ -252,7 +252,7 @@ func GetAssetByHash(cmd map[string]interface{}) map[string]interface{} {
 	if raw, ok := cmd["Raw"].(string); ok && raw == "1" {
 		w := bytes.NewBuffer(nil)
 		asset.Serialize(w)
-		resp["Result"] = ToHexString(w.Bytes())
+		resp["Result"] = BytesToHexString(w.Bytes())
 		return resp
 	}
 	resp["Result"] = asset
@@ -298,7 +298,7 @@ func GetBalanceByAsset(cmd map[string]interface{}) map[string]interface{} {
 	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
 	var balance Fixed64 = 0
 	for k, u := range unspends {
-		assid := ToHexString(k.ToArrayReverse())
+		assid := BytesToHexString(k.ToArrayReverse())
 		for _, v := range u {
 			if assetid == assid {
 				balance = balance + v.Value
@@ -336,7 +336,7 @@ func GetUnspends(cmd map[string]interface{}) map[string]interface{} {
 	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
 
 	for k, u := range unspends {
-		assetid := ToHexString(k.ToArrayReverse())
+		assetid := BytesToHexString(k.ToArrayReverse())
 		asset, err := ledger.DefaultLedger.Store.GetAsset(k)
 		if err != nil {
 			resp["Error"] = Err.INTERNAL_ERROR
@@ -344,7 +344,7 @@ func GetUnspends(cmd map[string]interface{}) map[string]interface{} {
 		}
 		var unspendsInfo []UTXOUnspentInfo
 		for _, v := range u {
-			unspendsInfo = append(unspendsInfo, UTXOUnspentInfo{ToHexString(v.Txid.ToArrayReverse()), v.Index, v.Value.String()})
+			unspendsInfo = append(unspendsInfo, UTXOUnspentInfo{BytesToHexString(v.Txid.ToArrayReverse()), v.Index, v.Value.String()})
 		}
 		results = append(results, Result{assetid, asset.Name, unspendsInfo})
 	}
@@ -367,7 +367,7 @@ func GetUnspendOutput(cmd map[string]interface{}) map[string]interface{} {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
 	}
-	bys, err := HexToBytesReverse(assetid)
+	bys, err := HexStringToBytesReverse(assetid)
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
@@ -389,7 +389,7 @@ func GetUnspendOutput(cmd map[string]interface{}) map[string]interface{} {
 	}
 	var UTXOoutputs []UTXOUnspentInfo
 	for _, v := range infos {
-		UTXOoutputs = append(UTXOoutputs, UTXOUnspentInfo{Txid: ToHexString(v.Txid.ToArrayReverse()), Index: v.Index, Value: v.Value.String()})
+		UTXOoutputs = append(UTXOoutputs, UTXOUnspentInfo{Txid: BytesToHexString(v.Txid.ToArrayReverse()), Index: v.Index, Value: v.Value.String()})
 	}
 	resp["Result"] = UTXOoutputs
 	return resp
@@ -400,7 +400,7 @@ func GetTransactionByHash(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(Err.SUCCESS)
 
 	str := cmd["Hash"].(string)
-	bys, err := HexToBytesReverse(str)
+	bys, err := HexStringToBytesReverse(str)
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
@@ -419,7 +419,7 @@ func GetTransactionByHash(cmd map[string]interface{}) map[string]interface{} {
 	if raw, ok := cmd["Raw"].(string); ok && raw == "1" {
 		w := bytes.NewBuffer(nil)
 		tx.Serialize(w)
-		resp["Result"] = ToHexString(w.Bytes())
+		resp["Result"] = BytesToHexString(w.Bytes())
 		return resp
 	}
 	tran := TransArryByteToHexString(tx)
@@ -434,7 +434,7 @@ func SendRawTransaction(cmd map[string]interface{}) map[string]interface{} {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
 	}
-	bys, err := HexToBytes(str)
+	bys, err := HexStringToBytes(str)
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
@@ -454,7 +454,7 @@ func SendRawTransaction(cmd map[string]interface{}) map[string]interface{} {
 		resp["Error"] = int64(errCode)
 		return resp
 	}
-	resp["Result"] = ToHexString(hash.ToArrayReverse())
+	resp["Result"] = BytesToHexString(hash.ToArrayReverse())
 	//TODO 0xd1 -> tx.InvokeCode
 	if txn.TxType == 0xd1 {
 		if userid, ok := cmd["Userid"].(string); ok && len(userid) > 0 {
@@ -495,7 +495,7 @@ func ResponsePack(errCode int64) map[string]interface{} {
 func GetContract(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(Err.SUCCESS)
 	str := cmd["Hash"].(string)
-	bys, err := HexToBytesReverse(str)
+	bys, err := HexStringToBytesReverse(str)
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp

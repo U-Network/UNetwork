@@ -59,7 +59,7 @@ func assetAction(c *cli.Context) error {
 		if name == "" {
 			rbuf := make([]byte, RANDBYTELEN)
 			rand.Read(rbuf)
-			name = "UGCNetwork-" + ToHexString(rbuf)
+			name = "UGCNetwork-" + BytesToHexString(rbuf)
 		}
 		txn, err = sdk.MakeRegTransaction(wallet, name, value)
 	} else {
@@ -69,7 +69,17 @@ func assetAction(c *cli.Context) error {
 			fmt.Println("missing flag [--asset] or [--to]")
 			return nil
 		}
-		assetID, _ := StringToUint256(asset)
+		var assetBytes []byte
+		var assetID Uint256
+		assetBytes, err = HexStringToBytesReverse(asset)
+		if err != nil {
+			fmt.Println("invalid asset ID")
+			return nil
+		}
+		if err = assetID.Deserialize(bytes.NewReader(assetBytes)); err != nil {
+			fmt.Println("invalid asset hash")
+			return nil
+		}
 		if issue {
 			txn, err = sdk.MakeIssueTransaction(wallet, assetID, address, value)
 		} else if transfer {
@@ -78,6 +88,7 @@ func assetAction(c *cli.Context) error {
 				Value:   value,
 			}
 			txn, err = sdk.MakeTransferTransaction(wallet, assetID, batchOut)
+
 		}
 	}
 	if err != nil {
@@ -88,7 +99,7 @@ func assetAction(c *cli.Context) error {
 		fmt.Println("serialize transaction failed")
 		return err
 	}
-	resp, err := httpjsonrpc.Call(Address(), "sendrawtransaction", 0, []interface{}{ToHexString(buffer.Bytes())})
+	resp, err := httpjsonrpc.Call(Address(), "sendrawtransaction", 0, []interface{}{BytesToHexString(buffer.Bytes())})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

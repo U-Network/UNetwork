@@ -64,11 +64,11 @@ func IsEqualBytes(b1 []byte, b2 []byte) bool {
 	return true
 }
 
-func ToHexString(data []byte) string {
+func BytesToHexString(data []byte) string {
 	return hex.EncodeToString(data)
 }
 
-func HexToBytes(value string) ([]byte, error) {
+func HexStringToBytes(value string) ([]byte, error) {
 	return hex.DecodeString(value)
 }
 
@@ -79,7 +79,7 @@ func BytesReverse(u []byte) []byte {
 	return u
 }
 
-func HexToBytesReverse(value string) ([]byte, error) {
+func HexStringToBytesReverse(value string) ([]byte, error) {
 	u, err := hex.DecodeString(value)
 	if err != nil {
 		return u, err
@@ -141,28 +141,4 @@ func SliceRemove(slice []uint32, h uint32) []uint32 {
 func FileExisted(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
-}
-
-func StringToUint160(s string) (Uint160, error) {
-	b, err := HexToBytes(s)
-	if err != nil {
-		return Uint160{}, err
-	}
-	u, err := Uint160ParseFromBytes(b)
-	if err != nil {
-		return Uint160{}, err
-	}
-
-	return u, nil
-}
-func StringToUint256(s string) (Uint256, error) {
-	b, err := HexToBytes(s)
-	if err != nil {
-		return Uint256{}, err
-	}
-	u, err := Uint256ParseFromBytes(b)
-	if err != nil {
-		return Uint256{}, err
-	}
-	return u, nil
 }

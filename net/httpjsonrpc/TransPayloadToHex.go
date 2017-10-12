@@ -14,8 +14,7 @@ type PayloadInfo interface{}
 
 //implement PayloadInfo define BookKeepingInfo
 type BookKeepingInfo struct {
-	Nonce  uint64
-	Issuer IssuerInfo
+	Nonce uint64
 }
 
 //implement PayloadInfo define DeployCodeInfo
@@ -81,7 +80,7 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 	case *payload.BookKeeper:
 		obj := new(BookkeeperInfo)
 		encodedPubKey, _ := object.PubKey.EncodePoint(true)
-		obj.PubKey = ToHexString(encodedPubKey)
+		obj.PubKey = BytesToHexString(encodedPubKey)
 		if object.Action == payload.BookKeeperAction_ADD {
 			obj.Action = "add"
 		} else if object.Action == payload.BookKeeperAction_SUB {
@@ -97,9 +96,9 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 	case *payload.TransferAsset:
 	case *payload.DeployCode:
 		obj := new(DeployCodeInfo)
-		obj.Code.Code = ToHexString(object.Code.Code)
-		obj.Code.ParameterTypes = ToHexString(ContractParameterTypeToByte(object.Code.ParameterTypes))
-		obj.Code.ReturnTypes = ToHexString(ContractParameterTypeToByte(object.Code.ReturnTypes))
+		obj.Code.Code = BytesToHexString(object.Code.Code)
+		obj.Code.ParameterTypes = BytesToHexString(ContractParameterTypeToByte(object.Code.ParameterTypes))
+		obj.Code.ReturnTypes = BytesToHexString(ContractParameterTypeToByte(object.Code.ReturnTypes))
 		obj.Name = object.Name
 		obj.CodeVersion = object.CodeVersion
 		obj.Author = object.Author
@@ -112,21 +111,21 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 		obj.Amount = object.Amount.String()
 		obj.Issuer.X = object.Issuer.X.String()
 		obj.Issuer.Y = object.Issuer.Y.String()
-		obj.Controller = ToHexString(object.Controller.ToArray())
+		obj.Controller = BytesToHexString(object.Controller.ToArrayReverse())
 		return obj
 	case *payload.Record:
 		obj := new(RecordInfo)
 		obj.RecordType = object.RecordType
-		obj.RecordData = ToHexString(object.RecordData)
+		obj.RecordData = BytesToHexString(object.RecordData)
 		return obj
 	case *payload.PrivacyPayload:
 		obj := new(PrivacyPayloadInfo)
 		obj.PayloadType = uint8(object.PayloadType)
-		obj.Payload = ToHexString(object.Payload)
+		obj.Payload = BytesToHexString(object.Payload)
 		obj.EncryptType = uint8(object.EncryptType)
 		bytesBuffer := bytes.NewBuffer([]byte{})
 		object.EncryptAttr.Serialize(bytesBuffer)
-		obj.EncryptAttr = ToHexString(bytesBuffer.Bytes())
+		obj.EncryptAttr = BytesToHexString(bytesBuffer.Bytes())
 		return obj
 	case *payload.DataFile:
 		obj := new(DataFileInfo)

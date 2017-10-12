@@ -20,7 +20,7 @@ func showAccountsInfo(wallet account.Client) {
 	for i, account := range accounts {
 		address, _ := account.ProgramHash.ToAddress()
 		publicKey, _ := account.PublicKey.EncodePoint(true)
-		fmt.Printf("%4s  %s %s\n", strconv.Itoa(i), address, ToHexString(publicKey))
+		fmt.Printf("%4s  %s %s\n", strconv.Itoa(i), address, BytesToHexString(publicKey))
 	}
 }
 
@@ -42,7 +42,7 @@ func showBalancesInfo(wallet account.Client) {
 	fmt.Println("----  --------\t\t\t\t\t\t\t\t------")
 	i := 0
 	for id, amount := range assets {
-		fmt.Printf("%4s  %s  %v\n", strconv.Itoa(i), ToHexString(id.ToArray()), amount)
+		fmt.Printf("%4s  %s  %v\n", strconv.Itoa(i), BytesToHexString(id.ToArrayReverse()), amount)
 		i++
 	}
 }
@@ -65,7 +65,7 @@ func showVerboseInfo(wallet account.Client) {
 			}
 		}
 		fmt.Println("---------------------------------------------------------------------------------------------------")
-		fmt.Printf("Address: %s  ProgramHash: %s\n", address, ToHexString(programHash.ToArray()))
+		fmt.Printf("Address: %s  ProgramHash: %s\n", address, BytesToHexString(programHash.ToArrayReverse()))
 		if len(assets) == 0 {
 			continue
 		}
@@ -73,7 +73,7 @@ func showVerboseInfo(wallet account.Client) {
 		fmt.Println("----  --------\t\t\t\t\t\t\t\t------")
 		i := 0
 		for id, amount := range assets {
-			fmt.Printf("%4s  %s  %v\n", strconv.Itoa(i), ToHexString(id.ToArray()), amount)
+			fmt.Printf("%4s  %s  %v\n", strconv.Itoa(i), BytesToHexString(id.ToArrayReverse()), amount)
 			i++
 		}
 	}

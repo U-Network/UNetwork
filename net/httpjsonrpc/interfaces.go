@@ -16,7 +16,6 @@ import (
 	"UGCNetwork/common/log"
 	"UGCNetwork/core/ledger"
 	tx "UGCNetwork/core/transaction"
-	"UGCNetwork/core/transaction/payload"
 	. "UGCNetwork/errors"
 	"UGCNetwork/sdk"
 
@@ -38,14 +37,14 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	trans.Attributes = make([]TxAttributeInfo, len(ptx.Attributes))
 	for _, v := range ptx.Attributes {
 		trans.Attributes[n].Usage = v.Usage
-		trans.Attributes[n].Data = ToHexString(v.Data)
+		trans.Attributes[n].Data = BytesToHexString(v.Data)
 		n++
 	}
 
 	n = 0
 	trans.UTXOInputs = make([]UTXOTxInputInfo, len(ptx.UTXOInputs))
 	for _, v := range ptx.UTXOInputs {
-		trans.UTXOInputs[n].ReferTxID = ToHexString(v.ReferTxID.ToArray())
+		trans.UTXOInputs[n].ReferTxID = BytesToHexString(v.ReferTxID.ToArrayReverse())
 		trans.UTXOInputs[n].ReferTxOutputIndex = v.ReferTxOutputIndex
 		n++
 	}
@@ -53,16 +52,16 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	n = 0
 	trans.BalanceInputs = make([]BalanceTxInputInfo, len(ptx.BalanceInputs))
 	for _, v := range ptx.BalanceInputs {
-		trans.BalanceInputs[n].AssetID = ToHexString(v.AssetID.ToArray())
+		trans.BalanceInputs[n].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
 		trans.BalanceInputs[n].Value = v.Value
-		trans.BalanceInputs[n].ProgramHash = ToHexString(v.ProgramHash.ToArray())
+		trans.BalanceInputs[n].ProgramHash = BytesToHexString(v.ProgramHash.ToArrayReverse())
 		n++
 	}
 
 	n = 0
 	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
 	for _, v := range ptx.Outputs {
-		trans.Outputs[n].AssetID = ToHexString(v.AssetID.ToArray())
+		trans.Outputs[n].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
 		trans.Outputs[n].Value = v.Value.String()
 		address, _ := v.ProgramHash.ToAddress()
 		trans.Outputs[n].Address = address
@@ -72,8 +71,8 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	n = 0
 	trans.Programs = make([]ProgramInfo, len(ptx.Programs))
 	for _, v := range ptx.Programs {
-		trans.Programs[n].Code = ToHexString(v.Code)
-		trans.Programs[n].Parameter = ToHexString(v.Parameter)
+		trans.Programs[n].Code = BytesToHexString(v.Code)
+		trans.Programs[n].Parameter = BytesToHexString(v.Parameter)
 		n++
 	}
 
@@ -83,7 +82,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		trans.AssetOutputs[n].Key = k
 		trans.AssetOutputs[n].Txout = make([]TxoutputInfo, len(v))
 		for m := 0; m < len(v); m++ {
-			trans.AssetOutputs[n].Txout[m].AssetID = ToHexString(v[m].AssetID.ToArray())
+			trans.AssetOutputs[n].Txout[m].AssetID = BytesToHexString(v[m].AssetID.ToArrayReverse())
 			trans.AssetOutputs[n].Txout[m].Value = v[m].Value.String()
 			address, _ := v[m].ProgramHash.ToAddress()
 			trans.AssetOutputs[n].Txout[m].Address = address
@@ -107,8 +106,8 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		n += 1
 	}
 
-	mhash := ptx.Hash()
-	trans.Hash = ToHexString(mhash.ToArray())
+	mHash := ptx.Hash()
+	trans.Hash = BytesToHexString(mHash.ToArrayReverse())
 
 	return trans
 }
@@ -121,7 +120,7 @@ func getCurrentDirectory() string {
 }
 func getBestBlockHash(params []interface{}) map[string]interface{} {
 	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
-	return UgcNetworkRpc(ToHexString(hash.ToArray()))
+	return UgcNetworkRpc(BytesToHexString(hash.ToArrayReverse()))
 }
 
 // Input JSON string examples for getblock method as following:
@@ -144,7 +143,7 @@ func getBlock(params []interface{}) map[string]interface{} {
 	// block hash
 	case string:
 		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
+		hex, err := HexStringToBytesReverse(str)
 		if err != nil {
 			return UgcNetworkRpcInvalidParameter
 		}
@@ -162,17 +161,17 @@ func getBlock(params []interface{}) map[string]interface{} {
 
 	blockHead := &BlockHead{
 		Version:          block.Blockdata.Version,
-		PrevBlockHash:    ToHexString(block.Blockdata.PrevBlockHash.ToArray()),
-		TransactionsRoot: ToHexString(block.Blockdata.TransactionsRoot.ToArray()),
+		PrevBlockHash:    BytesToHexString(block.Blockdata.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: BytesToHexString(block.Blockdata.TransactionsRoot.ToArrayReverse()),
 		Timestamp:        block.Blockdata.Timestamp,
 		Height:           block.Blockdata.Height,
 		ConsensusData:    block.Blockdata.ConsensusData,
-		NextBookKeeper:   ToHexString(block.Blockdata.NextBookKeeper.ToArray()),
+		NextBookKeeper:   BytesToHexString(block.Blockdata.NextBookKeeper.ToArrayReverse()),
 		Program: ProgramInfo{
-			Code:      ToHexString(block.Blockdata.Program.Code),
-			Parameter: ToHexString(block.Blockdata.Program.Parameter),
+			Code:      BytesToHexString(block.Blockdata.Program.Code),
+			Parameter: BytesToHexString(block.Blockdata.Program.Parameter),
 		},
-		Hash: ToHexString(hash.ToArray()),
+		Hash: BytesToHexString(hash.ToArrayReverse()),
 	}
 
 	trans := make([]*Transactions, len(block.Transactions))
@@ -181,7 +180,7 @@ func getBlock(params []interface{}) map[string]interface{} {
 	}
 
 	b := BlockInfo{
-		Hash:         ToHexString(hash.ToArray()),
+		Hash:         BytesToHexString(hash.ToArrayReverse()),
 		BlockData:    blockHead,
 		Transactions: trans,
 	}
@@ -205,7 +204,7 @@ func getBlockHash(params []interface{}) map[string]interface{} {
 		if err != nil {
 			return UgcNetworkRpcUnknownBlock
 		}
-		return UgcNetworkRpc(fmt.Sprintf("%016x", hash))
+		return UgcNetworkRpc(BytesToHexString(hash.ToArrayReverse()))
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
@@ -236,7 +235,7 @@ func getRawTransaction(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
+		hex, err := HexStringToBytesReverse(str)
 		if err != nil {
 			return UgcNetworkRpcInvalidParameter
 		}
@@ -266,7 +265,7 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
+		hex, err := HexStringToBytes(str)
 		if err != nil {
 			return UgcNetworkRpcInvalidParameter
 		}
@@ -284,7 +283,7 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
-	return UgcNetworkRpc(ToHexString(hash.ToArray()))
+	return UgcNetworkRpc(BytesToHexString(hash.ToArrayReverse()))
 }
 
 func getTxout(params []interface{}) map[string]interface{} {
@@ -301,7 +300,7 @@ func submitBlock(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
-		hex, _ := hex.DecodeString(str)
+		hex, _ := HexStringToBytes(str)
 		var block ledger.Block
 		if err := block.Deserialize(bytes.NewReader(hex)); err != nil {
 			return UgcNetworkRpcInvalidBlock
@@ -383,7 +382,7 @@ func sendSampleTransaction(params []interface{}) map[string]interface{} {
 			}
 		}
 		for i := 0; i < num; i++ {
-			regTx := NewRegTx(ToHexString(rbuf), i, admin, issuer)
+			regTx := NewRegTx(BytesToHexString(rbuf), i, admin, issuer)
 			SignTx(admin, regTx)
 			VerifyAndSendTx(regTx)
 		}
@@ -452,7 +451,7 @@ func regDataFile(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
+		hex, err := HexStringToBytes(str)
 		if err != nil {
 			return UgcNetworkRpcInvalidParameter
 		}
@@ -468,7 +467,7 @@ func regDataFile(params []interface{}) map[string]interface{} {
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
-	return UgcNetworkRpc(ToHexString(hash.ToArray()))
+	return UgcNetworkRpc(BytesToHexString(hash.ToArrayReverse()))
 }
 
 func catDataRecord(params []interface{}) map[string]interface{} {
@@ -478,7 +477,7 @@ func catDataRecord(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
-		b, err := hex.DecodeString(str)
+		b, err := HexStringToBytesReverse(str)
 		if err != nil {
 			return UgcNetworkRpcInvalidParameter
 		}
@@ -507,7 +506,7 @@ func getDataFile(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case string:
 		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
+		hex, err := HexStringToBytesReverse(str)
 		if err != nil {
 			return UgcNetworkRpcInvalidParameter
 		}
@@ -533,72 +532,6 @@ func getDataFile(params []interface{}) map[string]interface{} {
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
-}
-
-func searchTransactions(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return UgcNetworkRpcNil
-	}
-	var programHash string
-	switch params[0].(type) {
-	case string:
-		programHash = params[0].(string)
-	default:
-		return UgcNetworkRpcInvalidParameter
-	}
-
-	resp := make(map[string]string)
-	height := ledger.DefaultLedger.GetLocalBlockChainHeight()
-	var i uint32
-	for i = 1; i <= height; i++ {
-		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
-		if err != nil {
-			return UgcNetworkRpcInternalError
-		}
-		// skip the bookkeeping transaction
-		for _, t := range block.Transactions[1:] {
-			switch t.TxType {
-			case tx.RegisterAsset:
-				regPayload := t.Payload.(*payload.RegisterAsset)
-				controller := ToHexString(regPayload.Controller.ToArray())
-				if controller == programHash {
-					txHash := t.Hash()
-					txid := ToHexString(txHash.ToArray())
-					resp[txid] = "registration"
-				}
-			case tx.IssueAsset:
-				for _, v := range t.Outputs {
-					regTxn, err := ledger.DefaultLedger.Store.GetTransaction(v.AssetID)
-					if err != nil {
-						log.Warn("Can not find asset")
-						continue
-
-					}
-					regPayload := regTxn.Payload.(*payload.RegisterAsset)
-					controller := ToHexString(regPayload.Controller.ToArray())
-					if controller == programHash {
-						txHash := t.Hash()
-						txid := ToHexString(txHash.ToArray())
-						resp[txid] = "issuance"
-					}
-				}
-			case tx.TransferAsset:
-				transferTxnProgram := t.GetPrograms()[0]
-				transferTxnProgramHash, _ := ToCodeHash(transferTxnProgram.Code)
-				transferTxnProgramHashStr := ToHexString(transferTxnProgramHash.ToArray())
-				fmt.Println(transferTxnProgramHashStr)
-				if programHash == transferTxnProgramHashStr {
-					txHash := t.Hash()
-					txid := ToHexString(txHash.ToArray())
-					resp[txid] = "transfer"
-				}
-			default:
-				continue
-			}
-		}
-	}
-
-	return UgcNetworkRpc(resp)
 }
 
 var walletInstance *account.ClientImpl
@@ -669,7 +602,7 @@ func openWallet(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpc(resp)
 	}
 	resp["success"] = "true"
-	resp["message"] = ToHexString(programHash)
+	resp["message"] = BytesToHexString(programHash)
 	return UgcNetworkRpc(resp)
 }
 
@@ -723,9 +656,9 @@ func getWalletKey(params []interface{}) map[string]interface{} {
 	account, _ := walletInstance.GetDefaultAccount()
 	encodedPublickKey, _ := account.PublicKey.EncodePoint(true)
 	resp := make(map[string]string)
-	resp["PublicKey"] = ToHexString(encodedPublickKey)
-	resp["PrivateKey"] = ToHexString(account.PrivateKey)
-	resp["ProgramHash"] = ToHexString(account.ProgramHash.ToArray())
+	resp["PublicKey"] = BytesToHexString(encodedPublickKey)
+	resp["PrivateKey"] = BytesToHexString(account.PrivateKey)
+	resp["ProgramHash"] = BytesToHexString(account.ProgramHash.ToArrayReverse())
 
 	return UgcNetworkRpc(resp)
 }
@@ -743,32 +676,39 @@ func addAccount(params []interface{}) map[string]interface{} {
 		return UgcNetworkRpc("create contract error:" + err.Error())
 	}
 
-	return UgcNetworkRpc(ToHexString(account.ProgramHash.ToArray()))
+	address, err := account.ProgramHash.ToAddress()
+	if err != nil {
+		return UgcNetworkRpc("generate address error:" + err.Error())
+	}
+
+	return UgcNetworkRpc(address)
 }
 
 func deleteAccount(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return UgcNetworkRpcNil
 	}
-	var programHash string
+	var address string
 	switch params[0].(type) {
 	case string:
-		programHash = params[0].(string)
+		address = params[0].(string)
 	default:
 		return UgcNetworkRpcInvalidParameter
 	}
 	if walletInstance == nil {
 		return UgcNetworkRpc("open wallet first")
 	}
-	phBytes, _ := HexToBytes(programHash)
-	pbUint160, _ := Uint160ParseFromBytes(phBytes)
-	if err := walletInstance.DeleteAccount(pbUint160); err != nil {
+	programHash, err := ToScriptHash(address)
+	if err != nil {
+		return UgcNetworkRpc("invalid address:" + err.Error())
+	}
+	if err := walletInstance.DeleteAccount(programHash); err != nil {
 		return UgcNetworkRpc("Delete account error:" + err.Error())
 	}
-	if err := walletInstance.DeleteContract(pbUint160); err != nil {
+	if err := walletInstance.DeleteContract(programHash); err != nil {
 		return UgcNetworkRpc("Delete contract error:" + err.Error())
 	}
-	if err := walletInstance.DeleteCoinsData(pbUint160); err != nil {
+	if err := walletInstance.DeleteCoinsData(programHash); err != nil {
 		return UgcNetworkRpc("Delete coins error:" + err.Error())
 	}
 
@@ -833,7 +773,14 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 	if walletInstance == nil {
 		return UgcNetworkRpc("open wallet first")
 	}
-	assetID, _ := StringToUint256(asset)
+	tmp, err := HexStringToBytesReverse(asset)
+	if err != nil {
+		return UgcNetworkRpc("invalid asset ID")
+	}
+	var assetID Uint256
+	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
+		return UgcNetworkRpc("invalid asset hash")
+	}
 	issueTxn, err := sdk.MakeIssueTransaction(walletInstance, assetID, address, value)
 	if err != nil {
 		return UgcNetworkRpcInternalError
@@ -878,7 +825,14 @@ func makeTransferTxn(params []interface{}) map[string]interface{} {
 		Address: address,
 		Value:   value,
 	}
-	assetID, _ := StringToUint256(asset)
+	tmp, err := HexStringToBytesReverse(asset)
+	if err != nil {
+		return UgcNetworkRpc("invalid asset ID")
+	}
+	var assetID Uint256
+	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
+		return UgcNetworkRpc("invalid asset hash")
+	}
 	txn, err := sdk.MakeTransferTransaction(walletInstance, assetID, batchOut)
 	if err != nil {
 		return UgcNetworkRpcInternalError
@@ -908,7 +862,7 @@ func getBalance(params []interface{}) map[string]interface{} {
 		for _, coin := range coins {
 			if programHash == coin.Output.ProgramHash {
 				var existed bool
-				assetString := ToHexString(coin.Output.AssetID.ToArray())
+				assetString := BytesToHexString(coin.Output.AssetID.ToArray())
 				for _, info := range assetList {
 					if info.AssetID == assetString {
 						info.Value += coin.Output.Value.String()
