@@ -71,7 +71,7 @@ func MakeRegTransaction(wallet account.Client, name string, value string) (*tran
 		return nil, err
 	}
 	issuer := admin
-	asset := &Asset{name, "description", byte(MaxPrecision), AssetType(Share), UTXO}
+	asset := &Asset{name, name, byte(MaxPrecision), AssetType(Token), UTXO}
 	transactionContract, err := contract.CreateSignatureContract(admin.PubKey())
 	if err != nil {
 		fmt.Println("CreateSignatureContract failed")

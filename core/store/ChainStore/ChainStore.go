@@ -153,7 +153,6 @@ func (bd *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defau
 
 	hash := genesisBlock.Hash()
 	bd.headerIndex[0] = hash
-	log.Debugf("listhash genesis: %x\n", hash)
 
 	prefix := []byte{byte(CFG_Version)}
 	version, err := bd.st.Get(prefix)
@@ -1407,7 +1406,6 @@ func (bd *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint2
 		ph.Deserialize(rk)
 		var assetid Uint256
 		assetid.Deserialize(rk)
-		log.Tracef("[GetUnspentsFromProgramHash] assetid: %x\n", assetid.ToArray())
 
 		r := bytes.NewReader(iter.Value())
 		listNum, err := serialization.ReadVarUint(r, 0)

@@ -139,8 +139,8 @@ func (cs *FileStore) SaveAccountData(programHash []byte, encryptedPrivateKey []b
 	}
 	a := AccountData{
 		Address:             addr,
-		ProgramHash:         ToHexString(programHash),
-		PrivateKeyEncrypted: ToHexString(encryptedPrivateKey),
+		ProgramHash:         BytesToHexString(programHash),
+		PrivateKeyEncrypted: BytesToHexString(encryptedPrivateKey),
 		Type:                accountType,
 	}
 	cs.data.Account = append(cs.data.Account, a)
@@ -201,8 +201,8 @@ func (cs *FileStore) SaveContractData(ct *ct.Contract) error {
 		return errors.New("error: unmarshal db")
 	}
 	c := ContractData{
-		ProgramHash: ToHexString(ct.ProgramHash.ToArray()),
-		RawData:     ToHexString(ct.ToArray()),
+		ProgramHash: BytesToHexString(ct.ProgramHash.ToArray()),
+		RawData:     BytesToHexString(ct.ToArray()),
 	}
 	cs.data.Contract = append(cs.data.Contract, c)
 
@@ -270,7 +270,7 @@ func (cs *FileStore) SaveCoinsData(coins map[*transaction.UTXOTxInput]*Coin) err
 			k.Serialize(w)
 			v.Serialize(w)
 		}
-		cs.data.Coins = CoinData(ToHexString(w.Bytes()))
+		cs.data.Coins = CoinData(BytesToHexString(w.Bytes()))
 	}
 
 	JSONBlob, err := json.Marshal(cs.data)
@@ -295,7 +295,7 @@ func (cs *FileStore) DeleteCoinsData(programHash Uint160) error {
 	}
 
 	coins := make(map[*transaction.UTXOTxInput]*Coin)
-	rawCoins, _ := HexToBytes(string(cs.data.Coins))
+	rawCoins, _ := HexStringToBytes(string(cs.data.Coins))
 	r := bytes.NewReader(rawCoins)
 	num, _ := serialization.ReadUint32(r)
 	for i := 0; i < int(num); i++ {
@@ -327,7 +327,7 @@ func (cs *FileStore) LoadCoinsData() (map[*transaction.UTXOTxInput]*Coin, error)
 		return nil, errors.New("error: unmarshal db")
 	}
 	coins := make(map[*transaction.UTXOTxInput]*Coin)
-	rawCoins, _ := HexToBytes(string(cs.data.Coins))
+	rawCoins, _ := HexStringToBytes(string(cs.data.Coins))
 	r := bytes.NewReader(rawCoins)
 	num, _ := serialization.ReadUint32(r)
 	for i := 0; i < int(num); i++ {
@@ -354,7 +354,7 @@ func (cs *FileStore) SaveStoredData(name string, value []byte) error {
 		return errors.New("error: unmarshal db")
 	}
 
-	hexValue := ToHexString(value)
+	hexValue := BytesToHexString(value)
 	switch name {
 	case "IV":
 		cs.data.IV = hexValue
@@ -387,11 +387,11 @@ func (cs *FileStore) LoadStoredData(name string) ([]byte, error) {
 	}
 	switch name {
 	case "IV":
-		return HexToBytes(cs.data.IV)
+		return HexStringToBytes(cs.data.IV)
 	case "MasterKey":
-		return HexToBytes(cs.data.MasterKey)
+		return HexStringToBytes(cs.data.MasterKey)
 	case "PasswordHash":
-		return HexToBytes(cs.data.PasswordHash)
+		return HexStringToBytes(cs.data.PasswordHash)
 	case "Height":
 		bytesBuffer := bytes.NewBuffer([]byte{})
 		binary.Write(bytesBuffer, binary.LittleEndian, cs.data.Height)

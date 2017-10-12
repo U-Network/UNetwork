@@ -108,7 +108,7 @@ func Recover(path string, password []byte, privateKeyHex string) (*ClientImpl, e
 		return nil, errors.New("client nil")
 	}
 
-	privateKeyBytes, err := HexToBytes(privateKeyHex)
+	privateKeyBytes, err := HexStringToBytes(privateKeyHex)
 	if err != nil {
 		return nil, err
 	}
@@ -491,7 +491,7 @@ func (cl *ClientImpl) DeleteAccount(programHash Uint160) error {
 	// remove from memory
 	delete(cl.accounts, programHash)
 	// remove from db
-	return cl.DeleteAccountData(ToHexString(programHash.ToArray()))
+	return cl.DeleteAccountData(BytesToHexString(programHash.ToArray()))
 }
 
 func (cl *ClientImpl) CreateAccountByPrivateKey(privateKey []byte) (*Account, error) {
@@ -552,10 +552,10 @@ func (cl *ClientImpl) LoadAccounts() error {
 	}
 	for _, a := range account {
 		if a.Type == MAINACCOUNT {
-			p, _ := HexToBytes(a.ProgramHash)
+			p, _ := HexStringToBytes(a.ProgramHash)
 			cl.mainAccount, _ = Uint160ParseFromBytes(p)
 		}
-		encryptedKeyPair, _ := HexToBytes(a.PrivateKeyEncrypted)
+		encryptedKeyPair, _ := HexStringToBytes(a.PrivateKeyEncrypted)
 		keyPair, err := cl.DecryptPrivateKey(encryptedKeyPair)
 		if err != nil {
 			log.Error(err)
@@ -584,7 +584,7 @@ func (cl *ClientImpl) CreateContract(account *Account) error {
 
 func (cl *ClientImpl) DeleteContract(programHash Uint160) error {
 	delete(cl.contracts, programHash)
-	return cl.DeleteContractData(ToHexString(programHash.ToArray()))
+	return cl.DeleteContractData(BytesToHexString(programHash.ToArray()))
 }
 
 // SaveContract saves a contract to memory and db
@@ -612,12 +612,12 @@ func (cl *ClientImpl) LoadContracts() error {
 		return err
 	}
 	for _, c := range contract {
-		rawdata, _ := HexToBytes(c.RawData)
+		rawdata, _ := HexStringToBytes(c.RawData)
 		rdreader := bytes.NewReader(rawdata)
 		ct := new(ct.Contract)
 		ct.Deserialize(rdreader)
 
-		programHash, _ := HexToBytes(c.ProgramHash)
+		programHash, _ := HexStringToBytes(c.ProgramHash)
 		programhash, _ := Uint160ParseFromBytes(programHash)
 		ct.ProgramHash = programhash
 		contracts[ct.ProgramHash] = ct
