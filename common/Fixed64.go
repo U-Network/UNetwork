@@ -43,16 +43,16 @@ func (f Fixed64) GetData() int64 {
 
 func (f Fixed64) String() string {
 	var buffer bytes.Buffer
-	value := int64(f)
-	if value < 0 {
+	value := uint64(f)
+	if f < 0 {
 		buffer.WriteRune('-')
-		value = -value
+		value = uint64(-f)
 	}
-	buffer.WriteString(strconv.FormatInt(value/100000000, 10))
+	buffer.WriteString(strconv.FormatUint(value/100000000, 10))
 	value %= 100000000
 	if value > 0 {
 		buffer.WriteRune('.')
-		s := strconv.FormatInt(value, 10)
+		s := strconv.FormatUint(value, 10)
 		for i := len(s); i < 8; i++ {
 			buffer.WriteRune('0')
 		}
