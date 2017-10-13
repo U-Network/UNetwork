@@ -40,12 +40,20 @@ const (
 
 type Client interface {
 	Sign(context *ct.ContractContext) bool
+
 	ContainsAccount(pubKey *crypto.PubKey) bool
+	CreateAccount() (*Account, error)
+	DeleteAccount(programHash Uint160) error
 	GetAccount(pubKey *crypto.PubKey) (*Account, error)
+	GetDefaultAccount() (*Account, error)
 	GetAccountByProgramHash(programHash Uint160) *Account
 	GetAccounts() []*Account
-	GetDefaultAccount() (*Account, error)
+
+	CreateContract(account *Account) error
+	DeleteContract(programHash Uint160) error
+
 	GetCoins() map[*transaction.UTXOTxInput]*Coin
+	DeleteCoinsData(programHash Uint160) error
 }
 
 type ClientImpl struct {

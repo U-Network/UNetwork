@@ -90,6 +90,8 @@ func main() {
 			log.Fatal(err)
 			goto ERROR
 		}
+		// expose wallet to httpjson interface
+		httpjsonrpc.Wallet = client
 	}
 	log.Info("The Node's PublicKey ", acct.PublicKey)
 
