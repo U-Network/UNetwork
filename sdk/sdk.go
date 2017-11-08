@@ -21,19 +21,6 @@ type BatchOut struct {
 	Value   string
 }
 
-// sortedAccounts used for sequential constructing program hash for verification
-type sortedAccounts []*account.Account
-
-func (sa sortedAccounts) Len() int      { return len(sa) }
-func (sa sortedAccounts) Swap(i, j int) { sa[i], sa[j] = sa[j], sa[i] }
-func (sa sortedAccounts) Less(i, j int) bool {
-	if sa[i].ProgramHash.CompareTo(sa[j].ProgramHash) > 0 {
-		return false
-	} else {
-		return true
-	}
-}
-
 type sortedCoinsItem struct {
 	input *transaction.UTXOTxInput
 	coin  *account.Coin
@@ -158,7 +145,6 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 	}
 
 	var expected Fixed64
-	var transferred Fixed64
 	input := []*transaction.UTXOTxInput{}
 	output := []*transaction.TxOutput{}
 	// construct transaction outputs
@@ -197,15 +183,12 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 				}
 				// if any, the changes output of transaction will be the last one
 				output = append(output, changes)
-				transferred += expected
 				expected = 0
 				break
 			} else if coinItem.coin.Output.Value == expected {
-				transferred += expected
 				expected = 0
 				break
 			} else if coinItem.coin.Output.Value < expected {
-				transferred += coinItem.coin.Output.Value
 				expected = expected - coinItem.coin.Output.Value
 			}
 		}
@@ -223,36 +206,9 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 	txn.Attributes = make([]*transaction.TxAttribute, 0)
 	txn.Attributes = append(txn.Attributes, &txAttr)
 
-	// get sorted singer's account
-	var accounts sortedAccounts
-	for ref, coin := range coins {
-		for _, in := range input {
-			if in.ReferTxID == ref.ReferTxID && in.ReferTxOutputIndex == ref.ReferTxOutputIndex {
-				foundDuplicate := false
-				for _, tmp := range accounts {
-					// skip duplicated program hash
-					if coin.Output.ProgramHash == tmp.ProgramHash {
-						foundDuplicate = true
-						break
-					}
-				}
-				if !foundDuplicate {
-					accounts = append(accounts, wallet.GetAccountByProgramHash(coin.Output.ProgramHash))
-				}
-			}
-		}
-	}
-	sort.Sort(accounts)
-
-	// sign transaction
-	ctx := newContractContextWithoutProgramHashes(txn, len(accounts))
-	i := 0
-	for _, account := range accounts {
-		signature, _ := signature.SignBySigner(txn, account)
-		contract, _ := contract.CreateSignatureContract(account.PublicKey)
-		ctx.MyAdd(contract, i, signature)
-		i++
-	}
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil

@@ -44,7 +44,7 @@ func (cxt *ContractContext) Add(contract *Contract, index int, parameter []byte)
 	log.Debug()
 	i := cxt.GetIndex(contract.ProgramHash)
 	if i < 0 {
-		log.Warn("Program Hash is not exist, using 0 by default")
+		log.Warn("program Hash is not exist")
 		i = 0
 	}
 	if cxt.Codes[i] == nil {
@@ -57,54 +57,13 @@ func (cxt *ContractContext) Add(contract *Contract, index int, parameter []byte)
 	return nil
 }
 
-func (cxt *ContractContext) MyAdd(contract *Contract, i int, parameter []byte) error {
-	if cxt.Codes[i] == nil {
-		cxt.Codes[i] = contract.Code
-	}
-	if cxt.Parameters[i] == nil {
-		cxt.Parameters[i] = make([][]byte, len(contract.Parameters))
-	}
-	cxt.Parameters[i][0] = parameter
-	return nil
-}
-
 func (cxt *ContractContext) AddContract(contract *Contract, pubkey *crypto.PubKey, parameter []byte) error {
 	log.Debug()
 	if contract.GetType() == MultiSigContract {
-		log.Debug()
-		// add multi sig contract
-
-		log.Debug("Multi Sig: contract.ProgramHash:", contract.ProgramHash)
-		log.Debug("Multi Sig: cxt.ProgramHashes:", cxt.ProgramHashes)
-
-		index := cxt.GetIndex(contract.ProgramHash)
-
-		log.Debug("Multi Sig: GetIndex:", index)
-
-		if index < 0 {
-			log.Error("The program hash is not exist.")
-			return errors.New("The program hash is not exist.")
-		}
-
-		log.Debug("Multi Sig: contract.Code:", cxt.Codes[index])
-
-		if cxt.Codes[index] == nil {
-			cxt.Codes[index] = contract.Code
-		}
-		log.Debug("Multi Sig: cxt.Codes[index]:", cxt.Codes[index])
-
-		if cxt.Parameters[index] == nil {
-			cxt.Parameters[index] = make([][]byte, len(contract.Parameters))
-		}
-		log.Debug("Multi Sig: cxt.Parameters[index]:", cxt.Parameters[index])
-
 		if err := cxt.Add(contract, cxt.tempParaIndex, parameter); err != nil {
 			return err
 		}
-
 		cxt.tempParaIndex++
-
-		//all paramenters added, sort the parameters
 		if cxt.tempParaIndex == len(contract.Parameters) {
 			cxt.tempParaIndex = 0
 		}

@@ -83,12 +83,13 @@ func assetAction(c *cli.Context) error {
 		if issue {
 			txn, err = sdk.MakeIssueTransaction(wallet, assetID, address, value)
 		} else if transfer {
-			batchOut := sdk.BatchOut{
-				Address: address,
-				Value:   value,
+			resp, err := httpjsonrpc.Call(Address(), "sendtoaddress", 0, []interface{}{asset, address, value})
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return err
 			}
-			txn, err = sdk.MakeTransferTransaction(wallet, assetID, batchOut)
-
+			FormatOutput(resp)
+			return nil
 		}
 	}
 	if err != nil {
