@@ -3,6 +3,7 @@ package vm
 import (
 	"crypto/sha1"
 	"crypto/sha256"
+	"errors"
 	"hash"
 )
 
@@ -34,18 +35,18 @@ func opCheckSig(e *ExecutionEngine) (VMState, error) {
 
 func opCheckMultiSig(e *ExecutionEngine) (VMState, error) {
 	if e.evaluationStack.Count() < 4 {
-		return FAULT, nil
+		return FAULT, errors.New("element count is not enough")
 	}
 	n := int(AssertStackItem(e.evaluationStack.Pop()).GetBigInteger().Int64())
 	if n < 1 {
-		return FAULT, nil
+		return FAULT, errors.New("invalid n in multisig")
 	}
 	if e.evaluationStack.Count() < n+2 {
-		return FAULT, nil
+		return FAULT, errors.New("invalid element count")
 	}
 	e.opCount += n
 	if e.opCount > e.maxSteps {
-		return FAULT, nil
+		return FAULT, errors.New("too many OP code")
 	}
 
 	pubkeys := make([][]byte, n)
@@ -55,10 +56,10 @@ func opCheckMultiSig(e *ExecutionEngine) (VMState, error) {
 
 	m := int(AssertStackItem(e.evaluationStack.Pop()).GetBigInteger().Int64())
 	if m < 1 || m > n {
-		return FAULT, nil
+		return FAULT, errors.New("invalid m in multisig")
 	}
 	if e.evaluationStack.Count() < m {
-		return FAULT, nil
+		return FAULT, errors.New("signatures in stack is not enough")
 	}
 
 	signatures := make([][]byte, m)
@@ -68,16 +69,30 @@ func opCheckMultiSig(e *ExecutionEngine) (VMState, error) {
 
 	message := e.scriptContainer.GetMessage()
 	fSuccess := true
-
-	for i, j := 0, 0; fSuccess && i < m && j < n; {
-		ver, _ := e.crypto.VerifySignature(message, signatures[i], pubkeys[j])
-		if ver {
-			i++
+	count := 0
+	for _, sig := range signatures {
+		index := -1
+		for i, pubkey := range pubkeys {
+			ok, _ := e.crypto.VerifySignature(message, sig, pubkey)
+			if ok {
+				index = i
+				count++
+				break
+			}
 		}
-		j++
-		if m-i > n-j {
+		if index != -1 {
+			part1 := pubkeys[:index]
+			part2 := pubkeys[index+1:]
+			pubkeys = nil
+			pubkeys = append(pubkeys, part1...)
+			pubkeys = append(pubkeys, part2...)
+		} else {
 			fSuccess = false
+			break
 		}
+	}
+	if count != m {
+		fSuccess = false
 	}
 	err := pushData(e, fSuccess)
 	if err != nil {

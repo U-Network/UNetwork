@@ -12,6 +12,7 @@ import (
 	"UGCNetwork/cli/data"
 	"UGCNetwork/cli/debug"
 	"UGCNetwork/cli/info"
+	"UGCNetwork/cli/multisig"
 	"UGCNetwork/cli/privpayload"
 	"UGCNetwork/cli/recover"
 	"UGCNetwork/cli/test"
@@ -48,6 +49,7 @@ func main() {
 		*data.NewCommand(),
 		*bookkeeper.NewCommand(),
 		*recover.NewCommand(),
+		*multisig.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 	sort.Sort(cli.FlagsByName(app.Flags))

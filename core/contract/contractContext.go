@@ -224,6 +224,26 @@ func (cxt *ContractContext) GetPrograms() []*pg.Program {
 	return programs
 }
 
+func (cxt *ContractContext) GetUncompletedPrograms() []*pg.Program {
+	programs := make([]*pg.Program, len(cxt.Parameters))
+	for i := 0; i < len(cxt.Codes); i++ {
+		sb := pg.NewProgramBuilder()
+
+		for _, parameter := range cxt.Parameters[i] {
+			if len(parameter) <= 2 {
+				sb.PushNumber(new(big.Int).SetBytes(parameter))
+			} else {
+				sb.PushData(parameter)
+			}
+		}
+		programs[i] = &pg.Program{
+			Code:      cxt.Codes[i],
+			Parameter: sb.ToArray(),
+		}
+	}
+	return programs
+}
+
 func (cxt *ContractContext) IsCompleted() bool {
 	for _, p := range cxt.Parameters {
 		if p == nil {

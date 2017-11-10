@@ -39,7 +39,7 @@ const (
 )
 
 type Client interface {
-	Sign(context *ct.ContractContext) bool
+	Sign(context *ct.ContractContext) error
 
 	ContainsAccount(pubKey *crypto.PubKey) bool
 	CreateAccount() (*Account, error)
@@ -50,6 +50,8 @@ type Client interface {
 	GetAccounts() []*Account
 
 	CreateContract(account *Account) error
+	CreateMultiSignContract(contractOwner Uint160, m int, publicKeys []*crypto.PubKey) error
+	GetContracts() []*ct.Contract
 	DeleteContract(programHash Uint160) error
 
 	GetCoins() map[*transaction.UTXOTxInput]*Coin
@@ -162,11 +164,17 @@ func (client *ClientImpl) ProcessOneBlock(block *ledger.Block) {
 	// received coins
 	for _, tx := range block.Transactions {
 		for index, output := range tx.Outputs {
-			if _, ok := client.contracts[output.ProgramHash]; ok {
+			if contract, ok := client.contracts[output.ProgramHash]; ok {
 				input := &transaction.UTXOTxInput{ReferTxID: tx.Hash(), ReferTxOutputIndex: uint16(index)}
 				if _, ok := client.coins[input]; !ok {
-					newCoin := &Coin{Output: output}
-					client.coins[input] = newCoin
+					var newCoin Coin
+					switch {
+					case contract.IsStandard():
+						newCoin = Coin{Output: output, AddressType: SingleSign}
+					case contract.IsMultiSigContract():
+						newCoin = Coin{Output: output, AddressType: MultiSign}
+					}
+					client.coins[input] = &newCoin
 					needUpdate = true
 				}
 			}
@@ -408,34 +416,48 @@ func (cl *ClientImpl) ContainsAccount(pubKey *crypto.PubKey) bool {
 	}
 }
 
-func (cl *ClientImpl) Sign(context *ct.ContractContext) bool {
-	log.Debug()
-	fSuccess := false
-	for i, hash := range context.ProgramHashes {
+func (cl *ClientImpl) Sign(context *ct.ContractContext) error {
+	for _, hash := range context.ProgramHashes {
 		contract := cl.GetContract(hash)
 		if contract == nil {
-			continue
+			return errors.New("no available contract in wallet")
 		}
-		account := cl.GetAccountByProgramHash(hash)
-		if account == nil {
-			continue
-		}
-
-		signature, err := sig.SignBySigner(context.Data, account)
-		if err != nil {
-			return fSuccess
-		}
-		err = context.AddContract(contract, account.PublicKey, signature)
-
-		if err != nil {
-			fSuccess = false
-		} else {
-			if i == 0 {
-				fSuccess = true
+		switch {
+		case contract.IsStandard():
+			acct := cl.GetAccountByProgramHash(hash)
+			if acct == nil {
+				return errors.New("no available account in wallet to do single-sign")
+			}
+			signature, err := sig.SignBySigner(context.Data, acct)
+			if err != nil {
+				return err
+			}
+			if err := context.AddContract(contract, acct.PublicKey, signature); err != nil {
+				return err
+			}
+		case contract.IsMultiSigContract():
+			programHashes := transaction.ParseMultisigTransactionCode(contract.Code)
+			found := false
+			for _, hash := range programHashes {
+				acct := cl.GetAccountByProgramHash(hash)
+				if acct != nil {
+					found = true
+					signature, err := sig.SignBySigner(context.Data, acct)
+					if err != nil {
+						return err
+					}
+					if err := context.AddContract(contract, acct.PublicKey, signature); err != nil {
+						return err
+					}
+				}
+			}
+			if !found {
+				return errors.New("no available account detected")
 			}
 		}
 	}
-	return fSuccess
+
+	return nil
 }
 
 func (cl *ClientImpl) verifyPasswordKey(passwordKey []byte) bool {
@@ -578,9 +600,21 @@ func (cl *ClientImpl) LoadAccounts() error {
 	return nil
 }
 
-// CreateContract create a new contract then save it
+// CreateContract creates a singlesig contract to wallet
 func (cl *ClientImpl) CreateContract(account *Account) error {
 	contract, err := contract.CreateSignatureContract(account.PubKey())
+	if err != nil {
+		return err
+	}
+	if err := cl.SaveContract(contract); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CreateMultiSignContract creates a multisig contract to wallet
+func (cl *ClientImpl) CreateMultiSignContract(contractOwner Uint160, m int, publicKeys []*crypto.PubKey) error {
+	contract, err := contract.CreateMultiSigContract(contractOwner, m, publicKeys)
 	if err != nil {
 		return err
 	}
@@ -599,10 +633,6 @@ func (cl *ClientImpl) DeleteContract(programHash Uint160) error {
 func (cl *ClientImpl) SaveContract(ct *contract.Contract) error {
 	cl.mu.Lock()
 	defer cl.mu.Unlock()
-
-	if cl.accounts[ct.ProgramHash] == nil {
-		return NewDetailErr(errors.New("SaveContract(): contract.OwnerPubkeyHash not in []accounts"), ErrNoCode, "")
-	}
 
 	// save contract to memory
 	cl.contracts[ct.ProgramHash] = ct
@@ -633,6 +663,18 @@ func (cl *ClientImpl) LoadContracts() error {
 
 	cl.contracts = contracts
 	return nil
+}
+
+// GetContracts returns all contracts in wallet
+func (client *ClientImpl) GetContracts() []*ct.Contract {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+
+	contracts := []*ct.Contract{}
+	for _, v := range client.contracts {
+		contracts = append(contracts, v)
+	}
+	return contracts
 }
 
 func (client *ClientImpl) LoadCoins() error {
