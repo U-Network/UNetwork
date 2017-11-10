@@ -505,12 +505,12 @@ func (ds *DbftService) SignAndRelay(payload *msg.ConsensusPayload) {
 	ctCxt := ct.NewContractContext(payload)
 
 	ret := ds.Client.Sign(ctCxt)
-	if ret == false {
-		log.Warn("[SignAndRelay] Sign contract failure")
+	if ret != nil {
+		log.Error("[SignAndRelay] Sign contract failure")
 	}
 	prog := ctCxt.GetPrograms()
 	if prog == nil {
-		log.Warn("[SignAndRelay] Get programe failure")
+		log.Error("[SignAndRelay] Get programe failure")
 	}
 	payload.SetPrograms(prog)
 	ds.localNet.Xmit(payload)

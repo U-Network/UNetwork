@@ -39,14 +39,16 @@ func (sc sortedCoins) Less(i, j int) bool {
 	}
 }
 
-func sortCoinsByValue(coins map[*transaction.UTXOTxInput]*account.Coin) sortedCoins {
+func sortCoinsByValue(coins map[*transaction.UTXOTxInput]*account.Coin, addrtype account.AddressType) sortedCoins {
 	var coinList sortedCoins
 	for in, c := range coins {
-		tmp := &sortedCoinsItem{
-			input: in,
-			coin:  c,
+		if c.AddressType == addrtype {
+			tmp := &sortedCoinsItem{
+				input: in,
+				coin:  c,
+			}
+			coinList = append(coinList, tmp)
 		}
-		coinList = append(coinList, tmp)
 	}
 	sort.Sort(coinList)
 	return coinList
@@ -127,6 +129,7 @@ func getTransferTxnPerOutputFee(outputNum int) (Fixed64, error) {
 
 	return txnFee / Fixed64(outputNum), nil
 }
+
 func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
 	//TODO: check if being transferred asset is System Token(IPT)
 	outputNum := len(batchOut)
@@ -171,7 +174,7 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 
 	// construct transaction inputs and changes
 	coins := wallet.GetCoins()
-	sorted := sortCoinsByValue(coins)
+	sorted := sortCoinsByValue(coins, account.SingleSign)
 	for _, coinItem := range sorted {
 		if coinItem.coin.Output.AssetID == assetID {
 			input = append(input, coinItem.input)
@@ -210,6 +213,99 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 	ctx := contract.NewContractContext(txn)
 	wallet.Sign(ctx)
 	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
+
+func MakeMultisigTransferTransaction(wallet account.Client, assetID Uint256, from string, batchOut ...BatchOut) (*transaction.Transaction, error) {
+	//TODO: check if being transferred asset is System Token(IPT)
+	outputNum := len(batchOut)
+	if outputNum == 0 {
+		return nil, errors.New("nil outputs")
+	}
+
+	spendAddress, err := ToScriptHash(from)
+	if err != nil {
+		return nil, errors.New("invalid sender address")
+	}
+
+	perOutputFee, err := getTransferTxnPerOutputFee(len(batchOut))
+	if err != nil {
+		return nil, err
+	}
+
+	var expected Fixed64
+	input := []*transaction.UTXOTxInput{}
+	output := []*transaction.TxOutput{}
+	// construct transaction outputs
+	for _, o := range batchOut {
+		outputValue, err := StringToFixed64(o.Value)
+		if err != nil {
+			return nil, err
+		}
+		if outputValue <= perOutputFee {
+			return nil, errors.New("token is not enough for transaction fee")
+		}
+		expected += outputValue
+		address, err := ToScriptHash(o.Address)
+		if err != nil {
+			return nil, errors.New("invalid receiver address")
+		}
+		tmp := &transaction.TxOutput{
+			AssetID:     assetID,
+			Value:       outputValue - perOutputFee,
+			ProgramHash: address,
+		}
+		output = append(output, tmp)
+	}
+
+	// construct transaction inputs and changes
+	coins := wallet.GetCoins()
+	sorted := sortCoinsByValue(coins, account.MultiSign)
+	for _, coinItem := range sorted {
+		if coinItem.coin.Output.AssetID == assetID && coinItem.coin.Output.ProgramHash == spendAddress {
+			input = append(input, coinItem.input)
+			if coinItem.coin.Output.Value > expected {
+				changes := &transaction.TxOutput{
+					AssetID:     assetID,
+					Value:       coinItem.coin.Output.Value - expected,
+					ProgramHash: spendAddress,
+				}
+				// if any, the changes output of transaction will be the last one
+				output = append(output, changes)
+				expected = 0
+				break
+			} else if coinItem.coin.Output.Value == expected {
+				expected = 0
+				break
+			} else if coinItem.coin.Output.Value < expected {
+				expected = expected - coinItem.coin.Output.Value
+			}
+		}
+	}
+	if expected > 0 {
+		return nil, errors.New("token is not enough")
+	}
+
+	// construct transaction
+	txn, err := transaction.NewTransferAssetTransaction(input, output)
+	if err != nil {
+		return nil, err
+	}
+	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
+	txn.Attributes = make([]*transaction.TxAttribute, 0)
+	txn.Attributes = append(txn.Attributes, &txAttr)
+
+	ctx := contract.NewContractContext(txn)
+	err = wallet.Sign(ctx)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if ctx.IsCompleted() {
+		txn.SetPrograms(ctx.GetPrograms())
+	} else {
+		txn.SetPrograms(ctx.GetUncompletedPrograms())
+	}
 
 	return txn, nil
 }

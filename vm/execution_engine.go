@@ -130,8 +130,12 @@ func (e *ExecutionEngine) StepInto() {
 		}
 		e.opCount++
 		state, err := e.ExecuteOp(OpCode(opCode), context)
-		if state == VMState(HALT) {
+		switch state {
+		case VMState(HALT):
 			e.state = VMState(e.state | HALT)
+			return
+		case VMState(FAULT):
+			e.state = VMState(e.state | FAULT)
 			return
 		}
 	}

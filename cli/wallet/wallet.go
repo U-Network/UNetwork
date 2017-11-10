@@ -4,13 +4,19 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"UGCNetwork/account"
 	. "UGCNetwork/cli/common"
 	. "UGCNetwork/common"
 	"UGCNetwork/common/password"
+	"UGCNetwork/crypto"
 
 	"github.com/urfave/cli"
+)
+
+const (
+	MinMultiSignKey int = 3
 )
 
 func showAccountsInfo(wallet account.Client) {
@@ -24,14 +30,63 @@ func showAccountsInfo(wallet account.Client) {
 	}
 }
 
+func showMultisigInfo(wallet account.Client) {
+	contracts := wallet.GetContracts()
+	accounts := wallet.GetAccounts()
+	coins := wallet.GetCoins()
+
+	multisign := []Uint160{}
+	// find multisign address
+	for _, contract := range contracts {
+		found := false
+		for _, account := range accounts {
+			if contract.ProgramHash == account.ProgramHash {
+				found = true
+				break
+			}
+		}
+		if !found {
+			multisign = append(multisign, contract.ProgramHash)
+		}
+	}
+
+	for _, programHash := range multisign {
+		assets := make(map[Uint256]Fixed64)
+		for _, out := range coins {
+			if out.Output.ProgramHash == programHash {
+				if _, ok := assets[out.Output.AssetID]; !ok {
+					assets[out.Output.AssetID] = out.Output.Value
+				} else {
+					assets[out.Output.AssetID] += out.Output.Value
+				}
+			}
+		}
+		address, _ := programHash.ToAddress()
+		fmt.Println("-----------------------------------------------------------------------------------")
+		fmt.Printf("Address: %s\n", address)
+		if len(assets) != 0 {
+			fmt.Println(" ID   Asset ID\t\t\t\t\t\t\t\tAmount")
+			fmt.Println("----  --------\t\t\t\t\t\t\t\t------")
+			i := 0
+			for id, value := range assets {
+				fmt.Printf("%4s  %s  %v\n", strconv.Itoa(i), BytesToHexString(id.ToArrayReverse()), value)
+				i++
+			}
+		}
+		fmt.Println("-----------------------------------------------------------------------------------\n")
+	}
+}
+
 func showBalancesInfo(wallet account.Client) {
 	coins := wallet.GetCoins()
 	assets := make(map[Uint256]Fixed64)
 	for _, out := range coins {
-		if _, ok := assets[out.Output.AssetID]; !ok {
-			assets[out.Output.AssetID] = out.Output.Value
-		} else {
-			assets[out.Output.AssetID] += out.Output.Value
+		if out.AddressType == account.SingleSign {
+			if _, ok := assets[out.Output.AssetID]; !ok {
+				assets[out.Output.AssetID] = out.Output.Value
+			} else {
+				assets[out.Output.AssetID] += out.Output.Value
+			}
 		}
 	}
 	if len(assets) == 0 {
@@ -69,6 +124,7 @@ func showVerboseInfo(wallet account.Client) {
 		if len(assets) == 0 {
 			continue
 		}
+
 		fmt.Println(" ID   Asset ID\t\t\t\t\t\t\t\tAmount")
 		fmt.Println("----  --------\t\t\t\t\t\t\t\t------")
 		i := 0
@@ -140,8 +196,8 @@ func walletAction(c *cli.Context) error {
 
 	// list wallet info
 	if item := c.String("list"); item != "" {
-		if item != "account" && item != "balance" && item != "verbose" {
-			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose]")
+		if item != "account" && item != "balance" && item != "verbose" && item != "multisig" {
+			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | multisig]")
 			os.Exit(1)
 		} else {
 			wallet, err := account.Open(name, getPassword(passwd))
@@ -156,6 +212,8 @@ func walletAction(c *cli.Context) error {
 				showBalancesInfo(wallet)
 			case "verbose":
 				showVerboseInfo(wallet)
+			case "multisig":
+				showMultisigInfo(wallet)
 			}
 		}
 		return nil
@@ -219,6 +277,49 @@ func walletAction(c *cli.Context) error {
 		return nil
 	}
 
+	// add multisig account
+	multikeys := c.String("addmultisigaccount")
+	if multikeys != "" {
+		publicKeys := strings.Split(multikeys, ":")
+		if len(publicKeys) < MinMultiSignKey {
+			fmt.Fprintln(os.Stderr, "public keys is not enough")
+			os.Exit(1)
+		}
+		var keys []*crypto.PubKey
+		for _, v := range publicKeys {
+			byteKey, err := HexStringToBytes(v)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "invalid public key")
+				os.Exit(1)
+			}
+			rawKey, err := crypto.DecodePoint(byteKey)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "invalid encoded public key")
+				os.Exit(1)
+			}
+			keys = append(keys, rawKey)
+		}
+		wallet, err := account.Open(name, getPassword(passwd))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		mainAccount, err := wallet.GetDefaultAccount()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "wallet is broken, main account missing")
+			os.Exit(1)
+		}
+		// generate M/N multsig contract
+		// M = N/2+1
+		// M/N could be 2/3, 3/4, 3/5, 4/6, 4/7 ...
+		var M = len(keys)/2 + 1
+		if err := wallet.CreateMultiSignContract(mainAccount.ProgramHash, M, keys); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		fmt.Printf("a multisig account created\n")
+	}
+
 	return nil
 }
 
@@ -240,6 +341,10 @@ func NewCommand() *cli.Command {
 			cli.IntFlag{
 				Name:  "addaccount",
 				Usage: "add new account address",
+			},
+			cli.StringFlag{
+				Name:  "addmultisigaccount",
+				Usage: "add new multi-sign account address",
 			},
 			cli.BoolFlag{
 				Name:  "changepassword",
