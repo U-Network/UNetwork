@@ -7,6 +7,10 @@ import (
 	"strconv"
 )
 
+const (
+	LocalHost = "127.0.0.1"
+)
+
 func StartRPCServer() {
 	log.Debug()
 	http.HandleFunc("/", Handle)
@@ -20,14 +24,13 @@ func StartRPCServer() {
 	HandleFunc("getrawtransaction", getRawTransaction)
 	HandleFunc("sendrawtransaction", sendRawTransaction)
 	HandleFunc("getversion", getVersion)
-	HandleFunc("sendtoaddress", sendToAddress)
-	//HandleFunc("submitblock", submitBlock)
-	//HandleFunc("getdataile", getDataFile)
-	//HandleFunc("catdatarecord", catDataRecord)
-	//HandleFunc("regdatafile", regDataFile)
-	//HandleFunc("uploadDataFile", uploadDataFile)
+	HandleFunc("getneighbor", getNeighbor)
+	HandleFunc("getnodestate", getNodeState)
 
-	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
+	HandleFunc("setdebuginfo", setDebugInfo)
+	HandleFunc("sendtoaddress", sendToAddress)
+
+	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}
