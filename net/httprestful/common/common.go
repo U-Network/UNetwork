@@ -281,6 +281,51 @@ func GetBalanceByAddr(cmd map[string]interface{}) map[string]interface{} {
 	resp["Result"] = balance.String()
 	return resp
 }
+
+func GetLockedAsset(cmd map[string]interface{}) map[string]interface{} {
+	resp := ResponsePack(Err.SUCCESS)
+	addr, a := cmd["Addr"].(string)
+	assetid, k := cmd["Assetid"].(string)
+	if !a || !k {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	var programHash Uint160
+	programHash, err := ToScriptHash(addr)
+	if err != nil {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	tmpID, err := HexStringToBytesReverse(assetid)
+	if err != nil {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	asset, err := Uint256ParseFromBytes(tmpID)
+	if err != nil {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	type locked struct {
+		Lock   uint32
+		Unlock uint32
+		Amount string
+	}
+	ret := []*locked{}
+	lockedAsset, _ := ledger.DefaultLedger.Store.GetLockedFromProgramHash(programHash, asset)
+	for _, v := range lockedAsset {
+		a := &locked{
+			Lock:   v.Lock,
+			Unlock: v.Unlock,
+			Amount: v.Amount.String(),
+		}
+		ret = append(ret, a)
+	}
+	resp["Result"] = ret
+
+	return resp
+}
+
 func GetBalanceByAsset(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(Err.SUCCESS)
 	addr, ok := cmd["Addr"].(string)

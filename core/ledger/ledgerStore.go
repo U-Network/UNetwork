@@ -44,6 +44,8 @@ type ILedgerStore interface {
 	ContainsUnspent(txid Uint256, index uint16) (bool, error)
 	GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error)
 	GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*tx.UTXOUnspent, error)
+	GetLockedFromProgramHash(programHash Uint160, assetid Uint256) ([]*LockAsset, error)
+	GetAvailableAsset(programHash Uint160, assetid Uint256) (Fixed64, Fixed64, error)
 	GetAssets() map[Uint256]*Asset
 
 	IsTxHashDuplicate(txhash Uint256) bool

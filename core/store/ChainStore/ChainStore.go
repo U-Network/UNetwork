@@ -1,6 +1,14 @@
 package ChainStore
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"math/big"
+	"sort"
+	"sync"
+	"time"
+
 	. "UGCNetwork/common"
 	"UGCNetwork/common/log"
 	"UGCNetwork/common/serialization"
@@ -15,13 +23,6 @@ import (
 	"UGCNetwork/core/validation"
 	"UGCNetwork/crypto"
 	"UGCNetwork/events"
-	"bytes"
-	"errors"
-	"fmt"
-	"math/big"
-	"sort"
-	"sync"
-	"time"
 )
 
 const (
@@ -502,6 +503,27 @@ func (bd *ChainStore) SaveAsset(assetId Uint256, asset *Asset) error {
 	return nil
 }
 
+func (bd *ChainStore) SaveLockedAsset(programHash Uint160, assetID Uint256, lockAsset []*LockAsset) error {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Locked))
+	programHash.Serialize(key)
+	assetID.Serialize(key)
+
+	value := bytes.NewBuffer(nil)
+	serialization.WriteVarUint(value, uint64(len(lockAsset)))
+	for _, v := range lockAsset {
+		if err := v.Serialize(value); err != nil {
+			return err
+		}
+	}
+
+	if err := bd.st.BatchPut(key.Bytes(), value.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (bd *ChainStore) GetAsset(hash Uint256) (*Asset, error) {
 	log.Debug(fmt.Sprintf("GetAsset Hash: %x\n", hash))
 
@@ -677,6 +699,7 @@ func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
 	quantities := make(map[Uint256]Fixed64)
+	lockedAssets := make(map[Uint160]map[Uint256][]*LockAsset)
 
 	///////////////////////////////////////////////////////////////
 	// Get Unspents for every tx
@@ -759,6 +782,7 @@ func (bd *ChainStore) persist(b *Block) error {
 
 		// now support RegisterAsset / IssueAsset / TransferAsset and Miner TX ONLY.
 		if b.Transactions[i].TxType == tx.RegisterAsset ||
+			b.Transactions[i].TxType == tx.LockAsset ||
 			b.Transactions[i].TxType == tx.IssueAsset ||
 			b.Transactions[i].TxType == tx.TransferAsset ||
 			b.Transactions[i].TxType == tx.Record ||
@@ -777,6 +801,25 @@ func (bd *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
+		}
+
+		if b.Transactions[i].TxType == tx.LockAsset {
+			lp := b.Transactions[i].Payload.(*payload.LockAsset)
+			if _, ok := lockedAssets[lp.ProgramHash]; !ok {
+				lockedAssets[lp.ProgramHash] = make(map[Uint256][]*LockAsset)
+			}
+			if _, ok := lockedAssets[lp.ProgramHash][lp.AssetID]; !ok {
+				lockedAssets[lp.ProgramHash][lp.AssetID], err = bd.GetLockedFromProgramHash(lp.ProgramHash, lp.AssetID)
+				if err != nil {
+					lockedAssets[lp.ProgramHash][lp.AssetID] = make([]*LockAsset, 0)
+				}
+			}
+			newAsset := &LockAsset{
+				Lock:   b.Blockdata.Height,
+				Unlock: lp.UnlockHeight,
+				Amount: lp.Amount,
+			}
+			lockedAssets[lp.ProgramHash][lp.AssetID] = append(lockedAssets[lp.ProgramHash][lp.AssetID], newAsset)
 		}
 
 		if b.Transactions[i].TxType == tx.IssueAsset {
@@ -1039,6 +1082,14 @@ func (bd *ChainStore) persist(b *Block) error {
 		value.Serialize(accountValue)
 
 		bd.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
+	}
+
+	for programHash, assets := range lockedAssets {
+		for assetID, locked := range assets {
+			if err := bd.SaveLockedAsset(programHash, assetID, locked); err != nil {
+				return err
+			}
+		}
 	}
 
 	currentBlockKey := bytes.NewBuffer(nil)
@@ -1333,6 +1384,57 @@ func (bd *ChainStore) IsBlockInStore(hash Uint256) bool {
 	}
 
 	return true
+}
+
+func (bd *ChainStore) GetAvailableAsset(programHash Uint160, assetID Uint256) (Fixed64, Fixed64, error) {
+	// get total asset
+	var total Fixed64
+	utxos, err := bd.GetUnspentFromProgramHash(programHash, assetID)
+	if err != nil {
+		return Fixed64(-1), Fixed64(-1), err
+	}
+	for _, v := range utxos {
+		total += v.Value
+	}
+
+	// get locked asset
+	var locked Fixed64
+	l, _ := bd.GetLockedFromProgramHash(programHash, assetID)
+	for _, v := range l {
+		if v.Unlock > bd.currentBlockHeight {
+			locked += v.Amount
+		}
+	}
+
+	return total, locked, nil
+}
+
+func (bd *ChainStore) GetLockedFromProgramHash(programHash Uint160, assetID Uint256) ([]*LockAsset, error) {
+	prefix := []byte{byte(ST_Locked)}
+	key := append(prefix, programHash.ToArray()...)
+	key = append(key, assetID.ToArray()...)
+
+	value, err := bd.st.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	r := bytes.NewReader(value)
+	num, err := serialization.ReadVarUint(r, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	lockedAssets := make([]*LockAsset, num)
+	for i := 0; i < int(num); i++ {
+		var locked LockAsset
+		if err := locked.Deserialize(r); err != nil {
+			return nil, err
+		}
+		lockedAssets[i] = &locked
+	}
+
+	return lockedAssets, nil
 }
 
 func (bd *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error) {

@@ -45,6 +45,7 @@ const (
 	Api_Getasset            = "/api/v1/asset/:hash"
 	Api_GetBalanceByAddr    = "/api/v1/asset/balances/:addr"
 	Api_GetBalancebyAsset   = "/api/v1/asset/balance/:addr/:assetid"
+	Api_GetLockedAsset      = "/api/v1/asset/locked/:addr/:assetid"
 	Api_GetUTXObyAsset      = "/api/v1/asset/utxo/:addr/:assetid"
 	Api_GetUTXObyAddr       = "/api/v1/asset/utxos/:addr"
 	Api_SendRawTx           = "/api/v1/transaction"
@@ -151,6 +152,7 @@ func (rt *restServer) registryMethod() {
 		Api_GetUTXObyAsset:      {name: "getutxobyasset", handler: GetUnspendOutput},
 		Api_GetBalanceByAddr:    {name: "getbalancebyaddr", handler: GetBalanceByAddr},
 		Api_GetBalancebyAsset:   {name: "getbalancebyasset", handler: GetBalanceByAsset},
+		Api_GetLockedAsset:      {name: "getlockedasset", handler: GetLockedAsset},
 		Api_OauthServerUrl:      {name: "getoauthserverurl", handler: GetOauthServerUrl},
 		Api_NoticeServerUrl:     {name: "getnoticeserverurl", handler: GetNoticeServerUrl},
 		Api_Restart:             {name: "restart", handler: rt.Restart},
@@ -198,6 +200,8 @@ func (rt *restServer) getPath(url string) string {
 		return Api_GetBalanceByAddr
 	} else if strings.Contains(url, strings.TrimRight(Api_GetBalancebyAsset, ":addr/:assetid")) {
 		return Api_GetBalancebyAsset
+	} else if strings.Contains(url, strings.TrimRight(Api_GetLockedAsset, ":addr/:assetid")) {
+		return Api_GetLockedAsset
 	} else if strings.Contains(url, strings.TrimRight(Api_GetUTXObyAddr, ":addr")) {
 		return Api_GetUTXObyAddr
 	} else if strings.Contains(url, strings.TrimRight(Api_GetUTXObyAsset, ":addr/:assetid")) {
@@ -245,6 +249,10 @@ func (rt *restServer) getParams(r *http.Request, url string, req map[string]inte
 		req["Raw"] = r.FormValue("raw")
 		break
 	case Api_GetBalancebyAsset:
+		req["Addr"] = getParam(r, "addr")
+		req["Assetid"] = getParam(r, "assetid")
+		break
+	case Api_GetLockedAsset:
 		req["Addr"] = getParam(r, "addr")
 		req["Assetid"] = getParam(r, "assetid")
 		break

@@ -112,6 +112,29 @@ func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string
 	return tx, nil
 }
 
+func MakeLockAssetTransaction(wallet account.Client, assetID Uint256, value string, height uint32) (*transaction.Transaction, error) {
+	mainAccount, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	fixedValue, err := StringToFixed64(value)
+	if err != nil {
+		return nil, err
+	}
+	txn, _ := transaction.NewLockAssetTransaction(mainAccount.ProgramHash, assetID, fixedValue, height)
+	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
+	txn.Attributes = make([]*transaction.TxAttribute, 0)
+	txn.Attributes = append(txn.Attributes, &txAttr)
+
+	ctx := contract.NewContractContext(txn)
+	if err := wallet.Sign(ctx); err != nil {
+		return nil, err
+	}
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
+
 func getTransferTxnPerOutputFee(outputNum int) (Fixed64, error) {
 	var txnFee Fixed64
 	var err error

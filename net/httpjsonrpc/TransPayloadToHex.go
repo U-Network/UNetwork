@@ -45,6 +45,13 @@ type RegisterAssetInfo struct {
 	Controller string
 }
 
+type LockAssetInfo struct {
+	Address    string
+	AssetID    string
+	Amount     string
+	LockHeight uint32
+}
+
 type RecordInfo struct {
 	RecordType string
 	RecordData string
@@ -112,6 +119,14 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 		obj.Issuer.X = object.Issuer.X.String()
 		obj.Issuer.Y = object.Issuer.Y.String()
 		obj.Controller = BytesToHexString(object.Controller.ToArrayReverse())
+		return obj
+	case *payload.LockAsset:
+		obj := new(LockAssetInfo)
+		address, _ := object.ProgramHash.ToAddress()
+		obj.Address = address
+		obj.AssetID = BytesToHexString(object.AssetID.ToArrayReverse())
+		obj.Amount = object.Amount.String()
+		obj.LockHeight = object.UnlockHeight
 		return obj
 	case *payload.Record:
 		obj := new(RecordInfo)

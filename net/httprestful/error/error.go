@@ -61,5 +61,7 @@ var ErrMap = map[int64]string{
 	int64(ErrTxHashDuplicate):      "INTERNAL ERROR, ErrTxHashDuplicate",
 	int64(ErrStateUpdaterVaild):    "INTERNAL ERROR, ErrStateUpdaterVaild",
 	int64(ErrSummaryAsset):         "INTERNAL ERROR, ErrSummaryAsset",
+	int64(ErrLockedAsset):          "INTERNAL ERROR, ErrLockedAsset",
+	int64(ErrDuplicateLockAsset):   "INTERNAL ERROR, ErrDuplicateLockAsset",
 	int64(ErrXmitFail):             "INTERNAL ERROR, ErrXmitFail",
 }
