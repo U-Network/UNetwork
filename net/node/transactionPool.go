@@ -20,6 +20,7 @@ type TXNPool struct {
 	txnList       map[common.Uint256]*transaction.Transaction // transaction which have been verifyed will put into this map
 	issueSummary  map[common.Uint256]common.Fixed64           // transaction which pass the verify will summary the amout to this map
 	inputUTXOList map[string]*transaction.Transaction         // transaction which pass the verify will add the UTXO to this map
+	lockAssetList map[string]struct{}                         // keep only one copy for each program hash and asset ID pair
 }
 
 func (this *TXNPool) init() {
@@ -29,6 +30,7 @@ func (this *TXNPool) init() {
 	this.inputUTXOList = make(map[string]*transaction.Transaction)
 	this.issueSummary = make(map[common.Uint256]common.Fixed64)
 	this.txnList = make(map[common.Uint256]*transaction.Transaction)
+	this.lockAssetList = make(map[string]struct{})
 }
 
 //append transaction to txnpool when check ok.
@@ -83,6 +85,7 @@ func (this *TXNPool) GetTxnPool(byCount bool) map[common.Uint256]*transaction.Tr
 func (this *TXNPool) CleanSubmittedTransactions(block *ledger.Block) error {
 	this.cleanTransactionList(block.Transactions)
 	this.cleanUTXOList(block.Transactions)
+	this.cleanLockedAssetList(block.Transactions)
 	this.cleanIssueSummary(block.Transactions)
 	return nil
 }
@@ -101,6 +104,11 @@ func (this *TXNPool) verifyTransactionWithTxnPool(txn *transaction.Transaction) 
 		log.Info(err)
 		return ErrDoubleSpend
 	}
+	// check if exist duplicate LockAsset transactions in a block
+	if err := this.checkDuplicateLockAsset(txn); err != nil {
+		log.Info(err)
+		return ErrDuplicateLockAsset
+	}
 	//check issue transaction weather occur exceed issue range.
 	if ok := this.summaryAssetIssueAmount(txn); !ok {
 		log.Info(fmt.Sprintf("Check summary Asset Issue Amount failed with txn=%x", txn.Hash()))
@@ -109,6 +117,19 @@ func (this *TXNPool) verifyTransactionWithTxnPool(txn *transaction.Transaction) 
 	}
 
 	return ErrNoError
+}
+
+func (this *TXNPool) checkDuplicateLockAsset(txn *transaction.Transaction) error {
+	if txn.TxType == transaction.LockAsset {
+		lockAssetPayload := txn.Payload.(*payload.LockAsset)
+		str := lockAssetPayload.ToString()
+		if _, ok := this.lockAssetList[str]; ok {
+			return errors.New("duplicated locking asset detected")
+		}
+		this.lockAssetList[str] = struct{}{}
+	}
+
+	return nil
 }
 
 //remove from associated map
@@ -162,6 +183,15 @@ func (this *TXNPool) cleanUTXOList(txs []*transaction.Transaction) {
 		inputUtxos, _ := txn.GetReference()
 		for Utxoinput, _ := range inputUtxos {
 			this.delInputUTXOList(Utxoinput)
+		}
+	}
+}
+
+func (this *TXNPool) cleanLockedAssetList(txs []*transaction.Transaction) {
+	for _, txn := range txs {
+		if txn.TxType == transaction.LockAsset {
+			lockAssetPayload := txn.Payload.(*payload.LockAsset)
+			delete(this.lockAssetList, lockAssetPayload.ToString())
 		}
 	}
 }

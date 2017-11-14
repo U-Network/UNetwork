@@ -25,6 +25,7 @@ const (
 	BookKeeping    TransactionType = 0x00
 	IssueAsset     TransactionType = 0x01
 	BookKeeper     TransactionType = 0x02
+	LockAsset      TransactionType = 0x03
 	PrivacyPayload TransactionType = 0x20
 	RegisterAsset  TransactionType = 0x40
 	TransferAsset  TransactionType = 0x80
@@ -200,6 +201,8 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	switch tx.TxType {
 	case RegisterAsset:
 		tx.Payload = new(payload.RegisterAsset)
+	case LockAsset:
+		tx.Payload = new(payload.LockAsset)
 	case IssueAsset:
 		tx.Payload = new(payload.IssueAsset)
 	case TransferAsset:
@@ -305,6 +308,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
 		}
 		hashs = append(hashs, astHash)
+	case LockAsset:
+		hashs = append(hashs, tx.Payload.(*payload.LockAsset).ProgramHash)
 	case IssueAsset:
 		result := tx.GetMergedAssetIDValueFromOutputs()
 		if err != nil {

@@ -274,7 +274,7 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
 			return UgcNetworkRpcInvalidTransaction
 		}
-		if txn.TxType != tx.TransferAsset && txn.TxType != tx.BookKeeper {
+		if txn.TxType != tx.TransferAsset && txn.TxType != tx.LockAsset && txn.TxType != tx.BookKeeper {
 			return UgcNetworkRpc("invalid transaction type")
 		}
 		hash = txn.Hash()
@@ -843,6 +843,60 @@ func sendToAddress(params []interface{}) map[string]interface{} {
 	}
 	txHash := txn.Hash()
 	return UgcNetworkRpc(BytesToHexString(txHash.ToArrayReverse()))
+}
+
+func lockAsset(params []interface{}) map[string]interface{} {
+	if len(params) < 3 {
+		return UgcNetworkRpcNil
+	}
+	var asset, value string
+	var height float64
+	switch params[0].(type) {
+	case string:
+		asset = params[0].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[1].(type) {
+	case string:
+		value = params[1].(string)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	switch params[2].(type) {
+	case float64:
+		height = params[2].(float64)
+	default:
+		return UgcNetworkRpcInvalidParameter
+	}
+	if Wallet == nil {
+		return UgcNetworkRpc("error: invalid wallet instance")
+	}
+
+	accts := Wallet.GetAccounts()
+	if len(accts) > 1 {
+		return UgcNetworkRpc("error: does't support multi-addresses wallet locking asset")
+	}
+
+	tmp, err := HexStringToBytesReverse(asset)
+	if err != nil {
+		return UgcNetworkRpc("error: invalid asset ID")
+	}
+	var assetID Uint256
+	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
+		return UgcNetworkRpc("error: invalid asset hash")
+	}
+
+	txn, err := sdk.MakeLockAssetTransaction(Wallet, assetID, value, uint32(height))
+	if err != nil {
+		return UgcNetworkRpc("error: " + err.Error())
+	}
+
+	txnHash := txn.Hash()
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return UgcNetworkRpc(errCode.Error())
+	}
+	return UgcNetworkRpc(BytesToHexString(txnHash.ToArrayReverse()))
 }
 
 func signMultisigTransaction(params []interface{}) map[string]interface{} {

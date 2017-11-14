@@ -1,7 +1,11 @@
 package validation
 
 import (
-	"UGCNetwork/common"
+	"errors"
+	"fmt"
+	"math"
+
+	. "UGCNetwork/common"
 	"UGCNetwork/common/config"
 	"UGCNetwork/common/log"
 	"UGCNetwork/core/asset"
@@ -10,40 +14,36 @@ import (
 	"UGCNetwork/core/transaction/payload"
 	"UGCNetwork/crypto"
 	. "UGCNetwork/errors"
-	"errors"
-	"fmt"
-	"math"
 )
 
-// VerifyTransaction verifys received single transaction
-func VerifyTransaction(Tx *tx.Transaction) ErrCode {
+func VerifyTransaction(txn *tx.Transaction) ErrCode {
 
-	if err := CheckDuplicateInput(Tx); err != nil {
+	if err := CheckDuplicateInput(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrDuplicateInput
 	}
 
-	if err := CheckAssetPrecision(Tx); err != nil {
+	if err := CheckAssetPrecision(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrAssetPrecision
 	}
 
-	if err := CheckTransactionBalance(Tx); err != nil {
+	if err := CheckTransactionBalance(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrTransactionBalance
 	}
 
-	if err := CheckAttributeProgram(Tx); err != nil {
+	if err := CheckAttributeProgram(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrAttributeProgram
 	}
 
-	if err := CheckTransactionContracts(Tx); err != nil {
+	if err := CheckTransactionContracts(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrTransactionContracts
 	}
 
-	if err := CheckTransactionPayload(Tx); err != nil {
+	if err := CheckTransactionPayload(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrTransactionPayload
 	}
@@ -54,7 +54,7 @@ func VerifyTransaction(Tx *tx.Transaction) ErrCode {
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
 func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 	//initial
-	txnlist := make(map[common.Uint256]*tx.Transaction, 0)
+	txnlist := make(map[Uint256]*tx.Transaction, 0)
 	var txPoolInputs []string
 	//sum all inputs in TxPool
 	for _, Tx := range TxPool {
@@ -88,8 +88,8 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 				AssetReg := trx.Payload.(*payload.RegisterAsset)
 
 				//Get the amount has been issued of this assetID
-				var quantity_issued common.Fixed64
-				if AssetReg.Amount < common.Fixed64(0) {
+				var quantity_issued Fixed64
+				if AssetReg.Amount < Fixed64(0) {
 					continue
 				} else {
 					quantity_issued, err = tx.TxStore.GetQuantityIssued(k)
@@ -99,7 +99,7 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 				}
 
 				//calc the amounts in txPool which are also IssueAsset
-				var txPoolAmounts common.Fixed64
+				var txPoolAmounts Fixed64
 				for _, t := range TxPool {
 					if t.TxType == tx.IssueAsset {
 						outputResult := t.GetMergedAssetIDValueFromOutputs()
@@ -126,16 +126,69 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 	return nil
 }
 
-// VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
-func VerifyTransactionWithLedger(Tx *tx.Transaction, ledger *ledger.Ledger) ErrCode {
-	if IsDoubleSpend(Tx, ledger) {
-		log.Info("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
-		return ErrDoubleSpend
+func CheckLockedAsset(txn *tx.Transaction, ledger *ledger.Ledger) error {
+	// onlu check locked asset for transfer transaction
+	if txn.TxType != tx.TransferAsset {
+		return nil
 	}
-	if exist := ledger.Store.IsTxHashDuplicate(Tx.Hash()); exist {
-		log.Info("[VerifyTransactionWithLedger] duplicate transaction check faild.")
+
+	// get spend asset amount for each program hash and asset ID pair
+	result := make(map[Uint160]map[Uint256]Fixed64)
+	inputAsset, err := txn.GetReference()
+	if err != nil {
+		return err
+	}
+	for _, referOutput := range inputAsset {
+		if _, ok := result[referOutput.ProgramHash]; !ok {
+			result[referOutput.ProgramHash] = make(map[Uint256]Fixed64)
+		}
+		if _, ok := result[referOutput.ProgramHash][referOutput.AssetID]; !ok {
+			result[referOutput.ProgramHash][referOutput.AssetID] = referOutput.Value
+		} else {
+			result[referOutput.ProgramHash][referOutput.AssetID] += referOutput.Value
+		}
+	}
+	for _, output := range txn.Outputs {
+		if _, ok := result[output.ProgramHash]; ok {
+			if _, find := result[output.ProgramHash][output.AssetID]; find {
+				result[output.ProgramHash][output.AssetID] -= output.Value
+			}
+		}
+	}
+
+	// check if this transaction spends the locked asset
+	for programHash, assets := range result {
+		for assetID, spend := range assets {
+			total, locked, err := ledger.Store.GetAvailableAsset(programHash, assetID)
+			if err != nil {
+				return err
+			}
+			if total < spend+locked {
+				return errors.New("token is not enough, locked token can't be used.")
+			}
+		}
+	}
+
+	return nil
+}
+
+func VerifyTransactionWithLedger(txn *tx.Transaction, ledger *ledger.Ledger) ErrCode {
+
+	if exist := ledger.Store.IsTxHashDuplicate(txn.Hash()); exist {
+		log.Info("[VerifyTransactionWithLedger] duplicated transaction detected.")
 		return ErrTxHashDuplicate
 	}
+
+	if IsDoubleSpend(txn, ledger) {
+		log.Info("[VerifyTransactionWithLedger] double spend checking failed.")
+		return ErrDoubleSpend
+	}
+
+	if err := CheckLockedAsset(txn, ledger); err != nil {
+		log.Info("[VerifyTransactionWithLedger] .")
+		return ErrLockedAsset
+	}
+
 	return ErrNoError
 }
 
@@ -177,7 +230,7 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 	if len(Tx.Outputs) == 0 {
 		return nil
 	}
-	assetOutputs := make(map[common.Uint256][]*tx.TxOutput, len(Tx.Outputs))
+	assetOutputs := make(map[Uint256][]*tx.TxOutput, len(Tx.Outputs))
 
 	for _, v := range Tx.Outputs {
 		assetOutputs[v.AssetID] = append(assetOutputs[v.AssetID], v)
@@ -199,7 +252,7 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 
 func CheckTransactionBalance(Tx *tx.Transaction) error {
 	for _, v := range Tx.Outputs {
-		if v.Value <= common.Fixed64(0) {
+		if v.Value <= Fixed64(0) {
 			return errors.New("Invalid transaction UTXO output.")
 		}
 	}
@@ -250,7 +303,7 @@ func CheckTransactionContracts(Tx *tx.Transaction) error {
 	}
 }
 
-func checkAmountPrecise(amount common.Fixed64, precision byte) bool {
+func checkAmountPrecise(amount Fixed64, precision byte) bool {
 	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
 
@@ -283,9 +336,21 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 			return errors.New("Invalide asset Precision.")
 		}
 		if checkAmountPrecise(pld.Amount, pld.Asset.Precision) {
-			return errors.New("Invalide asset value,out of precise.")
+			return errors.New("Invalid asset precision.")
 		}
 	case *payload.IssueAsset:
+	case *payload.LockAsset:
+		total, locked, err := ledger.DefaultLedger.Store.GetAvailableAsset(pld.ProgramHash, pld.AssetID)
+		if err != nil {
+			return errors.New("no available asset")
+		}
+		if locked+pld.Amount > total {
+			return errors.New("no enough asset to be locked")
+		}
+		// TODO: add a height accept range
+		if pld.UnlockHeight <= ledger.DefaultLedger.Store.GetHeight() {
+			return errors.New("expired LockAsset transaction detected")
+		}
 	case *payload.TransferAsset:
 	case *payload.BookKeeping:
 	case *payload.PrivacyPayload:

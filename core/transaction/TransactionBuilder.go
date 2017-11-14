@@ -143,3 +143,21 @@ func NewDataFileTransaction(path string, fileName string, note string, issuer *c
 		Programs:      []*program.Program{},
 	}, nil
 }
+
+func NewLockAssetTransaction(programHash common.Uint160, assetID common.Uint256, amount common.Fixed64, height uint32) (*Transaction, error) {
+	lockAssetPayload := &payload.LockAsset{
+		ProgramHash:  programHash,
+		AssetID:      assetID,
+		Amount:       amount,
+		UnlockHeight: height,
+	}
+
+	return &Transaction{
+		UTXOInputs:    []*UTXOTxInput{},
+		BalanceInputs: []*BalanceTxInput{},
+		Attributes:    []*TxAttribute{},
+		TxType:        LockAsset,
+		Payload:       lockAssetPayload,
+		Programs:      []*program.Program{},
+	}, nil
+}
