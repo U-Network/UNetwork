@@ -17,11 +17,16 @@ import (
 	. "UGCNetwork/errors"
 )
 
+const (
+	WalletStoreVersion = "1.0.1"
+)
+
 type WalletData struct {
 	PasswordHash string
 	IV           string
 	MasterKey    string
 	Height       uint32
+	Version      string
 }
 
 type AccountData struct {
@@ -32,7 +37,7 @@ type AccountData struct {
 }
 
 type ContractData struct {
-	ProgramHash string //TODO: owner in contract ?
+	ProgramHash string
 	RawData     string
 }
 
@@ -268,7 +273,7 @@ func (cs *FileStore) SaveCoinsData(coins map[*transaction.UTXOTxInput]*Coin) err
 		serialization.WriteUint32(w, uint32(len(coins)))
 		for k, v := range coins {
 			k.Serialize(w)
-			v.Serialize(w)
+			v.Serialize(w, cs.data.Version)
 		}
 		cs.data.Coins = CoinData(BytesToHexString(w.Bytes()))
 	}
@@ -304,7 +309,7 @@ func (cs *FileStore) DeleteCoinsData(programHash Uint160) error {
 			return err
 		}
 		coin := new(Coin)
-		if err := coin.Deserialize(r); err != nil {
+		if err := coin.Deserialize(r, cs.data.Version); err != nil {
 			return err
 		}
 		if coin.Output.ProgramHash != programHash {
@@ -336,7 +341,7 @@ func (cs *FileStore) LoadCoinsData() (map[*transaction.UTXOTxInput]*Coin, error)
 			return nil, err
 		}
 		coin := new(Coin)
-		if err := coin.Deserialize(r); err != nil {
+		if err := coin.Deserialize(r, cs.data.Version); err != nil {
 			return nil, err
 		}
 		coins[input] = coin
@@ -356,6 +361,8 @@ func (cs *FileStore) SaveStoredData(name string, value []byte) error {
 
 	hexValue := BytesToHexString(value)
 	switch name {
+	case "Version":
+		cs.data.Version = string(value)
 	case "IV":
 		cs.data.IV = hexValue
 	case "MasterKey":
@@ -367,6 +374,7 @@ func (cs *FileStore) SaveStoredData(name string, value []byte) error {
 		bytesBuffer := bytes.NewBuffer(value)
 		binary.Read(bytesBuffer, binary.LittleEndian, &height)
 		cs.data.Height = height
+
 	}
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
@@ -386,6 +394,8 @@ func (cs *FileStore) LoadStoredData(name string) ([]byte, error) {
 		return nil, errors.New("error: unmarshal db")
 	}
 	switch name {
+	case "Version":
+		return []byte(cs.data.Version), nil
 	case "IV":
 		return HexStringToBytes(cs.data.IV)
 	case "MasterKey":

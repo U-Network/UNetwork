@@ -266,6 +266,11 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 		//new client store (build DB)
 		client.BuildDatabase(path)
 
+		if err := client.SaveStoredData("Version", []byte(WalletStoreVersion)); err != nil {
+			log.Error(err)
+			return nil
+		}
+
 		pwdhash := sha256.Sum256(passwordKey)
 		if err := client.SaveStoredData("PasswordHash", pwdhash[:]); err != nil {
 			log.Error(err)
