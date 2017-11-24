@@ -5,14 +5,18 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"UGCNetwork/account"
 	. "UGCNetwork/cli/common"
 	. "UGCNetwork/common"
 	"UGCNetwork/common/password"
 	"UGCNetwork/crypto"
+	"UGCNetwork/events/signalset"
 
 	"github.com/urfave/cli"
 )
@@ -174,6 +178,31 @@ func getConfirmedPassword(passwd string) []byte {
 	return tmp
 }
 
+func processSignals(wallet *account.ClientImpl) {
+	sigHandler := func(signal os.Signal, v interface{}) {
+		switch signal {
+		case syscall.SIGINT:
+			fmt.Println("Caught SIGINT signal, existing...")
+		case syscall.SIGTERM:
+			fmt.Println("Caught SIGTERM signal, existing...")
+		}
+		// hold the mutex lock to prevent any wallet db changes
+		wallet.FileStore.Lock()
+		os.Exit(0)
+	}
+	signalSet := signalset.New()
+	signalSet.Register(syscall.SIGINT, sigHandler)
+	signalSet.Register(syscall.SIGTERM, sigHandler)
+	sigChan := make(chan os.Signal, account.MaxSignalQueueLen)
+	signal.Notify(sigChan)
+	for {
+		select {
+		case sig := <-sigChan:
+			signalSet.Handle(sig, nil)
+		}
+	}
+}
+
 func walletAction(c *cli.Context) error {
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
@@ -272,6 +301,8 @@ func walletAction(c *cli.Context) error {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+		go processSignals(wallet)
+		time.Sleep(500 * time.Millisecond)
 		for i := 0; i < num; i++ {
 			account, err := wallet.CreateAccount()
 			if err != nil {
