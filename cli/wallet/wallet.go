@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"strconv"
@@ -135,6 +137,13 @@ func showVerboseInfo(wallet account.Client) {
 	}
 }
 
+func showHeightInfo(wallet *account.ClientImpl) {
+	h, _ := wallet.LoadStoredData("Height")
+	var height uint32
+	binary.Read(bytes.NewBuffer(h), binary.LittleEndian, &height)
+	fmt.Println("Height: ", height)
+}
+
 func getPassword(passwd string) []byte {
 	var tmp []byte
 	var err error
@@ -196,8 +205,8 @@ func walletAction(c *cli.Context) error {
 
 	// list wallet info
 	if item := c.String("list"); item != "" {
-		if item != "account" && item != "balance" && item != "verbose" && item != "multisig" {
-			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | multisig]")
+		if item != "account" && item != "balance" && item != "verbose" && item != "multisig" && item != "height" {
+			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | multisig | height]")
 			os.Exit(1)
 		} else {
 			wallet, err := account.Open(name, getPassword(passwd))
@@ -214,6 +223,8 @@ func walletAction(c *cli.Context) error {
 				showVerboseInfo(wallet)
 			case "multisig":
 				showMultisigInfo(wallet)
+			case "height":
+				showHeightInfo(wallet)
 			}
 		}
 		return nil
@@ -320,6 +331,24 @@ func walletAction(c *cli.Context) error {
 		fmt.Printf("a multisig account created\n")
 	}
 
+	// set wallet height
+	if height := c.Uint("setheight"); height >= 0 {
+		wallet, err := account.Open(name, getPassword(passwd))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		h := make([]byte, 4)
+		binary.LittleEndian.PutUint32(h, uint32(height))
+		if err := wallet.SaveStoredData("Height", h[:]); err != nil {
+			fmt.Println("set wallet height error: ", err)
+			os.Exit(1)
+		}
+		fmt.Println("wallet current height is ", height)
+
+		return nil
+	}
+
 	return nil
 }
 
@@ -336,7 +365,7 @@ func NewCommand() *cli.Command {
 			},
 			cli.StringFlag{
 				Name:  "list, l",
-				Usage: "list wallet information [account, balance, verbose]",
+				Usage: "list wallet information [account, balance, verbose, multisig, height]",
 			},
 			cli.IntFlag{
 				Name:  "addaccount",
@@ -345,6 +374,10 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "addmultisigaccount",
 				Usage: "add new multi-sign account address",
+			},
+			cli.UintFlag{
+				Name:  "setheight",
+				Usage: "set wallet height",
 			},
 			cli.BoolFlag{
 				Name:  "changepassword",
