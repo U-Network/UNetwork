@@ -54,7 +54,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	trans.BalanceInputs = make([]BalanceTxInputInfo, len(ptx.BalanceInputs))
 	for _, v := range ptx.BalanceInputs {
 		trans.BalanceInputs[n].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
-		trans.BalanceInputs[n].Value = v.Value
+		trans.BalanceInputs[n].Value = v.Value.String()
 		trans.BalanceInputs[n].ProgramHash = BytesToHexString(v.ProgramHash.ToArrayReverse())
 		n++
 	}
@@ -65,7 +65,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		trans.Outputs[n].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
 		trans.Outputs[n].Value = v.Value.String()
 		address, _ := v.ProgramHash.ToAddress()
-		trans.Outputs[n].Address = address
+		trans.Outputs[n].ProgramHash = address
 		n++
 	}
 
@@ -85,8 +85,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		for m := 0; m < len(v); m++ {
 			trans.AssetOutputs[n].Txout[m].AssetID = BytesToHexString(v[m].AssetID.ToArrayReverse())
 			trans.AssetOutputs[n].Txout[m].Value = v[m].Value.String()
-			address, _ := v[m].ProgramHash.ToAddress()
-			trans.AssetOutputs[n].Txout[m].Address = address
+			trans.AssetOutputs[n].Txout[m].ProgramHash = BytesToHexString(v[m].ProgramHash.ToArray())
 		}
 		n += 1
 	}
@@ -274,7 +273,9 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
 			return UgcNetworkRpcInvalidTransaction
 		}
-		if txn.TxType != tx.TransferAsset && txn.TxType != tx.LockAsset && txn.TxType != tx.BookKeeper {
+		if txn.TxType != tx.InvokeCode && txn.TxType != tx.DeployCode &&
+			txn.TxType != tx.TransferAsset && txn.TxType != tx.LockAsset &&
+			txn.TxType != tx.BookKeeper {
 			return UgcNetworkRpc("invalid transaction type")
 		}
 		hash = txn.Hash()

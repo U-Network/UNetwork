@@ -3,9 +3,11 @@ package transaction
 import (
 	"UGCNetwork/common"
 	"UGCNetwork/core/asset"
+	"UGCNetwork/core/code"
 	"UGCNetwork/core/contract/program"
 	"UGCNetwork/core/transaction/payload"
 	"UGCNetwork/crypto"
+	"UGCNetwork/smartcontract/types"
 )
 
 //initial a new transaction with asset registration payload
@@ -158,6 +160,49 @@ func NewLockAssetTransaction(programHash common.Uint160, assetID common.Uint256,
 		Attributes:    []*TxAttribute{},
 		TxType:        LockAsset,
 		Payload:       lockAssetPayload,
+		Programs:      []*program.Program{},
+	}, nil
+}
+
+//initial a new transaction with publish payload
+func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, name, codeversion, author, email, desp string, language types.LangType) (*Transaction, error) {
+	//TODO: check arguments
+	DeployCodePayload := &payload.DeployCode{
+		Code:        fc,
+		Name:        name,
+		CodeVersion: codeversion,
+		Author:      author,
+		Email:       email,
+		Description: desp,
+		Language:    language,
+		ProgramHash: programHash,
+	}
+
+	return &Transaction{
+		TxType:        DeployCode,
+		Payload:       DeployCodePayload,
+		Attributes:    []*TxAttribute{},
+		UTXOInputs:    []*UTXOTxInput{},
+		BalanceInputs: []*BalanceTxInput{},
+		Programs:      []*program.Program{},
+	}, nil
+}
+
+//initial a new transaction with invoke payload
+func NewInvokeTransaction(fc []byte, codeHash common.Uint160, programhash common.Uint160) (*Transaction, error) {
+	//TODO: check arguments
+	InvokeCodePayload := &payload.InvokeCode{
+		Code:        fc,
+		CodeHash:    codeHash,
+		ProgramHash: programhash,
+	}
+
+	return &Transaction{
+		TxType:        InvokeCode,
+		Payload:       InvokeCodePayload,
+		Attributes:    []*TxAttribute{},
+		UTXOInputs:    []*UTXOTxInput{},
+		BalanceInputs: []*BalanceTxInput{},
 		Programs:      []*program.Program{},
 	}, nil
 }

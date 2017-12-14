@@ -5,9 +5,9 @@ import (
 	pg "UGCNetwork/core/contract/program"
 	"UGCNetwork/crypto"
 	. "UGCNetwork/errors"
-	"UGCNetwork/vm"
 	"math/big"
 	"sort"
+	"UGCNetwork/vm/avm"
 )
 
 //create a Single Singature contract for owner
@@ -43,7 +43,7 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 	}
 	sb := pg.NewProgramBuilder()
 	sb.PushData(temp)
-	sb.AddOp(vm.CHECKSIG)
+	sb.AddOp(avm.CHECKSIG)
 	return sb.ToArray(), nil
 }
 
@@ -90,6 +90,6 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 	}
 
 	sb.PushNumber(big.NewInt(int64(len(pubkeys))))
-	sb.AddOp(vm.CHECKMULTISIG)
+	sb.AddOp(avm.CHECKMULTISIG)
 	return sb.ToArray(), nil
 }
