@@ -15,6 +15,7 @@ import (
 	"UGCNetwork/cli/multisig"
 	"UGCNetwork/cli/privpayload"
 	"UGCNetwork/cli/recover"
+	"UGCNetwork/cli/smartcontract"
 	"UGCNetwork/cli/test"
 	"UGCNetwork/cli/wallet"
 
@@ -50,6 +51,7 @@ func main() {
 		*bookkeeper.NewCommand(),
 		*recover.NewCommand(),
 		*multisig.NewCommand(),
+		*smartcontract.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 	sort.Sort(cli.FlagsByName(app.Flags))

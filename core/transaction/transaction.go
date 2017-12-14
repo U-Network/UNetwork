@@ -1,12 +1,6 @@
 package transaction
 
 import (
-	"crypto/sha256"
-	"errors"
-	"fmt"
-	"io"
-	"sort"
-
 	. "UGCNetwork/common"
 	"UGCNetwork/common/log"
 	"UGCNetwork/common/serialization"
@@ -15,6 +9,12 @@ import (
 	sig "UGCNetwork/core/signature"
 	"UGCNetwork/core/transaction/payload"
 	. "UGCNetwork/errors"
+	"bytes"
+	"crypto/sha256"
+	"errors"
+	"fmt"
+	"io"
+	"sort"
 )
 
 //for different transaction types with different payload format
@@ -31,6 +31,7 @@ const (
 	TransferAsset  TransactionType = 0x80
 	Record         TransactionType = 0x81
 	DeployCode     TransactionType = 0xd0
+	InvokeCode     TransactionType = 0xd1
 	DataFile       TransactionType = 0x12
 )
 
@@ -157,6 +158,7 @@ func (tx *Transaction) Deserialize(r io.Reader) error {
 	// tx deserialize
 	err := tx.DeserializeUnsigned(r)
 	if err != nil {
+		log.Error("Deserialize DeserializeUnsigned:", err)
 		return NewDetailErr(err, ErrNoCode, "transaction Deserialize error")
 	}
 
@@ -182,6 +184,7 @@ func (tx *Transaction) DeserializeUnsigned(r io.Reader) error {
 	var txType [1]byte
 	_, err := io.ReadFull(r, txType[:])
 	if err != nil {
+		log.Error("DeserializeUnsigned ReadFull:", err)
 		return err
 	}
 	tx.TxType = TransactionType(txType[0])
@@ -193,6 +196,7 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	_, err := io.ReadFull(r, payloadVersion[:])
 	tx.PayloadVersion = payloadVersion[0]
 	if err != nil {
+		log.Error("DeserializeUnsignedWithoutType:", err)
 		return err
 	}
 
@@ -215,6 +219,10 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.BookKeeper)
 	case PrivacyPayload:
 		tx.Payload = new(payload.PrivacyPayload)
+	case DeployCode:
+		tx.Payload = new(payload.DeployCode)
+	case InvokeCode:
+		tx.Payload = new(payload.InvokeCode)
 	case DataFile:
 		tx.Payload = new(payload.DataFile)
 	default:
@@ -222,11 +230,13 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	}
 	err = tx.Payload.Deserialize(r, tx.PayloadVersion)
 	if err != nil {
+		log.Error("tx Payload Deserialize:", err)
 		return NewDetailErr(err, ErrNoCode, "Payload Parse error")
 	}
 	//attributes
 	Len, err := serialization.ReadVarUint(r, 0)
 	if err != nil {
+		log.Error("tx attributes Deserialize:", err)
 		return err
 	}
 	if Len > uint64(0) {
@@ -242,6 +252,8 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	//UTXOInputs
 	Len, err = serialization.ReadVarUint(r, 0)
 	if err != nil {
+		log.Error("tx UTXOInputs Deserialize:", err)
+
 		return err
 	}
 	if Len > uint64(0) {
@@ -345,6 +357,10 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		hashs = append(hashs, astHash)
 	case TransferAsset:
 	case Record:
+	case DeployCode:
+	case InvokeCode:
+		issuer := tx.Payload.(*payload.InvokeCode).ProgramHash
+		hashs = append(hashs, issuer)
 	case BookKeeper:
 		issuer := tx.Payload.(*payload.BookKeeper).Issuer
 		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
@@ -403,6 +419,12 @@ func (tx *Transaction) GenerateAssetMaps() {
 
 func (tx *Transaction) GetMessage() []byte {
 	return sig.GetHashData(tx)
+}
+
+func (tx *Transaction) ToArray() []byte {
+	b := new(bytes.Buffer)
+	tx.Serialize(b)
+	return b.Bytes()
 }
 
 func (tx *Transaction) Hash() Uint256 {

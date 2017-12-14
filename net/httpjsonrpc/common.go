@@ -45,14 +45,14 @@ type UTXOTxInputInfo struct {
 
 type BalanceTxInputInfo struct {
 	AssetID     string
-	Value       Fixed64
+	Value       string
 	ProgramHash string
 }
 
 type TxoutputInfo struct {
-	AssetID string
-	Value   string
-	Address string
+	AssetID     string
+	Value       string
+	ProgramHash string
 }
 
 type TxoutputMap struct {
