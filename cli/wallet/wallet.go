@@ -36,6 +36,20 @@ func showAccountsInfo(wallet account.Client) {
 	}
 }
 
+func showDefaultAccountInfo(wallet account.Client) {
+	mainAccount, err := wallet.GetDefaultAccount()
+	if nil == err {
+		fmt.Println(" ID   Address\t\t\t\t Public Key")
+		fmt.Println("----  -------\t\t\t\t ----------")
+
+		address, _ := mainAccount.ProgramHash.ToAddress()
+		publicKey, _ := mainAccount.PublicKey.EncodePoint(true)
+		fmt.Printf("%4s  %s %s\n", strconv.Itoa(0), address, BytesToHexString(publicKey))
+	} else {
+		fmt.Println("GetDefaultAccount err! ", err.Error())
+	}
+}
+
 func showMultisigInfo(wallet account.Client) {
 	contracts := wallet.GetContracts()
 	accounts := wallet.GetAccounts()
@@ -234,7 +248,7 @@ func walletAction(c *cli.Context) error {
 
 	// list wallet info
 	if item := c.String("list"); item != "" {
-		if item != "account" && item != "balance" && item != "verbose" && item != "multisig" && item != "height" {
+		if item != "account" && item != "mainaccount" && item != "balance" && item != "verbose" && item != "multisig" && item != "height" {
 			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | multisig | height]")
 			os.Exit(1)
 		} else {
@@ -246,6 +260,8 @@ func walletAction(c *cli.Context) error {
 			switch item {
 			case "account":
 				showAccountsInfo(wallet)
+			case "mainaccount":
+				showDefaultAccountInfo(wallet)
 			case "balance":
 				showBalancesInfo(wallet)
 			case "verbose":
@@ -396,7 +412,7 @@ func NewCommand() *cli.Command {
 			},
 			cli.StringFlag{
 				Name:  "list, l",
-				Usage: "list wallet information [account, balance, verbose, multisig, height]",
+				Usage: "list wallet information [account, mainaccount, balance, verbose, multisig, height]",
 			},
 			cli.IntFlag{
 				Name:  "addaccount",
