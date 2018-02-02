@@ -1,10 +1,10 @@
 package account
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/core/contract"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/core/contract"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
 	"errors"
 )
 

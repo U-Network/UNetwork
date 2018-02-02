@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/common/serialization"
-	"UGCNetwork/core/contract/program"
-	sig "UGCNetwork/core/signature"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/common/serialization"
+	"UNetwork/core/contract/program"
+	sig "UNetwork/core/signature"
+	. "UNetwork/errors"
 	"crypto/sha256"
 	"errors"
 	"io"

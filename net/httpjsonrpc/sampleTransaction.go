@@ -1,18 +1,18 @@
 package httpjsonrpc
 
 import (
-	. "UGCNetwork/account"
-	. "UGCNetwork/common"
-	"UGCNetwork/common/log"
-	. "UGCNetwork/core/asset"
-	"UGCNetwork/core/contract"
-	"UGCNetwork/core/signature"
-	"UGCNetwork/core/transaction"
+	. "UNetwork/account"
+	. "UNetwork/common"
+	"UNetwork/common/log"
+	. "UNetwork/core/asset"
+	"UNetwork/core/contract"
+	"UNetwork/core/signature"
+	"UNetwork/core/transaction"
 	"strconv"
 )
 
 const (
-	ASSETPREFIX = "UGCNetwork"
+	ASSETPREFIX = "UNetwork"
 )
 
 func NewRegTx(rand string, index int, admin, issuer *Account) *transaction.Transaction {

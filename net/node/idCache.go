@@ -1,8 +1,8 @@
 package node
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/net/protocol"
+	"UNetwork/common"
+	"UNetwork/net/protocol"
 	"sync"
 )
 

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 
-	. "UGCNetwork/errors"
+	. "UNetwork/errors"
 )
 
 const UINT256SIZE int = 32

@@ -1,7 +1,7 @@
 package util
 
 import (
-	"UGCNetwork/crypto/sm3"
+	"UNetwork/crypto/sm3"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"

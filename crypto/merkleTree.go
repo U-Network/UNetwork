@@ -1,8 +1,8 @@
 package crypto
 
 import (
-	. "UGCNetwork/common"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	. "UNetwork/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"

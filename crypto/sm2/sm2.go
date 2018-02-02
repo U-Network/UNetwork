@@ -1,8 +1,8 @@
 package sm2
 
 import (
-	"UGCNetwork/crypto/sm3"
-	"UGCNetwork/crypto/util"
+	"UNetwork/crypto/sm3"
+	"UNetwork/crypto/util"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/elliptic"

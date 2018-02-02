@@ -8,7 +8,7 @@ import (
 	"strings"
 	"encoding/binary"
 	"math/big"
-	"UGCNetwork/common"
+	"UNetwork/common"
 )
 
 var (

@@ -2,8 +2,8 @@ package coin
 
 import (
 	"testing"
-	"UGCNetwork/vm/evm/test_case"
-	"UGCNetwork/client"
+	"UNetwork/vm/evm/test_case"
+	"UNetwork/client"
 	"fmt"
 	"math/big"
 )

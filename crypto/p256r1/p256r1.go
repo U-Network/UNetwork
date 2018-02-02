@@ -1,7 +1,7 @@
 package p256r1
 
 import (
-	"UGCNetwork/crypto/util"
+	"UNetwork/crypto/util"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"

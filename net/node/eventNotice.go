@@ -1,7 +1,7 @@
 package node
 
 import (
-	"UGCNetwork/events"
+	"UNetwork/events"
 	"fmt"
 )
 

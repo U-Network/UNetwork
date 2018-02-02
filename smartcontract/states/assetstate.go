@@ -1,13 +1,13 @@
 package states
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/crypto"
+	"UNetwork/common"
+	"UNetwork/crypto"
 	"io"
-	"UGCNetwork/common/serialization"
-	. "UGCNetwork/errors"
+	"UNetwork/common/serialization"
+	. "UNetwork/errors"
 	"bytes"
-	"UGCNetwork/core/asset"
+	"UNetwork/core/asset"
 )
 
 type AssetState struct {

@@ -1,14 +1,14 @@
 package httpwebsocket
 
 import (
-	. "UGCNetwork/common"
-	. "UGCNetwork/common/config"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/events"
-	"UGCNetwork/net/httprestful/common"
-	Err "UGCNetwork/net/httprestful/error"
-	"UGCNetwork/net/httpwebsocket/websocket"
-	. "UGCNetwork/net/protocol"
+	. "UNetwork/common"
+	. "UNetwork/common/config"
+	"UNetwork/core/ledger"
+	"UNetwork/events"
+	"UNetwork/net/httprestful/common"
+	Err "UNetwork/net/httprestful/error"
+	"UNetwork/net/httpwebsocket/websocket"
+	. "UNetwork/net/protocol"
 	"bytes"
 )
 

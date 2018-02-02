@@ -1,10 +1,10 @@
 package states
 
 import (
-	"UGCNetwork/common"
+	"UNetwork/common"
 	"io"
 	"bytes"
-	"UGCNetwork/common/serialization"
+	"UNetwork/common/serialization"
 )
 
 type AccountState struct {

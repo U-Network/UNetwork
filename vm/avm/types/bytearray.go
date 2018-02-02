@@ -2,8 +2,8 @@ package types
 
 import (
 	"math/big"
-	"UGCNetwork/vm/avm/interfaces"
-	"UGCNetwork/common"
+	"UNetwork/vm/avm/interfaces"
+	"UNetwork/common"
 )
 
 type ByteArray struct {

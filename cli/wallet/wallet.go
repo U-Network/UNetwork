@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	. "UGCNetwork/common"
-	"UGCNetwork/common/password"
-	"UGCNetwork/crypto"
-	"UGCNetwork/events/signalset"
+	"UNetwork/account"
+	. "UNetwork/cli/common"
+	. "UNetwork/common"
+	"UNetwork/common/password"
+	"UNetwork/crypto"
+	"UNetwork/events/signalset"
 
 	"github.com/urfave/cli"
 )

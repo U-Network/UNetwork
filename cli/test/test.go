@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	. "UGCNetwork/cli/common"
-	"UGCNetwork/net/httpjsonrpc"
+	. "UNetwork/cli/common"
+	"UNetwork/net/httpjsonrpc"
 
 	"github.com/urfave/cli"
 )

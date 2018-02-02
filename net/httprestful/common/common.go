@@ -1,14 +1,14 @@
 package common
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/core/ledger"
-	tx "UGCNetwork/core/transaction"
-	. "UGCNetwork/errors"
-	. "UGCNetwork/net/httpjsonrpc"
-	Err "UGCNetwork/net/httprestful/error"
-	. "UGCNetwork/net/protocol"
-	"UGCNetwork/smartcontract/states"
+	. "UNetwork/common"
+	"UNetwork/core/ledger"
+	tx "UNetwork/core/transaction"
+	. "UNetwork/errors"
+	. "UNetwork/net/httpjsonrpc"
+	Err "UNetwork/net/httprestful/error"
+	. "UNetwork/net/protocol"
+	"UNetwork/smartcontract/states"
 	"bytes"
 	"fmt"
 	"strconv"

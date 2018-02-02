@@ -1,9 +1,9 @@
 package payload
 
 import (
-	"UGCNetwork/common/serialization"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
+	"UNetwork/common/serialization"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
 	"bytes"
 	"io"
 )

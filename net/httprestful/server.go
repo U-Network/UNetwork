@@ -1,12 +1,12 @@
 package httprestful
 
 import (
-	. "UGCNetwork/common/config"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/events"
-	"UGCNetwork/net/httprestful/common"
-	. "UGCNetwork/net/httprestful/restful"
-	. "UGCNetwork/net/protocol"
+	. "UNetwork/common/config"
+	"UNetwork/core/ledger"
+	"UNetwork/events"
+	"UNetwork/net/httprestful/common"
+	. "UNetwork/net/httprestful/restful"
+	. "UNetwork/net/protocol"
 	"strconv"
 )
 

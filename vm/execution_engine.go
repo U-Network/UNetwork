@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"UGCNetwork/vm/interfaces"
-	"UGCNetwork/vm/utils"
+	"UNetwork/vm/interfaces"
+	"UNetwork/vm/utils"
 	"io"
 	_ "math/big"
 	_ "sort"

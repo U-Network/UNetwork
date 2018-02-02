@@ -1,9 +1,9 @@
 package validation
 
 import (
-	"UGCNetwork/core/ledger"
-	tx "UGCNetwork/core/transaction"
-	. "UGCNetwork/errors"
+	"UNetwork/core/ledger"
+	tx "UNetwork/core/transaction"
+	. "UNetwork/errors"
 	"errors"
 	"fmt"
 )

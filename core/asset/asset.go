@@ -1,8 +1,8 @@
 package asset
 
 import (
-	"UGCNetwork/common/serialization"
-	. "UGCNetwork/errors"
+	"UNetwork/common/serialization"
+	. "UNetwork/errors"
 	"errors"
 	"io"
 	"bytes"
@@ -25,13 +25,13 @@ const (
 
 type AssetRecordType byte
 
-//onchain UGCNetwork is planed to support UTXO and Balance
+//onchain UNetwork is planed to support UTXO and Balance
 const (
 	UTXO    AssetRecordType = 0x00
 	Balance AssetRecordType = 0x01
 )
 
-//define the asset stucture in onchain UGCNetwork
+//define the asset stucture in onchain UNetwork
 //registered asset will be assigned to contract address
 type Asset struct {
 	Name        string

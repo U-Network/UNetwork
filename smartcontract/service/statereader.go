@@ -1,16 +1,16 @@
 package service
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/core/contract"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/core/signature"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/crypto"
-	"UGCNetwork/errors"
-	"UGCNetwork/smartcontract/states"
-	"UGCNetwork/vm/avm"
-	"UGCNetwork/vm/avm/types"
+	"UNetwork/common"
+	"UNetwork/core/contract"
+	"UNetwork/core/ledger"
+	"UNetwork/core/signature"
+	"UNetwork/core/transaction"
+	"UNetwork/crypto"
+	"UNetwork/errors"
+	"UNetwork/smartcontract/states"
+	"UNetwork/vm/avm"
+	"UNetwork/vm/avm/types"
 	"fmt"
 	"math/big"
 )

@@ -1,7 +1,7 @@
 package states
 
 import (
-	"UGCNetwork/crypto"
+	"UNetwork/crypto"
 	"io"
 	"bytes"
 )

@@ -1,12 +1,12 @@
 package ledger
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/common/log"
-	tx "UGCNetwork/core/transaction"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
-	"UGCNetwork/events"
+	. "UNetwork/common"
+	"UNetwork/common/log"
+	tx "UNetwork/core/transaction"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
+	"UNetwork/events"
 	"sync"
 )
 

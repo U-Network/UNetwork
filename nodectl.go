@@ -4,20 +4,20 @@ import (
 	"os"
 	"sort"
 
-	_ "UGCNetwork/cli"
-	"UGCNetwork/cli/asset"
-	"UGCNetwork/cli/bookkeeper"
-	. "UGCNetwork/cli/common"
-	"UGCNetwork/cli/consensus"
-	"UGCNetwork/cli/data"
-	"UGCNetwork/cli/debug"
-	"UGCNetwork/cli/info"
-	"UGCNetwork/cli/multisig"
-	"UGCNetwork/cli/privpayload"
-	"UGCNetwork/cli/recover"
-	"UGCNetwork/cli/smartcontract"
-	"UGCNetwork/cli/test"
-	"UGCNetwork/cli/wallet"
+	_ "UNetwork/cli"
+	"UNetwork/cli/asset"
+	"UNetwork/cli/bookkeeper"
+	. "UNetwork/cli/common"
+	"UNetwork/cli/consensus"
+	"UNetwork/cli/data"
+	"UNetwork/cli/debug"
+	"UNetwork/cli/info"
+	"UNetwork/cli/multisig"
+	"UNetwork/cli/privpayload"
+	"UNetwork/cli/recover"
+	"UNetwork/cli/smartcontract"
+	"UNetwork/cli/test"
+	"UNetwork/cli/wallet"
 
 	"github.com/urfave/cli"
 )
@@ -29,7 +29,7 @@ func main() {
 	app.Name = "nodectl"
 	app.Version = Version
 	app.HelpName = "nodectl"
-	app.Usage = "command line tool for UGCNetwork blockchain"
+	app.Usage = "command line tool for UNetwork blockchain"
 	app.UsageText = "nodectl [global options] command [command options] [args]"
 	app.HideHelp = false
 	app.HideVersion = false

@@ -1,7 +1,7 @@
 package payload
 
 import (
-	"UGCNetwork/common/serialization"
+	"UNetwork/common/serialization"
 	"io"
 )
 

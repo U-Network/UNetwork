@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/UGCNetworkProject/UGCNetwork.svg?branch=master)](https://travis-ci.org/UGCNetworkProject/UGCNetwork)
+[![Build Status](https://travis-ci.org/UNetworkProject/UNetwork.svg?branch=master)](https://travis-ci.org/UNetworkProject/UNetwork)
 
-# UGCNetwork (Distributed Networks Architecture)
+# UNetwork (Distributed Networks Architecture)
 
- UGCNetwork is a decentralized distributed network protocol based on blockchain technology and is implemented in Golang. Through peer-to-peer network, UGCNetwork can be used to digitize assets and provide financial service, including asset registration, issuance, transfer, etc.
+ UNetwork is a decentralized distributed network protocol based on blockchain technology and is implemented in Golang. Through peer-to-peer network, UNetwork can be used to digitize assets and provide financial service, including asset registration, issuance, transfer, etc.
 
 ## Highlight Features
 
@@ -21,16 +21,16 @@
 
 
 # Building
-The requirements to build UGCNetwork are:
+The requirements to build UNetwork are:
  *	Go version 1.8 or later
  *	Glide (a third-party package management tool)
  *	Properly configured Go environment
  
-Clone the UGCNetwork repository into the appropriate $GOPATH/src directory.
+Clone the UNetwork repository into the appropriate $GOPATH/src directory.
 
 
 ```shell
-$ git clone https://github.com/UGCNetworkProject/UGCNetwork.git
+$ git clone https://github.com/UNetworkProject/UNetwork.git
 
 ```
 
@@ -38,7 +38,7 @@ Fetch the dependent third-party packages with glide.
 
 
 ````shell
-$ cd UGCNetwork
+$ cd UNetwork
 $ glide install
 ````
 Build the source code with make.
@@ -57,7 +57,7 @@ Follow the procedures in Deployment section to give them a shot!
 
 # Deployment
  
-To run UGCNetwork successfully, at least 4 nodes are required. The four nodes can be deployed in the following two way:
+To run UNetwork successfully, at least 4 nodes are required. The four nodes can be deployed in the following two way:
 
 * multi-hosts deployment
 * single-host deployment
@@ -245,7 +245,7 @@ $ ./node
 $ - input you wallet password
 ```
 
-## Testing UGCNetwork in an open environment
+## Testing UNetwork in an open environment
  
  We also provide an open testing environment. It supports the operation below:
 
@@ -289,12 +289,12 @@ IP               PORT
 
 # Contributing
 
-Can I contribute patches to UGCNetwork project?
+Can I contribute patches to UNetwork project?
 
 Yes! Please open a pull request with signed-off commits. We appreciate your help!
 
 You can also send your patches as emails to the developer mailing list.
-Please join the UGCNetwork mailing list or forum and talk to us about it.
+Please join the UNetwork mailing list or forum and talk to us about it.
 
 Either way, if you don't sign off your patches, we will not accept them.
 This means adding a line that says "Signed-off-by: Name <email>" at the
@@ -329,27 +329,27 @@ looks like this:
 
 We have a mailing list for developers:
 
-* OnchainUGCNetwork@googlegroups.com
+* OnchainUNetwork@googlegroups.com
 
 We provide two ways to subscribe:
 
-* Send any contents to the email OnchainUGCNetwork+subscribe@googlegroups.com
+* Send any contents to the email OnchainUNetwork+subscribe@googlegroups.com
 
-* Sign in https://groups.google.com/forum/#!forum/OnchainUGCNetwork
+* Sign in https://groups.google.com/forum/#!forum/OnchainUNetwork
 
 
 ## Site
 
-* https://www.UGCNetworkproject.org
+* https://www.UNetworkproject.org
 
 ## Forum
 
-* https://forum.UGCNetworkproject.org
+* https://forum.UNetworkproject.org
 
 ## Wiki
 
-* https://wiki.UGCNetworkproject.org
+* https://wiki.UNetworkproject.org
 
 # License
 
-UGCNetwork is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
+UNetwork is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.

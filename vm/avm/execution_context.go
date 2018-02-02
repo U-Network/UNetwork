@@ -1,9 +1,9 @@
 package avm
 
 import (
-	"UGCNetwork/vm/avm/utils"
+	"UNetwork/vm/avm/utils"
 	"io"
-	"UGCNetwork/vm/avm/types"
+	"UNetwork/vm/avm/types"
 )
 
 type ExecutionContext struct {

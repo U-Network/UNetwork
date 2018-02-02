@@ -1,10 +1,10 @@
 package httpjsonrpc
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/core/asset"
-	. "UGCNetwork/core/transaction"
-	"UGCNetwork/core/transaction/payload"
+	. "UNetwork/common"
+	"UNetwork/core/asset"
+	. "UNetwork/core/transaction"
+	"UNetwork/core/transaction/payload"
 	"bytes"
 )
 

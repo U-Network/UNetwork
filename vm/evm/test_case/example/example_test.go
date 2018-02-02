@@ -2,7 +2,7 @@ package test
 
 import (
 	"testing"
-	"UGCNetwork/vm/evm/test_case"
+	"UNetwork/vm/evm/test_case"
 )
 
 const (

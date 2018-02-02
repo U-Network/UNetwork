@@ -1,9 +1,9 @@
 package httpnodeinfo
 
 import (
-	"UGCNetwork/common/config"
-	"UGCNetwork/core/ledger"
-	. "UGCNetwork/net/protocol"
+	"UNetwork/common/config"
+	"UNetwork/core/ledger"
+	. "UNetwork/net/protocol"
 	"fmt"
 	"html/template"
 	"net/http"

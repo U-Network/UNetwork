@@ -1,6 +1,6 @@
 package transaction
 
-import "UGCNetwork/common"
+import "UNetwork/common"
 
 //	Key  : AssetId common.Uint256
 //	Value: Amount common.Fixed64

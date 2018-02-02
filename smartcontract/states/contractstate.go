@@ -2,12 +2,12 @@ package states
 
 import (
 	"io"
-	. "UGCNetwork/errors"
-	"UGCNetwork/core/code"
+	. "UNetwork/errors"
+	"UNetwork/core/code"
 	"bytes"
-	"UGCNetwork/common/serialization"
-	"UGCNetwork/smartcontract/types"
-	"UGCNetwork/common"
+	"UNetwork/common/serialization"
+	"UNetwork/smartcontract/types"
+	"UNetwork/common"
 )
 
 type ContractState struct {

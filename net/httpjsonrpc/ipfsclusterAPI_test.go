@@ -1,7 +1,7 @@
 package httpjsonrpc
 
 import (
-	"UGCNetwork/common/log"
+	"UNetwork/common/log"
 	"fmt"
 	"os"
 	"os/exec"

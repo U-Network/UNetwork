@@ -1,13 +1,13 @@
 package service
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/core/asset"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/core/transaction"
-	. "UGCNetwork/net/httpjsonrpc"
-	"UGCNetwork/net/httprestful/common"
-	"UGCNetwork/smartcontract/states"
+	. "UNetwork/common"
+	"UNetwork/core/asset"
+	"UNetwork/core/ledger"
+	"UNetwork/core/transaction"
+	. "UNetwork/net/httpjsonrpc"
+	"UNetwork/net/httprestful/common"
+	"UNetwork/smartcontract/states"
 )
 
 type AccountInfo struct {

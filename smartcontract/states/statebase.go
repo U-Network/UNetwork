@@ -2,8 +2,8 @@ package states
 
 import (
 	"io"
-	"UGCNetwork/common/serialization"
-	"UGCNetwork/errors"
+	"UNetwork/common/serialization"
+	"UNetwork/errors"
 )
 
 type StateBase struct {

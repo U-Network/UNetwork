@@ -2,7 +2,7 @@ package abi
 
 import (
 	"reflect"
-	"UGCNetwork/vm/evm/common"
+	"UNetwork/vm/evm/common"
 )
 
 func packBytesSlice(bytes []byte, l int) []byte {

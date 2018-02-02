@@ -1,20 +1,20 @@
 package ledger
 
 import (
-	"UGCNetwork/common"
-	. "UGCNetwork/common"
-	"UGCNetwork/core/asset"
-	"UGCNetwork/core/contract"
-	tx "UGCNetwork/core/transaction"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
+	"UNetwork/common"
+	. "UNetwork/common"
+	"UNetwork/core/asset"
+	"UNetwork/core/contract"
+	tx "UNetwork/core/transaction"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
 	"errors"
 )
 
 var DefaultLedger *Ledger
 var StandbyBookKeepers []*crypto.PubKey
 
-// Ledger - the struct for onchainUGCNetwork ledger
+// Ledger - the struct for onchainUNetwork ledger
 type Ledger struct {
 	Blockchain *Blockchain
 	State      *State

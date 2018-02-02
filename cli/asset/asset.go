@@ -6,12 +6,12 @@ import (
 	"math/rand"
 	"os"
 
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	. "UGCNetwork/common"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/net/httpjsonrpc"
-	"UGCNetwork/sdk"
+	"UNetwork/account"
+	. "UNetwork/cli/common"
+	. "UNetwork/common"
+	"UNetwork/core/transaction"
+	"UNetwork/net/httpjsonrpc"
+	"UNetwork/sdk"
 
 	"github.com/urfave/cli"
 )
@@ -36,7 +36,7 @@ func parseAssetName(c *cli.Context) string {
 	if name == "" {
 		rbuf := make([]byte, RANDBYTELEN)
 		rand.Read(rbuf)
-		name = "UGCNetwork-" + BytesToHexString(rbuf)
+		name = "UNetwork-" + BytesToHexString(rbuf)
 	}
 
 	return name

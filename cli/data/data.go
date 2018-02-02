@@ -1,12 +1,12 @@
 package data
 
 import (
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	"UGCNetwork/core/contract"
-	"UGCNetwork/core/signature"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/net/httpjsonrpc"
+	"UNetwork/account"
+	. "UNetwork/cli/common"
+	"UNetwork/core/contract"
+	"UNetwork/core/signature"
+	"UNetwork/core/transaction"
+	"UNetwork/net/httpjsonrpc"
 	"bytes"
 	"encoding/hex"
 	"fmt"
@@ -141,7 +141,7 @@ func dataAction(c *cli.Context) error {
 		if name == "" {
 			rbuf := make([]byte, 4)
 			rand.Read(rbuf)
-			name = "UGCNetwork-" + hex.EncodeToString(rbuf)
+			name = "UNetwork-" + hex.EncodeToString(rbuf)
 		}
 		//create transaction
 		var tx *transaction.Transaction

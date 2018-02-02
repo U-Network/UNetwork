@@ -1,10 +1,10 @@
 package avm
 
 import (
-	. "UGCNetwork/vm/avm/errors"
+	. "UNetwork/vm/avm/errors"
 	"bytes"
 	"encoding/binary"
-	"UGCNetwork/vm/avm/types"
+	"UNetwork/vm/avm/types"
 )
 
 func validatorPushData4(e *ExecutionEngine) error {

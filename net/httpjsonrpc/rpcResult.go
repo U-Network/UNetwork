@@ -1,25 +1,25 @@
 package httpjsonrpc
 
 var (
-	UgcNetworkRpcInvalidHash        = responsePacking("invalid hash")
-	UgcNetworkRpcInvalidBlock       = responsePacking("invalid block")
-	UgcNetworkRpcInvalidTransaction = responsePacking("invalid transaction")
-	UgcNetworkRpcInvalidParameter   = responsePacking("invalid parameter")
+	uNetworkRpcInvalidHash        = responsePacking("invalid hash")
+	uNetworkRpcInvalidBlock       = responsePacking("invalid block")
+	uNetworkRpcInvalidTransaction = responsePacking("invalid transaction")
+	uNetworkRpcInvalidParameter   = responsePacking("invalid parameter")
 
-	UgcNetworkRpcUnknownBlock       = responsePacking("unknown block")
-	UgcNetworkRpcUnknownTransaction = responsePacking("unknown transaction")
+	uNetworkRpcUnknownBlock       = responsePacking("unknown block")
+	uNetworkRpcUnknownTransaction = responsePacking("unknown transaction")
 
-	UgcNetworkRpcNil           = responsePacking(nil)
-	UgcNetworkRpcUnsupported   = responsePacking("Unsupported")
-	UgcNetworkRpcInternalError = responsePacking("internal error")
-	UgcNetworkRpcIOError       = responsePacking("internal IO error")
-	UgcNetworkRpcAPIError      = responsePacking("internal API error")
-	UgcNetworkRpcSuccess       = responsePacking(true)
-	UgcNetworkRpcFailed        = responsePacking(false)
+	uNetworkRpcNil           = responsePacking(nil)
+	uNetworkRpcUnsupported   = responsePacking("Unsupported")
+	uNetworkRpcInternalError = responsePacking("internal error")
+	uNetworkRpcIOError       = responsePacking("internal IO error")
+	uNetworkRpcAPIError      = responsePacking("internal API error")
+	uNetworkRpcSuccess       = responsePacking(true)
+	uNetworkRpcFailed        = responsePacking(false)
 
 	// error code for wallet
-	UgcNetworkRpcWalletAlreadyExists = responsePacking("wallet already exist")
-	UgcNetworkRpcWalletNotExists     = responsePacking("wallet doesn't exist")
+	uNetworkRpcWalletAlreadyExists = responsePacking("wallet already exist")
+	uNetworkRpcWalletNotExists     = responsePacking("wallet doesn't exist")
 
-	UgcNetworkRpc = responsePacking
+	uNetworkRpc = responsePacking
 )

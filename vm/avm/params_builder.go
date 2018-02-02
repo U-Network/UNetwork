@@ -3,7 +3,7 @@ package avm
 import (
 	"bytes"
 	"encoding/binary"
-	"UGCNetwork/common"
+	"UNetwork/common"
 )
 
 type ParamsBuilder struct {

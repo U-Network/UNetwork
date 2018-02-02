@@ -1,11 +1,11 @@
 package evm
 
 import (
-	"UGCNetwork/common"
+	"UNetwork/common"
 	"sync/atomic"
 	"fmt"
 	"math/big"
-	"UGCNetwork/smartcontract/storage"
+	"UNetwork/smartcontract/storage"
 )
 
 type ExecutionEngine struct {

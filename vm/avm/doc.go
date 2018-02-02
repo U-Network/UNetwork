@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The UGCNetwork Dev team
+Copyright 2016 The UNetwork Dev team
 
 The go-vm library is free software: you can redistribute it and/or modify
 it under the terms of the APACHA License

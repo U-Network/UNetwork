@@ -1,6 +1,6 @@
 package error
 
-import . "UGCNetwork/errors"
+import . "UNetwork/errors"
 
 const (
 	SUCCESS            int64 = 0

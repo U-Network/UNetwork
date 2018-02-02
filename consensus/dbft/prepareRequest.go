@@ -1,11 +1,11 @@
 package dbft
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/common/log"
-	ser "UGCNetwork/common/serialization"
-	tx "UGCNetwork/core/transaction"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/common/log"
+	ser "UNetwork/common/serialization"
+	tx "UNetwork/core/transaction"
+	. "UNetwork/errors"
 	"io"
 )
 

@@ -3,9 +3,9 @@ package evm
 import (
 	"math/big"
 	"fmt"
-	"UGCNetwork/vm/evm/common"
-	"UGCNetwork/vm/evm/crypto"
-	. "UGCNetwork/common"
+	"UNetwork/vm/evm/common"
+	"UNetwork/vm/evm/crypto"
+	. "UNetwork/common"
 )
 
 var (

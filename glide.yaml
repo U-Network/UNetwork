@@ -1,4 +1,4 @@
-package: UGCNetwork
+package: UNetwork
 import:
 - package: github.com/golang/crypto
   subpackages:

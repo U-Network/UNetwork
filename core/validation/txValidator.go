@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"math"
 
-	. "UGCNetwork/common"
-	"UGCNetwork/common/config"
-	"UGCNetwork/common/log"
-	"UGCNetwork/core/asset"
-	"UGCNetwork/core/ledger"
-	tx "UGCNetwork/core/transaction"
-	"UGCNetwork/core/transaction/payload"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/common/config"
+	"UNetwork/common/log"
+	"UNetwork/core/asset"
+	"UNetwork/core/ledger"
+	tx "UNetwork/core/transaction"
+	"UNetwork/core/transaction/payload"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
 )
 
 func VerifyTransaction(txn *tx.Transaction) ErrCode {

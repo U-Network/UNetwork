@@ -2,7 +2,7 @@ package types
 
 import (
 	"math/big"
-	"UGCNetwork/vm/avm/interfaces"
+	"UNetwork/vm/avm/interfaces"
 )
 
 type Boolean struct {
