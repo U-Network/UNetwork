@@ -3,7 +3,7 @@ package avm
 import (
 	"testing"
 	"math/big"
-	"UGCNetwork/vm/avm/types"
+	"UNetwork/vm/avm/types"
 )
 
 

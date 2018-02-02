@@ -3,8 +3,8 @@ package payload
 import (
 	"io"
 
-	. "UGCNetwork/common"
-	"UGCNetwork/common/serialization"
+	. "UNetwork/common"
+	"UNetwork/common/serialization"
 )
 
 type LockAsset struct {

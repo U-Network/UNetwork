@@ -1,14 +1,14 @@
 package test_case
 
 import (
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/crypto"
-	"UGCNetwork/core/store/ChainStore"
-	client "UGCNetwork/account"
-	"UGCNetwork/vm/evm"
+	"UNetwork/core/ledger"
+	"UNetwork/crypto"
+	"UNetwork/core/store/ChainStore"
+	client "UNetwork/account"
+	"UNetwork/vm/evm"
 	"strings"
-	"UGCNetwork/vm/evm/abi"
-	"UGCNetwork/common"
+	"UNetwork/vm/evm/abi"
+	"UNetwork/common"
 	"time"
 	"math/big"
 )

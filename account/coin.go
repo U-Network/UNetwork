@@ -3,8 +3,8 @@ package account
 import (
 	"io"
 
-	"UGCNetwork/common/serialization"
-	"UGCNetwork/core/transaction"
+	"UNetwork/common/serialization"
+	"UNetwork/core/transaction"
 )
 
 type AddressType byte

@@ -1,7 +1,7 @@
 package common
 
 import (
-	. "UGCNetwork/errors"
+	. "UNetwork/errors"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

@@ -2,8 +2,8 @@ package deal
 
 import (
 	"testing"
-	"UGCNetwork/vm/evm/test_case"
-	"UGCNetwork/common"
+	"UNetwork/vm/evm/test_case"
+	"UNetwork/common"
 	"fmt"
 )
 

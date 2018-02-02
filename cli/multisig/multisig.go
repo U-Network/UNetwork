@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	"UGCNetwork/common"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/net/httpjsonrpc"
+	"UNetwork/account"
+	. "UNetwork/cli/common"
+	"UNetwork/common"
+	"UNetwork/core/transaction"
+	"UNetwork/net/httpjsonrpc"
 
 	"github.com/urfave/cli"
 )

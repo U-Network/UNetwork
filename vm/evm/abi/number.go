@@ -3,8 +3,8 @@ package abi
 import (
 	"reflect"
 	"math/big"
-	"UGCNetwork/vm/evm/common"
-	. "UGCNetwork/common"
+	"UNetwork/vm/evm/common"
+	. "UNetwork/common"
 )
 
 var (

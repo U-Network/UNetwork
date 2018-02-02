@@ -1,10 +1,10 @@
 package code
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/common/log"
-	"UGCNetwork/common/serialization"
-	. "UGCNetwork/core/contract"
+	. "UNetwork/common"
+	"UNetwork/common/log"
+	"UNetwork/common/serialization"
+	. "UNetwork/core/contract"
 	"fmt"
 	"io"
 )

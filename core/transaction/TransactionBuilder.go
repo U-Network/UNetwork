@@ -1,13 +1,13 @@
 package transaction
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/core/asset"
-	"UGCNetwork/core/code"
-	"UGCNetwork/core/contract/program"
-	"UGCNetwork/core/transaction/payload"
-	"UGCNetwork/crypto"
-	"UGCNetwork/smartcontract/types"
+	"UNetwork/common"
+	"UNetwork/core/asset"
+	"UNetwork/core/code"
+	"UNetwork/core/contract/program"
+	"UNetwork/core/transaction/payload"
+	"UNetwork/crypto"
+	"UNetwork/smartcontract/types"
 )
 
 //initial a new transaction with asset registration payload

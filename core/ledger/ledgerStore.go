@@ -1,12 +1,12 @@
 package ledger
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/core/account"
-	. "UGCNetwork/core/asset"
-	tx "UGCNetwork/core/transaction"
-	"UGCNetwork/crypto"
-	"UGCNetwork/smartcontract/states"
+	. "UNetwork/common"
+	"UNetwork/core/account"
+	. "UNetwork/core/asset"
+	tx "UNetwork/core/transaction"
+	"UNetwork/crypto"
+	"UNetwork/smartcontract/states"
 )
 
 // ILedgerStore provides func with store package.

@@ -1,6 +1,6 @@
 package avm
 
-import "UGCNetwork/vm/avm/types"
+import "UNetwork/vm/avm/types"
 
 type StackItem struct {
 	_object types.StackItemInterface

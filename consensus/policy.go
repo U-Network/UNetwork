@@ -1,7 +1,7 @@
 package consensus
 
 import (
-	. "UGCNetwork/common"
+	. "UNetwork/common"
 )
 type Policy struct {
 	PolicyLevel PolicyLevel

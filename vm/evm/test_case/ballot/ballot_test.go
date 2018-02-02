@@ -2,10 +2,10 @@ package ballot
 
 import (
 	"testing"
-	"UGCNetwork/vm/evm/test_case"
+	"UNetwork/vm/evm/test_case"
 	"fmt"
 	"math/big"
-	"UGCNetwork/client"
+	"UNetwork/client"
 )
 
 const (

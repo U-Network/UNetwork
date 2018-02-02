@@ -1,8 +1,8 @@
 package account
 
 import (
-	. "UGCNetwork/common"
-	ct "UGCNetwork/core/contract"
+	. "UNetwork/common"
+	ct "UNetwork/core/contract"
 )
 
 type IClientStore interface {

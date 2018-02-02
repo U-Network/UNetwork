@@ -1,8 +1,8 @@
 package program
 
 import (
-	"UGCNetwork/common/serialization"
-	. "UGCNetwork/errors"
+	"UNetwork/common/serialization"
+	. "UNetwork/errors"
 	"io"
 )
 

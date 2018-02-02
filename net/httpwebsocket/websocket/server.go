@@ -1,11 +1,11 @@
 package websocket
 
 import (
-	. "UGCNetwork/common/config"
-	"UGCNetwork/common/log"
-	. "UGCNetwork/net/httprestful/common"
-	Err "UGCNetwork/net/httprestful/error"
-	. "UGCNetwork/net/httpwebsocket/session"
+	. "UNetwork/common/config"
+	"UNetwork/common/log"
+	. "UNetwork/net/httprestful/common"
+	Err "UNetwork/net/httprestful/error"
+	. "UNetwork/net/httpwebsocket/session"
 	"context"
 	"crypto/tls"
 	"encoding/json"

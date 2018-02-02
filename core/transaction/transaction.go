@@ -1,14 +1,14 @@
 package transaction
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/common/log"
-	"UGCNetwork/common/serialization"
-	"UGCNetwork/core/contract"
-	"UGCNetwork/core/contract/program"
-	sig "UGCNetwork/core/signature"
-	"UGCNetwork/core/transaction/payload"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/common/log"
+	"UNetwork/common/serialization"
+	"UNetwork/core/contract"
+	"UNetwork/core/contract/program"
+	sig "UNetwork/core/signature"
+	"UNetwork/core/transaction/payload"
+	. "UNetwork/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"

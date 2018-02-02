@@ -1,14 +1,14 @@
 package privpayload
 
 import (
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	"UGCNetwork/core/contract"
-	"UGCNetwork/core/signature"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/core/transaction/payload"
-	"UGCNetwork/crypto"
-	"UGCNetwork/net/httpjsonrpc"
+	"UNetwork/account"
+	. "UNetwork/cli/common"
+	"UNetwork/core/contract"
+	"UNetwork/core/signature"
+	"UNetwork/core/transaction"
+	"UNetwork/core/transaction/payload"
+	"UNetwork/crypto"
+	"UNetwork/net/httpjsonrpc"
 	"bytes"
 	"encoding/hex"
 	"encoding/json"

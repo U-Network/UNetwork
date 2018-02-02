@@ -1,8 +1,8 @@
 package avm
 
 import (
-	"UGCNetwork/common/log"
-	. "UGCNetwork/vm/avm/errors"
+	"UNetwork/common/log"
+	. "UNetwork/vm/avm/errors"
 )
 
 func opNop(e *ExecutionEngine) (VMState, error) {

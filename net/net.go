@@ -1,14 +1,14 @@
 package net
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
-	"UGCNetwork/events"
-	"UGCNetwork/net/node"
-	"UGCNetwork/net/protocol"
+	. "UNetwork/common"
+	"UNetwork/core/ledger"
+	"UNetwork/core/transaction"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
+	"UNetwork/events"
+	"UNetwork/net/node"
+	"UNetwork/net/protocol"
 )
 
 type Neter interface {

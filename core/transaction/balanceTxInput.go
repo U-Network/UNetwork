@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"UGCNetwork/common"
+	"UNetwork/common"
 	"io"
 )
 

@@ -1,11 +1,11 @@
 package node
 
 import (
-	"UGCNetwork/common/config"
-	"UGCNetwork/common/log"
-	"UGCNetwork/core/ledger"
-	. "UGCNetwork/net/message"
-	. "UGCNetwork/net/protocol"
+	"UNetwork/common/config"
+	"UNetwork/common/log"
+	"UNetwork/core/ledger"
+	. "UNetwork/net/message"
+	. "UNetwork/net/protocol"
 	"math/rand"
 	"net"
 	"strconv"

@@ -1,11 +1,11 @@
 package avm
 
 import (
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
-	"UGCNetwork/common/log"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
+	"UNetwork/common/log"
 	"errors"
-	"UGCNetwork/common"
+	"UNetwork/common"
 )
 
 

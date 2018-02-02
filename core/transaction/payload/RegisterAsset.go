@@ -1,10 +1,10 @@
 package payload
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/core/asset"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
+	"UNetwork/common"
+	"UNetwork/core/asset"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
 	"io"
 )
 

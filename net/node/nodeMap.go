@@ -1,7 +1,7 @@
 package node
 
 import (
-	. "UGCNetwork/net/protocol"
+	. "UNetwork/net/protocol"
 	"fmt"
 	"sync"
 )

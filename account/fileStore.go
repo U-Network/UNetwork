@@ -10,11 +10,11 @@ import (
 	"os"
 	"sync"
 
-	. "UGCNetwork/common"
-	"UGCNetwork/common/serialization"
-	ct "UGCNetwork/core/contract"
-	"UGCNetwork/core/transaction"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/common/serialization"
+	ct "UNetwork/core/contract"
+	"UNetwork/core/transaction"
+	. "UNetwork/errors"
 )
 
 const (

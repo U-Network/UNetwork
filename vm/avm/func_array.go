@@ -1,7 +1,7 @@
 package avm
 
 import (
-	"UGCNetwork/vm/avm/types"
+	"UNetwork/vm/avm/types"
 )
 
 func opArraySize(e *ExecutionEngine) (VMState, error) {

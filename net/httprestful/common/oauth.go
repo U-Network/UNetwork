@@ -1,9 +1,9 @@
 package common
 
 import (
-	. "UGCNetwork/common/config"
-	"UGCNetwork/common/log"
-	Err "UGCNetwork/net/httprestful/error"
+	. "UNetwork/common/config"
+	"UNetwork/common/log"
+	Err "UNetwork/net/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"io/ioutil"

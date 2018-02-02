@@ -1,11 +1,11 @@
 package main
 
 import (
-	"UGCNetwork/crypto"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/core/store"
-	."UGCNetwork/common"
-	"UGCNetwork/common/log"
+	"UNetwork/crypto"
+	"UNetwork/core/ledger"
+	"UNetwork/core/store"
+	."UNetwork/common"
+	"UNetwork/common/log"
 	"encoding/hex"
 	"os"
 	"fmt"

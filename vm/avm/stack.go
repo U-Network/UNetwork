@@ -1,7 +1,7 @@
 package avm
 
 import (
-	"UGCNetwork/vm/avm/types"
+	"UNetwork/vm/avm/types"
 )
 
 type Element interface {

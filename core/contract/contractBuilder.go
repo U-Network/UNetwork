@@ -1,13 +1,13 @@
 package contract
 
 import (
-	. "UGCNetwork/common"
-	pg "UGCNetwork/core/contract/program"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	pg "UNetwork/core/contract/program"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
 	"math/big"
 	"sort"
-	"UGCNetwork/vm/avm"
+	"UNetwork/vm/avm"
 )
 
 //create a Single Singature contract for owner

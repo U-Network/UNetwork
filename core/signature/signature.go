@@ -1,12 +1,12 @@
 package signature
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/common/log"
-	"UGCNetwork/core/contract/program"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
-	"UGCNetwork/vm/avm/interfaces"
+	"UNetwork/common"
+	"UNetwork/common/log"
+	"UNetwork/core/contract/program"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
+	"UNetwork/vm/avm/interfaces"
 	"bytes"
 	"crypto/sha256"
 	"io"

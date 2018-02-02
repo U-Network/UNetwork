@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/crypto"
-	. "UGCNetwork/errors"
-	"UGCNetwork/events"
+	"UNetwork/common"
+	"UNetwork/core/ledger"
+	"UNetwork/core/transaction"
+	"UNetwork/crypto"
+	. "UNetwork/errors"
+	"UNetwork/events"
 	"bytes"
 	"encoding/binary"
 	"time"

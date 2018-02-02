@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"UGCNetwork/smartcontract/states"
+	"UNetwork/smartcontract/states"
 	"bytes"
-	"UGCNetwork/core/store"
+	"UNetwork/core/store"
 )
 
 type RWSet struct {

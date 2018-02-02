@@ -4,12 +4,12 @@ import (
 	"testing"
 	"strings"
 	"fmt"
-	"UGCNetwork/common"
-	"UGCNetwork/vm/evm/abi"
-	"UGCNetwork/crypto"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/core/store/ChainStore"
-	"UGCNetwork/client"
+	"UNetwork/common"
+	"UNetwork/vm/evm/abi"
+	"UNetwork/crypto"
+	"UNetwork/core/ledger"
+	"UNetwork/core/store/ChainStore"
+	"UNetwork/client"
 )
 
 const (

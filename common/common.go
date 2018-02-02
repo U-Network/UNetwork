@@ -1,8 +1,8 @@
 package common
 
 import (
-	"UGCNetwork/common/log"
-	. "UGCNetwork/errors"
+	"UNetwork/common/log"
+	. "UNetwork/errors"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

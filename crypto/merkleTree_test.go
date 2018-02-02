@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	. "UGCNetwork/common"
+	. "UNetwork/common"
 	"crypto/sha256"
 	"fmt"
 	"testing"

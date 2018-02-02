@@ -1,16 +1,16 @@
 package smartcontract
 
 import (
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	"UGCNetwork/common"
-	"UGCNetwork/common/password"
-	"UGCNetwork/core/code"
-	"UGCNetwork/core/contract"
-	"UGCNetwork/core/signature"
-	"UGCNetwork/core/transaction"
-	httpjsonrpc "UGCNetwork/net/httpjsonrpc"
-	"UGCNetwork/smartcontract/types"
+	"UNetwork/account"
+	. "UNetwork/cli/common"
+	"UNetwork/common"
+	"UNetwork/common/password"
+	"UNetwork/core/code"
+	"UNetwork/core/contract"
+	"UNetwork/core/signature"
+	"UNetwork/core/transaction"
+	httpjsonrpc "UNetwork/net/httpjsonrpc"
+	"UNetwork/smartcontract/types"
 	"bytes"
 	"encoding/hex"
 	"fmt"
@@ -78,7 +78,7 @@ func makeDeployContractTransaction(signer *account.Account, codeStr string, lang
 	}
 	fc.CodeHash()
 
-	tx, err := transaction.NewDeployTransaction(fc, signer.ProgramHash, "UGCNetwork", "1.0", "UGCNetwork user", "user@onchain.com", "test uint", types.LangType(byte(language)))
+	tx, err := transaction.NewDeployTransaction(fc, signer.ProgramHash, "UNetwork", "1.0", "UNetwork user", "user@onchain.com", "test uint", types.LangType(byte(language)))
 	if err != nil {
 		return "Deploy smartcontract fail!", err
 	}

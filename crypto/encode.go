@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	. "UGCNetwork/errors"
+	. "UNetwork/errors"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"

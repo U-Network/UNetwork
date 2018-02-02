@@ -1,11 +1,11 @@
 package message
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/common/log"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/events"
-	. "UGCNetwork/net/protocol"
+	"UNetwork/common"
+	"UNetwork/common/log"
+	"UNetwork/core/ledger"
+	"UNetwork/events"
+	. "UNetwork/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

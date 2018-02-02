@@ -1,12 +1,12 @@
 package contract
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/common/log"
-	pg "UGCNetwork/core/contract/program"
-	sig "UGCNetwork/core/signature"
-	"UGCNetwork/crypto"
-	_ "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/common/log"
+	pg "UNetwork/core/contract/program"
+	sig "UNetwork/core/signature"
+	"UNetwork/crypto"
+	_ "UNetwork/errors"
 	"errors"
 	"math/big"
 	"sort"

@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"UGCNetwork/core/store"
-	"UGCNetwork/smartcontract/states"
-	"UGCNetwork/common"
+	"UNetwork/core/store"
+	"UNetwork/smartcontract/states"
+	"UNetwork/common"
 	"math/big"
 )
 

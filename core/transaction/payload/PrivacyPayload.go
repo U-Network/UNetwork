@@ -1,8 +1,8 @@
 package payload
 
 import (
-	"UGCNetwork/common/serialization"
-	"UGCNetwork/crypto"
+	"UNetwork/common/serialization"
+	"UNetwork/crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"

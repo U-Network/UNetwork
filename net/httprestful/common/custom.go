@@ -1,11 +1,11 @@
 package common
 
 import (
-	. "UGCNetwork/common"
-	tx "UGCNetwork/core/transaction"
-	. "UGCNetwork/errors"
-	. "UGCNetwork/net/httpjsonrpc"
-	Err "UGCNetwork/net/httprestful/error"
+	. "UNetwork/common"
+	tx "UNetwork/core/transaction"
+	. "UNetwork/errors"
+	. "UNetwork/net/httpjsonrpc"
+	Err "UNetwork/net/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"time"

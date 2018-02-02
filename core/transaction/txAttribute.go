@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"UGCNetwork/common/serialization"
-	. "UGCNetwork/errors"
+	"UNetwork/common/serialization"
+	. "UNetwork/errors"
 	"errors"
 	"io"
 	"bytes"

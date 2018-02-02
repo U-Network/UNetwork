@@ -1,14 +1,14 @@
 package node
 
 import (
-	"UGCNetwork/common"
-	"UGCNetwork/common/config"
-	"UGCNetwork/common/log"
-	"UGCNetwork/core/ledger"
-	"UGCNetwork/core/transaction"
-	"UGCNetwork/core/transaction/payload"
-	va "UGCNetwork/core/validation"
-	. "UGCNetwork/errors"
+	"UNetwork/common"
+	"UNetwork/common/config"
+	"UNetwork/common/log"
+	"UNetwork/core/ledger"
+	"UNetwork/core/transaction"
+	"UNetwork/core/transaction/payload"
+	va "UNetwork/core/validation"
+	. "UNetwork/errors"
 	"errors"
 	"fmt"
 	"sync"

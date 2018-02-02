@@ -1,11 +1,11 @@
 package payload
 
 import (
-	. "UGCNetwork/core/code"
-	"UGCNetwork/common/serialization"
+	. "UNetwork/core/code"
+	"UNetwork/common/serialization"
 	"io"
-	"UGCNetwork/smartcontract/types"
-	"UGCNetwork/common"
+	"UNetwork/smartcontract/types"
+	"UNetwork/common"
 )
 
 type DeployCode struct {

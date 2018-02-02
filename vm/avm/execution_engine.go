@@ -1,12 +1,12 @@
 package avm
 
 import (
-	"UGCNetwork/vm/avm/interfaces"
+	"UNetwork/vm/avm/interfaces"
 	"io"
 	_ "math/big"
 	_ "sort"
-	. "UGCNetwork/vm/avm/errors"
-	"UGCNetwork/common"
+	. "UNetwork/vm/avm/errors"
+	"UNetwork/common"
 )
 
 const (

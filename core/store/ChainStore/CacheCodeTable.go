@@ -1,8 +1,8 @@
 package ChainStore
 
 import (
-	"UGCNetwork/core/store"
-	"UGCNetwork/smartcontract/states"
+	"UNetwork/core/store"
+	"UNetwork/smartcontract/states"
 )
 
 type CacheCodeTable struct {

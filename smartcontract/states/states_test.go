@@ -2,12 +2,12 @@ package states
 
 import (
 	"testing"
-	"UGCNetwork/common"
+	"UNetwork/common"
 	"bytes"
 	"fmt"
-	"UGCNetwork/crypto"
+	"UNetwork/crypto"
 	"math/big"
-	"UGCNetwork/common/serialization"
+	"UNetwork/common/serialization"
 )
 
 func TestAccountState(t *testing.T) {

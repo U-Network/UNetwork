@@ -1,7 +1,7 @@
 package service
 
 import (
-	"UGCNetwork/common"
+	"UNetwork/common"
 )
 
 type StorageContext struct {

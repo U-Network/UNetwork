@@ -1,7 +1,7 @@
 package account
 
 import (
-	"UGCNetwork/crypto"
+	"UNetwork/crypto"
 	"fmt"
 	"os"
 	"path"

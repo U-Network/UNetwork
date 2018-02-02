@@ -2,8 +2,8 @@ package states
 
 import (
 	"io"
-	"UGCNetwork/vm/avm/interfaces"
-	"UGCNetwork/core/store"
+	"UNetwork/vm/avm/interfaces"
+	"UNetwork/core/store"
 	"bytes"
 )
 

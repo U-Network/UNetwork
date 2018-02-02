@@ -1,8 +1,8 @@
 package code
 
 import (
-	. "UGCNetwork/common"
-	. "UGCNetwork/core/contract"
+	. "UNetwork/common"
+	. "UNetwork/core/contract"
 )
 //ICode is the abstract interface of smart contract code.
 type ICode interface {

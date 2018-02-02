@@ -1,10 +1,10 @@
 package evm
 
 import (
-	"UGCNetwork/common"
+	"UNetwork/common"
 	"math/big"
-	. "UGCNetwork/vm/evm/common"
-	"UGCNetwork/vm/evm/crypto"
+	. "UNetwork/vm/evm/common"
+	"UNetwork/vm/evm/crypto"
 	"crypto/sha256"
 	"github.com/golang/crypto/ripemd160"
 )

@@ -1,4 +1,4 @@
-# Onchain UGCNetwork Data Model Specification
+# Onchain UNetwork Data Model Specification
 
 * [Introduction](#introduction)
 * [Definitions](#definitions)
@@ -15,14 +15,14 @@
 
 ## Introduction
 
-This document describes the serialization format for the data structures used in the Onchain UGCNetwork.
+This document describes the serialization format for the data structures used in the Onchain UNetwork.
 
 ## Definitions
 
 ### Ledger
 
 The ledger Contains the BlockChain, current state and the store interface of the ledger. which is maintained by each peer.
-UGCNetwork is designed to support muti Ledger, but now is only allowed one ledger.
+UNetwork is designed to support muti Ledger, but now is only allowed one ledger.
 
 
 Field               | Type              | Description

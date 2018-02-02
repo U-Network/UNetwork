@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	"UGCNetwork/account"
-	. "UGCNetwork/cli/common"
-	"UGCNetwork/common/password"
+	"UNetwork/account"
+	. "UNetwork/cli/common"
+	"UNetwork/common/password"
 	"github.com/urfave/cli"
 )
 

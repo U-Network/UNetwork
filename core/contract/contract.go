@@ -1,13 +1,13 @@
 package contract
 
 import (
-	. "UGCNetwork/common"
-	"UGCNetwork/common/serialization"
-	. "UGCNetwork/errors"
+	. "UNetwork/common"
+	"UNetwork/common/serialization"
+	. "UNetwork/errors"
 	"bytes"
 	"errors"
 	"io"
-	"UGCNetwork/vm/avm"
+	"UNetwork/vm/avm"
 )
 
 //Contract address is the hash of contract program .

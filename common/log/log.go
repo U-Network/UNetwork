@@ -1,7 +1,7 @@
 package log
 
 import (
-	"UGCNetwork/common/config"
+	"UNetwork/common/config"
 	"bytes"
 	"errors"
 	"fmt"

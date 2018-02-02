@@ -1,10 +1,10 @@
 package program
 
 import (
-	. "UGCNetwork/common"
+	. "UNetwork/common"
 	"bytes"
 	"math/big"
-	"UGCNetwork/vm/avm"
+	"UNetwork/vm/avm"
 )
 
 type ProgramBuilder struct {
