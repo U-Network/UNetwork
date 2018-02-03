@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/UNetworkProject/UNetwork.svg?branch=master)](https://travis-ci.org/UNetworkProject/UNetwork)
 
-# UNetwork (Distributed Networks Architecture)
+# UNetwork 
 
  UNetwork is a decentralized distributed network protocol based on blockchain technology and is implemented in Golang. Through peer-to-peer network, UNetwork can be used to digitize assets and provide financial service, including asset registration, issuance, transfer, etc.
 
@@ -30,7 +30,7 @@ Clone the UNetwork repository into the appropriate $GOPATH/src directory.
 
 
 ```shell
-$ git clone https://github.com/UNetworkProject/UNetwork.git
+$ git clone https://github.com/U-Network/unetwork.git
 
 ```
 
@@ -325,30 +325,12 @@ looks like this:
 
 # Community
 
-## Mailing list
-
-We have a mailing list for developers:
-
-* OnchainUNetwork@googlegroups.com
-
-We provide two ways to subscribe:
-
-* Send any contents to the email OnchainUNetwork+subscribe@googlegroups.com
-
-* Sign in https://groups.google.com/forum/#!forum/OnchainUNetwork
 
 
 ## Site
 
-* https://www.UNetworkproject.org
+* http://u.network
 
-## Forum
-
-* https://forum.UNetworkproject.org
-
-## Wiki
-
-* https://wiki.UNetworkproject.org
 
 # License
 
