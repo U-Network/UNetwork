@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/UNetworkProject/UNetwork.svg?branch=master)](https://travis-ci.org/UNetworkProject/UNetwork)
+[![Build Status](https://travis-ci.org/U-Network/UNetwork.svg?branch=master)](https://travis-ci.org/U-Network/UNetwork)
 
 # UNetwork 
 
