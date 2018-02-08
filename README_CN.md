@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/UNetworkProject/UNetwork.svg?branch=master)](https://travis-ci.org/UNetworkProject/UNetwork)
+[![Build Status](https://travis-ci.org/U-Network/UNetwork.svg?branch=dev)](https://travis-ci.org/U-Network/UNetwork)
 
 # UNetwork 
 
@@ -30,7 +30,7 @@ UNetwork是go语言实现的基于区块链技术的去中心化的分布式网�
 
 
 ```shell
-$ git clone https://github.com/U-Network/unetwork.git
+$ git clone https://github.com/U-Network/UNetwork.git
 ```
 
 用第三方包管理工具glide拉取依赖库
