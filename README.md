@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/UNetworkProject/UNetwork.svg?branch=master)](https://travis-ci.org/UNetworkProject/UNetwork)
+[![Build Status](https://travis-ci.org/U-Network/UNetwork.svg?branch=master)](https://travis-ci.org/U-Network/UNetwork)
 
 # UNetwork 
 
@@ -30,7 +30,7 @@ Clone the UNetwork repository into the appropriate $GOPATH/src directory.
 
 
 ```shell
-$ git clone https://github.com/U-Network/unetwork.git
+$ git clone https://github.com/U-Network/UNetwork.git
 
 ```
 
