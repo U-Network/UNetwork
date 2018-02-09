@@ -26,6 +26,12 @@ const (
 	ST_AssetState     DataEntryPrefix = 0xc5
 	ST_Validator      DataEntryPrefix = 0xc6
 	ST_Locked         DataEntryPrefix = 0xc7
+	ST_User           DataEntryPrefix = 0xc8 // key: username 			value: program hash + reputation
+	ST_Post           DataEntryPrefix = 0xc9 // key: username 			value: all post and reply transaction hash
+	ST_Like           DataEntryPrefix = 0xca // key: post/reply txid	value: liker/disliker
+	ST_Withdraw       DataEntryPrefix = 0xcb // key: username   		value: withdrawn token
+	ST_Total          DataEntryPrefix = 0xcc // key: username   		value: total token
+
 	//SYSTEM
 	SYS_CurrentBlock DataEntryPrefix = 0x40
 	// SYS_CurrentHeader     DataEntryPrefix = 0x41

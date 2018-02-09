@@ -67,10 +67,6 @@ func (ds *DbftService) BlockPersistCompleted(v interface{}) {
 	log.Debug()
 	if block, ok := v.(*ledger.Block); ok {
 		log.Infof("persist block: %x", block.Hash())
-		err := ds.localNet.CleanSubmittedTransactions(block)
-		if err != nil {
-			log.Warn(err)
-		}
 
 		ds.localNet.Xmit(block.Hash())
 		//log.Debug(fmt.Sprintf("persist block: %x with %d transactions\n", block.Hash(),len(trxHashToBeDelete)))
@@ -160,6 +156,11 @@ func (ds *DbftService) CheckSignatures() error {
 			if err := ledger.DefaultLedger.Blockchain.AddBlock(block); err != nil {
 				log.Error(fmt.Sprintf("[CheckSignatures] Xmit block Error: %s, blockHash: %d", err.Error(), block.Hash()))
 				return NewDetailErr(err, ErrNoCode, "[DbftService], CheckSignatures AddContract failed.")
+			}
+
+			if err := ds.localNet.CleanSubmittedTransactions(block); err != nil {
+				log.Warn(err)
+				return NewDetailErr(err, ErrNoCode, "[DbftService], clean transaction pool error.")
 			}
 
 			ds.context.State |= BlockGenerated

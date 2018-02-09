@@ -14,6 +14,8 @@ import (
 	"UNetwork/core/contract"
 	"UNetwork/core/signature"
 	"UNetwork/core/transaction"
+	"UNetwork/core/forum"
+
 )
 
 type BatchOut struct {
@@ -71,9 +73,6 @@ func MakeRegTransaction(wallet account.Client, name string, value string) (*tran
 		return nil, err
 	}
 	tx, _ := transaction.NewRegisterAssetTransaction(asset, fixedValue, issuer.PubKey(), transactionContract.ProgramHash)
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	tx.Attributes = make([]*transaction.TxAttribute, 0)
-	tx.Attributes = append(tx.Attributes, &txAttr)
 	if err := signTransaction(issuer, tx); err != nil {
 		fmt.Println("sign regist transaction failed")
 		return nil, err
@@ -122,10 +121,6 @@ func MakeLockAssetTransaction(wallet account.Client, assetID Uint256, value stri
 		return nil, err
 	}
 	txn, _ := transaction.NewLockAssetTransaction(mainAccount.ProgramHash, assetID, fixedValue, height)
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	txn.Attributes = make([]*transaction.TxAttribute, 0)
-	txn.Attributes = append(txn.Attributes, &txAttr)
-
 	ctx := contract.NewContractContext(txn)
 	if err := wallet.Sign(ctx); err != nil {
 		return nil, err
@@ -228,9 +223,6 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 	if err != nil {
 		return nil, err
 	}
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	txn.Attributes = make([]*transaction.TxAttribute, 0)
-	txn.Attributes = append(txn.Attributes, &txAttr)
 
 	// sign transaction contract
 	ctx := contract.NewContractContext(txn)
@@ -315,10 +307,6 @@ func MakeMultisigTransferTransaction(wallet account.Client, assetID Uint256, fro
 	if err != nil {
 		return nil, err
 	}
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	txn.Attributes = make([]*transaction.TxAttribute, 0)
-	txn.Attributes = append(txn.Attributes, &txAttr)
-
 	ctx := contract.NewContractContext(txn)
 	err = wallet.Sign(ctx)
 	if err != nil {
@@ -359,4 +347,74 @@ func newContractContextWithoutProgramHashes(data signature.SignableData, length 
 		Codes:      make([][]byte, length),
 		Parameters: make([][][]byte, length),
 	}
+}
+
+func MakeRegisterUserTransaction(name string, phash Uint160) (*transaction.Transaction, error) {
+	txn, err := transaction.NewRegisterUserTrasaction(name, phash)
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
+}
+
+func MakePostArticleTransaction(wallet account.Client, articleHash Uint256, author string) (*transaction.Transaction, error) {
+	txn, err := transaction.NewPostArticleTrasaction(articleHash, author)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := contract.NewContractContext(txn)
+	if err := wallet.Sign(ctx); err != nil {
+		return nil, err
+	}
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, err
+}
+
+func MakeLikeArticleTransaction(wallet account.Client, articleHash Uint256, me string, likeType forum.LikeType) (*transaction.Transaction, error) {
+	txn, err := transaction.NewLikeArticleTrasaction(articleHash, me, likeType)
+	if err != nil {
+		return nil, err
+	}
+	ctx := contract.NewContractContext(txn)
+	if err := wallet.Sign(ctx); err != nil {
+		return nil, err
+	}
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, err
+}
+
+func MakeReplyArticleTransaction(wallet account.Client, postHash Uint256, contentHash Uint256, replier string) (*transaction.Transaction, error) {
+	txn, err := transaction.NewReplyArticleTrasaction(postHash, contentHash, replier)
+	if err != nil {
+		return nil, err
+	}
+	ctx := contract.NewContractContext(txn)
+	if err := wallet.Sign(ctx); err != nil {
+		return nil, err
+	}
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, err
+}
+
+func MakeWithdrawalTransaction(wallet account.Client, payee string, receipient Uint160, asset Uint256, amount string) (*transaction.Transaction, error) {
+	fixedAmount, err := StringToFixed64(amount)
+	if err != nil {
+		return nil, err
+	}
+	txn, err := transaction.NewWithdrawalTrasaction(payee, receipient, asset, fixedAmount)
+	if err != nil {
+		return nil, err
+	}
+	ctx := contract.NewContractContext(txn)
+	if err := wallet.Sign(ctx); err != nil {
+		return nil, err
+	}
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, err
 }

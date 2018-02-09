@@ -1,7 +1,12 @@
 package common
 
 import (
+	"bytes"
+	"fmt"
+	"strconv"
+
 	. "UNetwork/common"
+	"UNetwork/core/forum"
 	"UNetwork/core/ledger"
 	tx "UNetwork/core/transaction"
 	. "UNetwork/errors"
@@ -9,9 +14,7 @@ import (
 	Err "UNetwork/net/httprestful/error"
 	. "UNetwork/net/protocol"
 	"UNetwork/smartcontract/states"
-	"bytes"
-	"fmt"
-	"strconv"
+
 )
 
 var node Noder
@@ -327,6 +330,115 @@ func GetLockedAsset(cmd map[string]interface{}) map[string]interface{} {
 	return resp
 }
 
+func GetUserInfo(cmd map[string]interface{}) map[string]interface{} {
+	resp := ResponsePack(Err.SUCCESS)
+	name, ok := cmd["Username"].(string)
+	if !ok || len(name) > MaxUserNameLen || len(name) < MinUserNameLen {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	userInfo, err := ledger.DefaultLedger.Store.GetUserInfo(name)
+	if err != nil {
+		resp["Error"] = Err.INVALID_USER
+		return resp
+	}
+	totalInfo, err := ledger.DefaultLedger.Store.GetTokenInfo(name, forum.TotalToken)
+	if err != nil {
+		resp["Error"] = Err.INVALID_ASSET
+		return resp
+	}
+	withdrawInfo, err := ledger.DefaultLedger.Store.GetTokenInfo(name, forum.WithdrawnToken)
+	if err != nil {
+		resp["Error"] = Err.INVALID_ASSET
+		return resp
+	}
+	type info struct {
+		ProgramHash    string
+		Reputation     string
+		TotalToken     string
+		WithdrawnToken string
+	}
+	ret := &info{
+		ProgramHash:    BytesToHexString(userInfo.UserProgramHash.ToArrayReverse()),
+		Reputation:     userInfo.Reputation.String(),
+		TotalToken:     totalInfo.Number.String(),
+		WithdrawnToken: withdrawInfo.Number.String(),
+	}
+	resp["Result"] = ret
+
+	return resp
+}
+
+func GetUserArticleInfo(cmd map[string]interface{}) map[string]interface{} {
+	resp := ResponsePack(Err.SUCCESS)
+	name, ok := cmd["Username"].(string)
+	if !ok || len(name) > MaxUserNameLen || len(name) < MinUserNameLen {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	articleInfo, err := ledger.DefaultLedger.Store.GetUserArticleInfo(name)
+	if err != nil {
+		resp["Error"] = Err.INVALID_USER
+		return resp
+	}
+	type info struct {
+		ParentTxnHash string `json:",omitempty"`
+		ContentHash   string
+		ContentType   string
+	}
+	var ret []*info
+	for _, v := range articleInfo {
+		t, p := "", ""
+		switch v.ContentType {
+		case forum.Post:
+			t = "post"
+		case forum.Reply:
+			t = "reply"
+		}
+		var zeroHash Uint256
+		if v.ParentTxnHash != zeroHash {
+			p = BytesToHexString(v.ParentTxnHash.ToArrayReverse())
+		}
+		tmp := &info{
+			ParentTxnHash: p,
+			ContentHash:   BytesToHexString(v.ContentHash.ToArray()),
+			ContentType:   t,
+		}
+		ret = append(ret, tmp)
+	}
+	resp["Result"] = ret
+
+	return resp
+}
+
+func GetLikeInfo(cmd map[string]interface{}) map[string]interface{} {
+	resp := ResponsePack(Err.SUCCESS)
+	txnHash, ok := cmd["Posthash"].(string)
+	if !ok {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	tmp, err := HexStringToBytesReverse(txnHash)
+	if err != nil {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	hash, err := Uint256ParseFromBytes(tmp)
+	if err != nil {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+
+	likeInfo, err := ledger.DefaultLedger.Store.GetLikeInfo(hash)
+	if err != nil {
+		resp["Error"] = Err.INVALID_TRANSACTION
+		return resp
+	}
+	resp["Result"] = likeInfo
+
+	return resp
+}
+
 func GetBalanceByAsset(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(Err.SUCCESS)
 	addr, ok := cmd["Addr"].(string)
@@ -490,7 +602,9 @@ func SendRawTransaction(cmd map[string]interface{}) map[string]interface{} {
 		resp["Error"] = Err.INVALID_TRANSACTION
 		return resp
 	}
-	if txn.TxType != tx.TransferAsset {
+	if txn.TxType != tx.TransferAsset && txn.TxType != tx.RegisterUser &&
+		txn.TxType != tx.PostArticle && txn.TxType != tx.ReplyArticle &&
+		txn.TxType != tx.LikeArticle && txn.TxType != tx.Withdrawal {
 		resp["Error"] = Err.INVALID_TRANSACTION
 		return resp
 	}

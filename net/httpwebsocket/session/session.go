@@ -15,7 +15,7 @@ type Session struct {
 	sSessionId  string
 }
 
-const sessionTimeOut int64 = 120
+const sessionTimeOut int64 = 12 * 60 * 60
 
 func (s *Session) GetSessionId() string {
 	return s.sSessionId

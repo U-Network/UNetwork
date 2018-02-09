@@ -147,7 +147,6 @@ func (cp *ConsensusPayload) SerializeUnsigned(w io.Writer) error {
 		return err
 	}
 	return nil
-
 }
 
 func (cp *ConsensusPayload) Serialize(w io.Writer) error {
