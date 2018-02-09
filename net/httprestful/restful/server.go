@@ -46,9 +46,14 @@ const (
 	Api_GetBalanceByAddr    = "/api/v1/asset/balances/:addr"
 	Api_GetBalancebyAsset   = "/api/v1/asset/balance/:addr/:assetid"
 	Api_GetLockedAsset      = "/api/v1/asset/locked/:addr/:assetid"
+	Api_GetUserInfo         = "/api/v1/userinfo/:username"
+	Api_GetUserArticleInfo  = "/api/v1/userarticleinfo/:username"
+	Api_GetLikeInfo         = "/api/v1/likeinfo/:posthash"
 	Api_GetUTXObyAsset      = "/api/v1/asset/utxo/:addr/:assetid"
 	Api_GetUTXObyAddr       = "/api/v1/asset/utxos/:addr"
 	Api_SendRawTx           = "/api/v1/transaction"
+	Api_SendChatMessage     = "/api/v1/chatmessage"
+	Api_SendUserList        = "/api/v1/userlist"
 	Api_SendRcdTxByTrans    = "/api/v1/custom/transaction/record"
 	Api_GetStateUpdate      = "/api/v1/stateupdate/:namespace/:key"
 	Api_OauthServerUrl      = "/api/v1/config/oauthserver/url"
@@ -153,6 +158,9 @@ func (rt *restServer) registryMethod() {
 		Api_GetBalanceByAddr:    {name: "getbalancebyaddr", handler: GetBalanceByAddr},
 		Api_GetBalancebyAsset:   {name: "getbalancebyasset", handler: GetBalanceByAsset},
 		Api_GetLockedAsset:      {name: "getlockedasset", handler: GetLockedAsset},
+		Api_GetUserInfo:         {name: "getuserinfo", handler: GetUserInfo},
+		Api_GetLikeInfo:         {name: "getlikeinfo", handler: GetLikeInfo},
+		Api_GetUserArticleInfo:  {name: "getuserarticleinfo", handler: GetUserArticleInfo},
 		Api_OauthServerUrl:      {name: "getoauthserverurl", handler: GetOauthServerUrl},
 		Api_NoticeServerUrl:     {name: "getnoticeserverurl", handler: GetNoticeServerUrl},
 		Api_Restart:             {name: "restart", handler: rt.Restart},
@@ -172,6 +180,8 @@ func (rt *restServer) registryMethod() {
 	postMethodMap := map[string]Action{
 		Api_SendRawTx:         {name: "sendrawtransaction", handler: sendRawTransaction},
 		Api_SendRcdTxByTrans:  {name: "sendrecord", handler: SendRecord},
+		Api_SendChatMessage:   {name: "sendchatmessage", handler: SendChatMessage},
+		Api_SendUserList:      {name: "senduserlist", handler: SendUserList},
 		Api_OauthServerUrl:    {name: "setoauthserverurl", handler: SetOauthServerUrl},
 		Api_NoticeServerUrl:   {name: "setnoticeserverurl", handler: SetNoticeServerUrl},
 		Api_NoticeServerState: {name: "setpostblock", handler: SetPushBlockFlag},
@@ -202,6 +212,12 @@ func (rt *restServer) getPath(url string) string {
 		return Api_GetBalancebyAsset
 	} else if strings.Contains(url, strings.TrimRight(Api_GetLockedAsset, ":addr/:assetid")) {
 		return Api_GetLockedAsset
+	} else if strings.Contains(url, strings.TrimRight(Api_GetUserInfo, ":username")) {
+		return Api_GetUserInfo
+	} else if strings.Contains(url, strings.TrimRight(Api_GetUserArticleInfo, ":username")) {
+		return Api_GetUserArticleInfo
+	} else if strings.Contains(url, strings.TrimRight(Api_GetLikeInfo, ":posthash")) {
+		return Api_GetLikeInfo
 	} else if strings.Contains(url, strings.TrimRight(Api_GetUTXObyAddr, ":addr")) {
 		return Api_GetUTXObyAddr
 	} else if strings.Contains(url, strings.TrimRight(Api_GetUTXObyAsset, ":addr/:assetid")) {
@@ -255,6 +271,15 @@ func (rt *restServer) getParams(r *http.Request, url string, req map[string]inte
 	case Api_GetLockedAsset:
 		req["Addr"] = getParam(r, "addr")
 		req["Assetid"] = getParam(r, "assetid")
+		break
+	case Api_GetUserInfo:
+		req["Username"] = getParam(r, "username")
+		break
+	case Api_GetUserArticleInfo:
+		req["Username"] = getParam(r, "username")
+		break
+	case Api_GetLikeInfo:
+		req["Posthash"] = getParam(r, "posthash")
 		break
 	case Api_GetBalanceByAddr:
 		req["Addr"] = getParam(r, "addr")
@@ -319,6 +344,14 @@ func (rt *restServer) initGetHandler() {
 			rt.response(w, resp)
 		})
 	}
+	//Options
+	for k, _ := range rt.getMap {
+		rt.router.Options(k, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Access-Control-Allow-Headers", "*")
+			w.Header().Set("content-type", "application/json;charset=utf-8")
+			w.Header().Add("Access-Control-Allow-Origin", "*")
+		})
+	}
 }
 func (rt *restServer) initPostHandler() {
 	for k, _ := range rt.postMap {
@@ -362,12 +395,11 @@ func (rt *restServer) initPostHandler() {
 			rt.write(w, []byte{})
 		})
 	}
-
 }
 func (rt *restServer) write(w http.ResponseWriter, data []byte) {
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Add("Access-Control-Allow-Headers", "*")
 	w.Header().Set("content-type", "application/json;charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Write(data)
 }
 func (rt *restServer) response(w http.ResponseWriter, resp map[string]interface{}) {

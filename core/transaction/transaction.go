@@ -26,6 +26,11 @@ const (
 	IssueAsset     TransactionType = 0x01
 	BookKeeper     TransactionType = 0x02
 	LockAsset      TransactionType = 0x03
+	RegisterUser   TransactionType = 0x04
+	PostArticle    TransactionType = 0x05
+	LikeArticle    TransactionType = 0x06
+	ReplyArticle   TransactionType = 0x07
+	Withdrawal     TransactionType = 0x08
 	PrivacyPayload TransactionType = 0x20
 	RegisterAsset  TransactionType = 0x40
 	TransferAsset  TransactionType = 0x80
@@ -225,6 +230,16 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.InvokeCode)
 	case DataFile:
 		tx.Payload = new(payload.DataFile)
+	case RegisterUser:
+		tx.Payload = new(payload.RegisterUser)
+	case PostArticle:
+		tx.Payload = new(payload.PostArticle)
+	case LikeArticle:
+		tx.Payload = new(payload.LikeArticle)
+	case ReplyArticle:
+		tx.Payload = new(payload.ReplyArticle)
+	case Withdrawal:
+		tx.Payload = new(payload.Withdrawal)
 	default:
 		return errors.New("[Transaction],invalide transaction type.")
 	}
@@ -385,6 +400,30 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
 		}
 		hashs = append(hashs, astHash)
+	case PostArticle:
+		info, err := TxStore.GetUserInfo(tx.Payload.(*payload.PostArticle).Author)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetUserInfo failed.")
+		}
+		hashs = append(hashs, info.UserProgramHash)
+	case LikeArticle:
+		info, err := TxStore.GetUserInfo(tx.Payload.(*payload.LikeArticle).Liker)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetUserInfo failed.")
+		}
+		hashs = append(hashs, info.UserProgramHash)
+	case ReplyArticle:
+		info, err := TxStore.GetUserInfo(tx.Payload.(*payload.ReplyArticle).Replier)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetUserInfo failed.")
+		}
+		hashs = append(hashs, info.UserProgramHash)
+	case Withdrawal:
+		info, err := TxStore.GetUserInfo(tx.Payload.(*payload.Withdrawal).Payee)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetUserInfo failed.")
+		}
+		hashs = append(hashs, info.UserProgramHash)
 	default:
 	}
 	//remove dupilicated hashes

@@ -65,7 +65,8 @@ func GetTransactionOutputs(outputs []*transaction.TxOutput) []TxoutputInfo {
 	for k, v := range outputs {
 		outputList[k].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
 		outputList[k].Value = v.Value.String()
-		outputList[k].ProgramHash = BytesToHexString(v.ProgramHash.ToArrayReverse())
+		address, _ := v.ProgramHash.ToAddress()
+		outputList[k].Address = address
 	}
 	return outputList
 }

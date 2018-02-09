@@ -1,12 +1,15 @@
 package ledger
 
 import (
+
 	. "UNetwork/common"
 	"UNetwork/core/account"
 	. "UNetwork/core/asset"
+	"UNetwork/core/forum"
 	tx "UNetwork/core/transaction"
 	"UNetwork/crypto"
 	"UNetwork/smartcontract/states"
+
 )
 
 // ILedgerStore provides func with store package.
@@ -32,6 +35,12 @@ type ILedgerStore interface {
 	GetStorage(key []byte) ([]byte, error)
 	GetAccount(programHash Uint160) (*account.AccountState, error)
 	GetAssetState(assetId Uint256) (*states.AssetState, error)
+
+	GetUserInfo(name string) (*forum.UserInfo, error)
+	GetLikeInfo(postHash Uint256) ([]*forum.LikeInfo, error)
+	GetUserArticleInfo(name string) ([]*forum.ArticleInfo, error)
+	GetTokenInfo(name string, tokenType forum.TokenType) (*forum.TokenInfo, error)
+	GetAvailableTokenInfo(name string) (*forum.TokenInfo, error)
 
 	GetCurrentBlockHash() Uint256
 	GetCurrentHeaderHash() Uint256

@@ -12,6 +12,7 @@ const (
 	INVALID_METHOD int64 = 42001
 	INVALID_PARAMS int64 = 42002
 	INVALID_TOKEN  int64 = 42003
+	INVALID_USER   int64 = 42004
 
 	INVALID_TRANSACTION int64 = 43001
 	INVALID_ASSET       int64 = 43002
@@ -39,6 +40,7 @@ var ErrMap = map[int64]string{
 	INVALID_METHOD: "INVALID METHOD",
 	INVALID_PARAMS: "INVALID PARAMS",
 	INVALID_TOKEN:  "VERIFY TOKEN ERROR",
+	INVALID_USER:  "INVALID USER",
 
 	INVALID_TRANSACTION: "INVALID TRANSACTION",
 	INVALID_ASSET:       "INVALID ASSET",
@@ -62,6 +64,6 @@ var ErrMap = map[int64]string{
 	int64(ErrStateUpdaterVaild):    "INTERNAL ERROR, ErrStateUpdaterVaild",
 	int64(ErrSummaryAsset):         "INTERNAL ERROR, ErrSummaryAsset",
 	int64(ErrLockedAsset):          "INTERNAL ERROR, ErrLockedAsset",
-	int64(ErrDuplicateLockAsset):   "INTERNAL ERROR, ErrDuplicateLockAsset",
+	int64(ErrDuplicateCharacter):   "INTERNAL ERROR, ErrDuplicateCharacter",
 	int64(ErrXmitFail):             "INTERNAL ERROR, ErrXmitFail",
 }

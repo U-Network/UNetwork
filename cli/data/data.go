@@ -13,7 +13,6 @@ import (
 	"github.com/urfave/cli"
 	"math/rand"
 	"os"
-	"strconv"
 )
 
 func openWallet(name string, passwd []byte) account.Client {
@@ -150,10 +149,6 @@ func dataAction(c *cli.Context) error {
 		admin, _ := wallet.GetDefaultAccount()
 
 		tx, _ = transaction.NewDataFileTransaction(address, name, "", admin.PubKey())
-		txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-		tx.Attributes = make([]*transaction.TxAttribute, 0)
-		tx.Attributes = append(tx.Attributes, &txAttr)
-
 		if err := signTransaction(admin, tx); err != nil {
 			fmt.Println("sign datafile transaction failed")
 			return err

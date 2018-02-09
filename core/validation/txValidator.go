@@ -9,11 +9,13 @@ import (
 	"UNetwork/common/config"
 	"UNetwork/common/log"
 	"UNetwork/core/asset"
+	"UNetwork/core/forum"
 	"UNetwork/core/ledger"
 	tx "UNetwork/core/transaction"
 	"UNetwork/core/transaction/payload"
 	"UNetwork/crypto"
 	. "UNetwork/errors"
+
 )
 
 func VerifyTransaction(txn *tx.Transaction) ErrCode {
@@ -21,6 +23,11 @@ func VerifyTransaction(txn *tx.Transaction) ErrCode {
 	if err := CheckDuplicateInput(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrDuplicateInput
+	}
+
+	if err := CheckTransactionOutput(txn); err != nil {
+		log.Warn("[VerifyTransaction],", err)
+		return ErrInvalidOutput
 	}
 
 	if err := CheckAssetPrecision(txn); err != nil {
@@ -38,14 +45,14 @@ func VerifyTransaction(txn *tx.Transaction) ErrCode {
 		return ErrAttributeProgram
 	}
 
-	if err := CheckTransactionContracts(txn); err != nil {
-		log.Warn("[VerifyTransaction],", err)
-		return ErrTransactionContracts
-	}
-
 	if err := CheckTransactionPayload(txn); err != nil {
 		log.Warn("[VerifyTransaction],", err)
 		return ErrTransactionPayload
+	}
+
+	if err := CheckTransactionContracts(txn); err != nil {
+		log.Warn("[VerifyTransaction],", err)
+		return ErrTransactionContracts
 	}
 
 	return ErrNoError
@@ -207,6 +214,33 @@ func CheckDuplicateInput(tx *tx.Transaction) error {
 	return nil
 }
 
+func CheckTransactionOutput(txn *tx.Transaction) error {
+	if txn.TxType == tx.Withdrawal {
+		if len(txn.Outputs) != 1 {
+			return errors.New("invaild transaction output num in withdrawal transaction")
+		}
+		_, err := txn.Outputs[0].ProgramHash.ToAddress()
+		if err != nil {
+			return errors.New("invaild withdrawal address")
+		}
+
+		//TODO: check asset ID
+		payee := txn.Payload.(*payload.Withdrawal).Payee
+		availableTokenInfo, err := ledger.DefaultLedger.Store.GetAvailableTokenInfo(payee)
+		if err != nil {
+			return err
+		}
+		if availableTokenInfo.Number <= Fixed64(0) {
+			return errors.New("All tokens has been withdrawn")
+		}
+		if txn.Outputs[0].Value > availableTokenInfo.Number {
+			return errors.New("available tokens is not enough")
+		}
+	}
+
+	return nil
+}
+
 func CheckDuplicateUtxoInBlock(tx *tx.Transaction, txPoolInputs []string) error {
 	var txInputs []string
 	for _, t := range tx.UTXOInputs {
@@ -256,7 +290,7 @@ func CheckTransactionBalance(Tx *tx.Transaction) error {
 			return errors.New("Invalid transaction UTXO output.")
 		}
 	}
-	if Tx.TxType == tx.IssueAsset {
+	if Tx.TxType == tx.IssueAsset || Tx.TxType == tx.Withdrawal {
 		if len(Tx.UTXOInputs) > 0 {
 			return errors.New("Invalide Issue transaction.")
 		}
@@ -303,6 +337,49 @@ func CheckTransactionContracts(Tx *tx.Transaction) error {
 	}
 }
 
+func IsForumUserExist(user string) bool {
+	userInfo, _ := ledger.DefaultLedger.Store.GetUserInfo(user)
+	if userInfo == nil {
+		return false
+	}
+
+	return true
+}
+
+func CheckForumPostTransaction(hash Uint256) error {
+	txn, err := tx.TxStore.GetTransaction(hash)
+	if err != nil {
+		return errors.New(fmt.Sprintf("The main post hash '%s' is invaild", BytesToHexString(hash.ToArrayReverse())))
+	}
+	if txn.TxType != tx.PostArticle && txn.TxType != tx.ReplyArticle {
+		return errors.New("The transaction type is invalid in main post")
+	}
+
+	return nil
+}
+
+func CheckForumLikeInfo(hash Uint256, liker string, likeType forum.LikeType) error {
+	likeInfo, err := ledger.DefaultLedger.Store.GetLikeInfo(hash)
+	if err != nil {
+		return errors.New("The like info of main post is invalid")
+	}
+	flag := false
+	for _, v := range likeInfo {
+		if v.LikeType != likeType {
+			continue
+		}
+		if liker == v.Liker {
+			flag = true
+			break
+		}
+	}
+	if flag {
+		return errors.New(fmt.Sprintf("The post has been click by user '%s'\n", liker))
+	}
+
+	return nil
+}
+
 func checkAmountPrecise(amount Fixed64, precision byte) bool {
 	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
@@ -320,7 +397,6 @@ func checkIssuerInBookkeeperList(issuer *crypto.PubKey, bookKeepers []*crypto.Pu
 }
 
 func CheckTransactionPayload(Tx *tx.Transaction) error {
-
 	switch pld := Tx.Payload.(type) {
 	case *payload.BookKeeper:
 		//Todo: validate bookKeeper Cert
@@ -358,6 +434,45 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 	case *payload.DeployCode:
 	case *payload.InvokeCode:
 	case *payload.DataFile:
+	case *payload.RegisterUser:
+		username := pld.UserName
+		if len(username) < MinUserNameLen || len(username) > MaxUserNameLen {
+			return errors.New("invalid username")
+		}
+		if IsForumUserExist(pld.UserName) {
+			return errors.New("user already exists")
+		}
+	case *payload.PostArticle:
+		if !IsForumUserExist(pld.Author) {
+			return errors.New("invalid post user")
+		}
+	case *payload.LikeArticle:
+		liker := pld.Liker
+		txnHash := pld.PostTxnHash
+		liketype := pld.LikeType
+		// check if the liker is a valid user registered on blockchain
+		if !IsForumUserExist(liker) {
+			return errors.New("invalid like user")
+		}
+		// check if the post user liked is valid
+		if err := CheckForumPostTransaction(txnHash); err != nil {
+			return err
+		}
+		// check if the post has been liked by current user
+		if err := CheckForumLikeInfo(txnHash, liker, liketype); err != nil {
+			return err
+		}
+	case *payload.ReplyArticle:
+		if !IsForumUserExist(pld.Replier) {
+			return errors.New("invalid reply user")
+		}
+		if err := CheckForumPostTransaction(pld.PostHash); err != nil {
+			return err
+		}
+	case *payload.Withdrawal:
+		if !IsForumUserExist(pld.Payee) {
+			return errors.New("invalid withdraw user")
+		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
 	}

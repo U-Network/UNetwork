@@ -26,8 +26,9 @@ const (
 	ErrStateUpdaterVaild    ErrCode = 45011
 	ErrSummaryAsset         ErrCode = 45012
 	ErrLockedAsset          ErrCode = 45013
-	ErrDuplicateLockAsset   ErrCode = 45014
-	ErrXmitFail             ErrCode = 45015
+	ErrDuplicateCharacter   ErrCode = 45014
+	ErrInvalidOutput        ErrCode = 45015
+	ErrXmitFail             ErrCode = 45016
 )
 
 func (err ErrCode) Error() string {
@@ -62,8 +63,8 @@ func (err ErrCode) Error() string {
 		return "invalid summary asset"
 	case ErrLockedAsset:
 		return "locked asset unusable"
-	case ErrDuplicateLockAsset:
-		return "duplicate locking asset transaction detected"
+	case ErrDuplicateCharacter:
+		return "duplicate transaction character detected"
 	case ErrXmitFail:
 		return "transmit error"
 	}
