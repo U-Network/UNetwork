@@ -37,6 +37,10 @@ func (msg block) Handle(node Noder) error {
 		log.Warn("Block add failed: ", err, " ,block hash is ", hash)
 		return err
 	}
+	if err := node.LocalNode().CleanSubmittedTransactions(&msg.blk); err != nil {
+		log.Warn("clean transaction pool error")
+		return err
+	}
 	for _, n := range node.LocalNode().GetNeighborNoder() {
 		if n.ExistFlightHeight(msg.blk.Blockdata.Height) {
 			//sync block

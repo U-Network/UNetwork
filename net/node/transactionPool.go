@@ -21,6 +21,7 @@ type TXNPool struct {
 	issueSummary  map[common.Uint256]common.Fixed64           // transaction which pass the verify will summary the amout to this map
 	inputUTXOList map[string]*transaction.Transaction         // transaction which pass the verify will add the UTXO to this map
 	lockAssetList map[string]struct{}                         // keep only one copy for each program hash and asset ID pair
+	characterList map[string]struct{}                         // keep only one copy for character of each kind of transaction
 }
 
 func (this *TXNPool) init() {
@@ -31,6 +32,7 @@ func (this *TXNPool) init() {
 	this.issueSummary = make(map[common.Uint256]common.Fixed64)
 	this.txnList = make(map[common.Uint256]*transaction.Transaction)
 	this.lockAssetList = make(map[string]struct{})
+	this.characterList = make(map[string]struct{})
 }
 
 //append transaction to txnpool when check ok.
@@ -83,10 +85,15 @@ func (this *TXNPool) GetTxnPool(byCount bool) map[common.Uint256]*transaction.Tr
 
 //clean the trasaction Pool with committed block.
 func (this *TXNPool) CleanSubmittedTransactions(block *ledger.Block) error {
+
+	// clean transactions from memory pool
 	this.cleanTransactionList(block.Transactions)
+
+	// clean other things from memory pool
 	this.cleanUTXOList(block.Transactions)
-	this.cleanLockedAssetList(block.Transactions)
+	this.cleanTransactionCharacterList(block.Transactions)
 	this.cleanIssueSummary(block.Transactions)
+
 	return nil
 }
 
@@ -105,9 +112,9 @@ func (this *TXNPool) verifyTransactionWithTxnPool(txn *transaction.Transaction) 
 		return ErrDoubleSpend
 	}
 	// check if exist duplicate LockAsset transactions in a block
-	if err := this.checkDuplicateLockAsset(txn); err != nil {
+	if err := this.checkTransactionCharacter(txn); err != nil {
 		log.Info(err)
-		return ErrDuplicateLockAsset
+		return ErrDuplicateCharacter
 	}
 	//check issue transaction weather occur exceed issue range.
 	if ok := this.summaryAssetIssueAmount(txn); !ok {
@@ -119,14 +126,50 @@ func (this *TXNPool) verifyTransactionWithTxnPool(txn *transaction.Transaction) 
 	return ErrNoError
 }
 
-func (this *TXNPool) checkDuplicateLockAsset(txn *transaction.Transaction) error {
-	if txn.TxType == transaction.LockAsset {
-		lockAssetPayload := txn.Payload.(*payload.LockAsset)
-		str := lockAssetPayload.ToString()
+func (this *TXNPool) checkTransactionCharacter(txn *transaction.Transaction) error {
+	switch txn.TxType {
+	case transaction.LockAsset:
+		payload := txn.Payload.(*payload.LockAsset)
+		str := payload.ToString()
 		if _, ok := this.lockAssetList[str]; ok {
 			return errors.New("duplicated locking asset detected")
 		}
 		this.lockAssetList[str] = struct{}{}
+	case transaction.RegisterUser:
+		payload := txn.Payload.(*payload.RegisterUser)
+		str := payload.ToString()
+		if _, ok := this.characterList[str]; ok {
+			return errors.New("duplicated register user transaction detected")
+		}
+		this.characterList[str] = struct{}{}
+	case transaction.LikeArticle:
+		payload := txn.Payload.(*payload.LikeArticle)
+		str := payload.ToString()
+		if _, ok := this.characterList[str]; ok {
+			return errors.New("duplicated like transaction detected")
+		}
+		this.characterList[str] = struct{}{}
+	case transaction.PostArticle:
+		payload := txn.Payload.(*payload.PostArticle)
+		str := payload.ToString()
+		if _, ok := this.characterList[str]; ok {
+			return errors.New("duplicated post transaction detected")
+		}
+		this.characterList[str] = struct{}{}
+	case transaction.ReplyArticle:
+		payload := txn.Payload.(*payload.ReplyArticle)
+		str := payload.ToString()
+		if _, ok := this.characterList[str]; ok {
+			return errors.New("duplicated reply transaction detected")
+		}
+		this.characterList[str] = struct{}{}
+	case transaction.Withdrawal:
+		payload := txn.Payload.(*payload.Withdrawal)
+		str := payload.ToString()
+		if _, ok := this.characterList[str]; ok {
+			return errors.New("duplicated withdrawal transaction detected")
+		}
+		this.characterList[str] = struct{}{}
 	}
 
 	return nil
@@ -187,11 +230,27 @@ func (this *TXNPool) cleanUTXOList(txs []*transaction.Transaction) {
 	}
 }
 
-func (this *TXNPool) cleanLockedAssetList(txs []*transaction.Transaction) {
+func (this *TXNPool) cleanTransactionCharacterList(txs []*transaction.Transaction) {
 	for _, txn := range txs {
-		if txn.TxType == transaction.LockAsset {
-			lockAssetPayload := txn.Payload.(*payload.LockAsset)
-			delete(this.lockAssetList, lockAssetPayload.ToString())
+		switch txn.TxType {
+		case transaction.LockAsset:
+			payload := txn.Payload.(*payload.LockAsset)
+			delete(this.lockAssetList, payload.ToString())
+		case transaction.RegisterUser:
+			payload := txn.Payload.(*payload.RegisterUser)
+			delete(this.characterList, payload.ToString())
+		case transaction.LikeArticle:
+			payload := txn.Payload.(*payload.LikeArticle)
+			delete(this.characterList, payload.ToString())
+		case transaction.PostArticle:
+			payload := txn.Payload.(*payload.PostArticle)
+			delete(this.characterList, payload.ToString())
+		case transaction.ReplyArticle:
+			payload := txn.Payload.(*payload.ReplyArticle)
+			delete(this.characterList, payload.ToString())
+		case transaction.Withdrawal:
+			payload := txn.Payload.(*payload.Withdrawal)
+			delete(this.characterList, payload.ToString())
 		}
 	}
 }

@@ -157,6 +157,10 @@ func AllocMsg(t string, length int) Messager {
 	case "reject":
 		log.Warn("Not supported message type - reject")
 		return nil
+	case "chat":
+		var msg chat
+		copy(msg.msgHdr.CMD[0:len(t)], t)
+		return &msg
 	default:
 		log.Warn("Unknown message type")
 		return nil
@@ -232,7 +236,7 @@ func ValidMsgHdr(buf []byte) bool {
 	return magicVerify(h.Magic)
 }
 
-func PayloadLen(buf []byte) (int) {
+func PayloadLen(buf []byte) int {
 	var h msgHdr
 	h.Deserialization(buf)
 	return int(h.Length)

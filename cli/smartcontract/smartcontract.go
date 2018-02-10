@@ -9,16 +9,14 @@ import (
 	"UNetwork/core/contract"
 	"UNetwork/core/signature"
 	"UNetwork/core/transaction"
-	httpjsonrpc "UNetwork/net/httpjsonrpc"
+	"UNetwork/net/httpjsonrpc"
 	"UNetwork/smartcontract/types"
 	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/urfave/cli"
 	"io/ioutil"
-	"math/rand"
 	"os"
-	"strconv"
 )
 
 func newContractContextWithoutProgramHashes(data signature.SignableData) *contract.ContractContext {
@@ -82,9 +80,6 @@ func makeDeployContractTransaction(signer *account.Account, codeStr string, lang
 	if err != nil {
 		return "Deploy smartcontract fail!", err
 	}
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	tx.Attributes = make([]*transaction.TxAttribute, 0)
-	tx.Attributes = append(tx.Attributes, &txAttr)
 
 	var buffer bytes.Buffer
 	if err := tx.Serialize(&buffer); err != nil {
@@ -110,9 +105,6 @@ func makeInvokeTransaction(signer *account.Account, paramsStr, codeHashStr strin
 	if err != nil {
 		return "Invoke smartcontract fail!", err
 	}
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	tx.Attributes = make([]*transaction.TxAttribute, 0)
-	tx.Attributes = append(tx.Attributes, &txAttr)
 
 	if err := signTransaction(signer, tx); err != nil {
 		fmt.Println("sign transfer transaction failed")

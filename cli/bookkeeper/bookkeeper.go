@@ -11,18 +11,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"os"
-	"strconv"
 
 	"github.com/urfave/cli"
 )
 
 func makeBookkeeperTransaction(pubkey *crypto.PubKey, op bool, cert []byte, issuer *account.Account) (string, error) {
 	tx, _ := transaction.NewBookKeeperTransaction(pubkey, op, cert, issuer.PubKey())
-	attr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	tx.Attributes = make([]*transaction.TxAttribute, 0)
-	tx.Attributes = append(tx.Attributes, &attr)
 	if err := signTransaction(issuer, tx); err != nil {
 		fmt.Println("Sign regist transaction failed.")
 		return "", err

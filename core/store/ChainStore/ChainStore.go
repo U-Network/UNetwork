@@ -15,6 +15,7 @@ import (
 	"UNetwork/core/account"
 	. "UNetwork/core/asset"
 	"UNetwork/core/contract/program"
+	"UNetwork/core/forum"
 	. "UNetwork/core/ledger"
 	. "UNetwork/core/store"
 	. "UNetwork/core/store/LevelDBStore"
@@ -28,6 +29,7 @@ import (
 	"UNetwork/smartcontract"
 	"UNetwork/smartcontract/service"
 	"UNetwork/smartcontract/states"
+
 )
 
 const (
@@ -719,6 +721,8 @@ func (bd *ChainStore) persist(b *Block) error {
 	quantities := make(map[Uint256]Fixed64)
 	dbCache := NewDBCache(bd)
 	lockedAssets := make(map[Uint160]map[Uint256][]*LockAsset)
+	articleInfo := make(map[string][]*forum.ArticleInfo)
+	likeInfo := make(map[Uint256][]*forum.LikeInfo)
 
 	///////////////////////////////////////////////////////////////
 	// Get Unspents for every tx
@@ -798,34 +802,61 @@ func (bd *ChainStore) persist(b *Block) error {
 	nLen := len(b.Transactions)
 
 	for i := 0; i < nLen; i++ {
-
-		// now support RegisterAsset / IssueAsset / TransferAsset and Miner TX ONLY.
-		if b.Transactions[i].TxType == tx.RegisterAsset ||
-			b.Transactions[i].TxType == tx.LockAsset ||
-			b.Transactions[i].TxType == tx.IssueAsset ||
-			b.Transactions[i].TxType == tx.TransferAsset ||
-			b.Transactions[i].TxType == tx.Record ||
-			b.Transactions[i].TxType == tx.BookKeeper ||
-			b.Transactions[i].TxType == tx.PrivacyPayload ||
-			b.Transactions[i].TxType == tx.BookKeeping ||
-			b.Transactions[i].TxType == tx.DeployCode ||
-			b.Transactions[i].TxType == tx.InvokeCode ||
-			b.Transactions[i].TxType == tx.DataFile {
-			err = bd.SaveTransaction(b.Transactions[i], b.Blockdata.Height)
-			if err != nil {
-				return err
-			}
+		err = bd.SaveTransaction(b.Transactions[i], b.Blockdata.Height)
+		if err != nil {
+			return err
 		}
 		txHash := b.Transactions[i].Hash()
 		switch b.Transactions[i].TxType {
 		case tx.RegisterAsset:
-
 			ar := b.Transactions[i].Payload.(*payload.RegisterAsset)
 			err = bd.SaveAsset(b.Transactions[i].Hash(), ar.Asset)
 			if err != nil {
 				return err
 			}
-
+		case tx.RegisterUser:
+			payload := b.Transactions[i].Payload.(*payload.RegisterUser)
+			userInfo := &forum.UserInfo{
+				UserProgramHash: payload.UserProgramHash,
+				Reputation:      payload.Reputation,
+			}
+			err = bd.SaveUserInfo(payload.UserName, userInfo)
+			if err != nil {
+				return err
+			}
+		case tx.PostArticle:
+			author := b.Transactions[i].Payload.(*payload.PostArticle).Author
+			tmp := &forum.ArticleInfo{
+				ContentHash: b.Transactions[i].Payload.(*payload.PostArticle).ContentHash,
+				ContentType: forum.Post,
+			}
+			articleInfo[author] = append(articleInfo[author], tmp)
+		case tx.LikeArticle:
+			hash := b.Transactions[i].Payload.(*payload.LikeArticle).PostTxnHash
+			liker := b.Transactions[i].Payload.(*payload.LikeArticle).Liker
+			liketype := b.Transactions[i].Payload.(*payload.LikeArticle).LikeType
+			tmp := &forum.LikeInfo{
+				Liker:    liker,
+				LikeType: liketype,
+			}
+			likeInfo[hash] = append(likeInfo[hash], tmp)
+		case tx.ReplyArticle:
+			replier := b.Transactions[i].Payload.(*payload.ReplyArticle).Replier
+			tmp := &forum.ArticleInfo{
+				ParentTxnHash: b.Transactions[i].Payload.(*payload.ReplyArticle).PostHash,
+				ContentHash:   b.Transactions[i].Payload.(*payload.ReplyArticle).ContentHash,
+				ContentType:   forum.Reply,
+			}
+			articleInfo[replier] = append(articleInfo[replier], tmp)
+		case tx.Withdrawal:
+			payee := b.Transactions[i].Payload.(*payload.Withdrawal).Payee
+			info := &forum.TokenInfo{
+				Number: b.Transactions[i].Outputs[0].Value,
+			}
+			if err := bd.UpdateUserWithdrawnToken(payee, forum.WithdrawnToken, info); err != nil {
+				log.Error("Failed to update withdraw info")
+				continue
+			}
 		case tx.LockAsset:
 			lp := b.Transactions[i].Payload.(*payload.LockAsset)
 			if _, ok := lockedAssets[lp.ProgramHash]; !ok {
@@ -1201,6 +1232,71 @@ func (bd *ChainStore) persist(b *Block) error {
 			if err := bd.SaveLockedAsset(programHash, assetID, locked); err != nil {
 				return err
 			}
+		}
+	}
+
+	for user, info := range articleInfo {
+		if err := bd.UpdateUserArticleInfo(user, info); err != nil {
+			return err
+		}
+	}
+
+	userTokenInfo := make(map[string]*forum.TokenInfo)
+	userReputationInfo := make(map[string]*forum.UserInfo)
+	for postTxnHash, liker := range likeInfo {
+		// update like info for each post/reply transaction
+		if err := bd.UpdateLikeInfo(postTxnHash, liker); err != nil {
+			return err
+		}
+
+		// get author of each post/reply transaction
+		txn, err := bd.GetTransaction(postTxnHash)
+		if err != nil {
+			return err
+		}
+		author := txn.Payload.(*payload.PostArticle).Author
+
+		if _, ok := userTokenInfo[author]; !ok {
+			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
+			if err != nil {
+				return err
+			}
+			userTokenInfo[author] = existedTokenInfo
+		}
+		if _, ok := userReputationInfo[author]; !ok {
+			existedReputationInfo, err := bd.GetUserInfo(author)
+			if err != nil {
+				return err
+			}
+			userReputationInfo[author] = existedReputationInfo
+		}
+
+		// calculate total token and reputation info for each author
+		for _, l := range liker {
+			userInfo, err := bd.GetUserInfo(l.Liker)
+			if err != nil {
+				return err
+			}
+			switch l.LikeType {
+			case forum.LikePost:
+				userTokenInfo[author].Number += userInfo.Reputation / 1000
+				userReputationInfo[author].Reputation += userInfo.Reputation / 1000
+			case forum.DislikePost:
+				userReputationInfo[author].Reputation -= userInfo.Reputation / 1000
+			}
+		}
+	}
+	for user, tokenInfo := range userTokenInfo {
+		if err := bd.SaveTokenInfo(user, forum.TotalToken, tokenInfo); err != nil {
+			return err
+		}
+	}
+	for user, reputationInfo := range userReputationInfo {
+		if reputationInfo.Reputation <= Fixed64(100000000) {
+			reputationInfo.Reputation = 100000000
+		}
+		if err := bd.SaveUserInfo(user, reputationInfo); err != nil {
+			return err
 		}
 	}
 
@@ -1681,4 +1777,240 @@ func (bd *ChainStore) GetStorage(key []byte) ([]byte, error) {
 		return nil, err_get
 	}
 	return bData, nil
+}
+
+func (db *ChainStore) GetUserInfo(name string) (*forum.UserInfo, error) {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_User))
+	key.WriteString(name)
+
+	rawUserInfo, err := db.st.Get(key.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	r := bytes.NewReader(rawUserInfo)
+	var userInfo forum.UserInfo
+	if err := userInfo.Deserialization(r); err != nil {
+		return nil, err
+	}
+
+	return &userInfo, nil
+}
+
+func (bd *ChainStore) SaveUserInfo(name string, userInfo *forum.UserInfo) error {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_User))
+	key.WriteString(name)
+
+	value := bytes.NewBuffer(nil)
+	if err := userInfo.Serialization(value); err != nil {
+		return err
+	}
+
+	if err := bd.st.BatchPut(key.Bytes(), value.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ChainStore) GetUserArticleInfo(author string) ([]*forum.ArticleInfo, error) {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Post))
+	key.WriteString(author)
+
+	existed, _ := db.st.Get(key.Bytes())
+	if len(existed) == 0 {
+		return nil, nil
+	}
+	buf := bytes.NewBuffer(existed)
+	num, err := serialization.ReadVarUint(buf, 0)
+	if err != nil {
+		return nil, err
+	}
+	info := make([]*forum.ArticleInfo, num)
+	for i := range info {
+		info[i] = new(forum.ArticleInfo)
+		if err := info[i].Deserialization(buf); err != nil {
+			return nil, err
+		}
+	}
+
+	return info, nil
+}
+
+func (db *ChainStore) SaveUserArticleInfo(author string, postInfo []*forum.ArticleInfo) error {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Post))
+	key.WriteString(author)
+
+	value := bytes.NewBuffer(nil)
+	if err := serialization.WriteVarUint(value, uint64(len(postInfo))); err != nil {
+		return err
+	}
+	for _, info := range postInfo {
+		if err := info.Serialization(value); err != nil {
+			return err
+		}
+	}
+
+	if err := db.st.BatchPut(key.Bytes(), value.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ChainStore) UpdateUserArticleInfo(author string, postInfo []*forum.ArticleInfo) error {
+	existed, err := db.GetUserArticleInfo(author)
+	if err != nil {
+		return err
+	}
+	var updated []*forum.ArticleInfo
+	updated = append(updated, existed...)
+	updated = append(updated, postInfo...)
+	if err := db.SaveUserArticleInfo(author, updated); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ChainStore) GetLikeInfo(postTxnHash Uint256) ([]*forum.LikeInfo, error) {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Like))
+	postTxnHash.Serialize(key)
+
+	existed, _ := db.st.Get(key.Bytes())
+	if len(existed) == 0 {
+		return nil, nil
+	}
+	buf := bytes.NewBuffer(existed)
+	num, err := serialization.ReadVarUint(buf, 0)
+	if err != nil {
+		return nil, err
+	}
+	info := make([]*forum.LikeInfo, num)
+	for i := range info {
+		info[i] = new(forum.LikeInfo)
+		if err := info[i].Deserialization(buf); err != nil {
+			return nil, err
+		}
+	}
+
+	return info, nil
+}
+
+func (db *ChainStore) SaveLikeInfo(postTxnHash Uint256, likeInfo []*forum.LikeInfo) error {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Like))
+	postTxnHash.Serialize(key)
+
+	value := bytes.NewBuffer(nil)
+	if err := serialization.WriteVarUint(value, uint64(len(likeInfo))); err != nil {
+		return err
+	}
+	for _, info := range likeInfo {
+		if err := info.Serialization(value); err != nil {
+			return err
+		}
+	}
+
+	if err := db.st.BatchPut(key.Bytes(), value.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ChainStore) UpdateLikeInfo(postTxnHash Uint256, likeInfo []*forum.LikeInfo) error {
+	existed, err := db.GetLikeInfo(postTxnHash)
+	if err != nil {
+		return err
+	}
+	var updated []*forum.LikeInfo
+	updated = append(updated, existed...)
+	updated = append(updated, likeInfo...)
+	if err := db.SaveLikeInfo(postTxnHash, updated); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ChainStore) GetTokenInfo(name string, tokenType forum.TokenType) (*forum.TokenInfo, error) {
+	key := bytes.NewBuffer(nil)
+	switch tokenType {
+	case forum.TotalToken:
+		key.WriteByte(byte(ST_Total))
+	case forum.WithdrawnToken:
+		key.WriteByte(byte(ST_Withdraw))
+	}
+	key.WriteString(name)
+
+	var tokenInfo forum.TokenInfo
+	rawTokenInfo, _ := db.st.Get(key.Bytes())
+	if len(rawTokenInfo) == 0 {
+		return &tokenInfo, nil
+	}
+	r := bytes.NewReader(rawTokenInfo)
+	if err := tokenInfo.Deserialization(r); err != nil {
+		return nil, err
+	}
+
+	return &tokenInfo, nil
+}
+
+func (db *ChainStore) GetAvailableTokenInfo(name string) (*forum.TokenInfo, error) {
+	total, err := db.GetTokenInfo(name, forum.TotalToken)
+	if err != nil {
+		return nil, err
+	}
+	withdrawn, err := db.GetTokenInfo(name, forum.WithdrawnToken)
+	if err != nil {
+		return nil, err
+	}
+	available := &forum.TokenInfo{
+		Number: total.Number - withdrawn.Number,
+	}
+
+	return available, nil
+}
+
+func (db *ChainStore) SaveTokenInfo(name string, tokenType forum.TokenType, tokenInfo *forum.TokenInfo) error {
+	key := bytes.NewBuffer(nil)
+	switch tokenType {
+	case forum.TotalToken:
+		key.WriteByte(byte(ST_Total))
+	case forum.WithdrawnToken:
+		key.WriteByte(byte(ST_Withdraw))
+	}
+	key.WriteString(name)
+
+	value := bytes.NewBuffer(nil)
+	if err := tokenInfo.Serialization(value); err != nil {
+		return err
+	}
+
+	if err := db.st.BatchPut(key.Bytes(), value.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ChainStore) UpdateUserWithdrawnToken(name string, tokenType forum.TokenType, withdrawInfo *forum.TokenInfo) error {
+	existed, err := db.GetTokenInfo(name, tokenType)
+	if err != nil {
+		return err
+	}
+	newWithdrawInfo := &forum.TokenInfo{
+		Number: existed.Number + withdrawInfo.Number,
+	}
+	if err := db.SaveTokenInfo(name, tokenType, newWithdrawInfo); err != nil {
+		return err
+	}
+
+	return nil
 }
