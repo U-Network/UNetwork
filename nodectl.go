@@ -8,7 +8,6 @@ import (
 	"UNetwork/cli/asset"
 	"UNetwork/cli/bookkeeper"
 	. "UNetwork/cli/common"
-	"UNetwork/cli/consensus"
 	"UNetwork/cli/data"
 	"UNetwork/cli/debug"
 	"UNetwork/cli/info"
@@ -40,7 +39,6 @@ func main() {
 	}
 	//commands
 	app.Commands = []cli.Command{
-		*consensus.NewCommand(),
 		*debug.NewCommand(),
 		*info.NewCommand(),
 		*test.NewCommand(),
