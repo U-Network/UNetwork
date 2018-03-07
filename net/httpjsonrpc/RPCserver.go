@@ -11,37 +11,62 @@ const (
 	LocalHost = "127.0.0.1"
 )
 
+const (
+	RPCGetBestBlockHash          = "getbestblockhash"
+	RPCGetBlock                  = "getblock" 
+	RPCGetBlockCount             = "getblockcount"
+	RPCGetBlockHash              = "getblockhash"
+	RPCGetConnectionCount        = "getconnectioncount"
+	RPCGetRawMemPool             = "getrawmempool"
+	RPCGetRawTransaction         = "getrawtransaction"
+	RPCSendRawTransaction        = "sendrawtransaction"
+	RPCGetVersion                = "getversion"
+	RPCGetNeighbor               = "getneighbor"
+	RPCGetNodeState              = "getnodestate"
+	RPCSetDebugInfo              = "setdebuginfo"
+	RPCSendToAddress             = "sendtoaddress"
+	RPCLockAsset                 = "lockasset"
+	RPCCreateMultisigTransaction = "createmultisigtransaction"
+	RPCSignMultisigTrasaction    = "signmultisigtransaction"
+
+	RPCRegisterUser = "registeruser"
+	RPCPostarticle  = "postarticle"
+	RPCReplyArticle = "replyarticle"
+	RPCLikeArticle  = "likearticle"
+	RPCWithdrawl    = "withdrawal"
+)
+
 func StartRPCServer() {
 	log.Debug()
 	http.HandleFunc("/", Handle)
 
-	HandleFunc("getbestblockhash", getBestBlockHash)
-	HandleFunc("getblock", getBlock)
-	HandleFunc("getblockcount", getBlockCount)
-	HandleFunc("getblockhash", getBlockHash)
-	HandleFunc("getconnectioncount", getConnectionCount)
-	HandleFunc("getrawmempool", getRawMemPool)
-	HandleFunc("getrawtransaction", getRawTransaction)
-	HandleFunc("sendrawtransaction", sendRawTransaction)
-	HandleFunc("getversion", getVersion)
-	HandleFunc("getneighbor", getNeighbor)
-	HandleFunc("getnodestate", getNodeState)
+	HandleFunc(RPCGetBestBlockHash, getBestBlockHash)
+	HandleFunc(RPCGetBlock, getBlock)
+	HandleFunc(RPCGetBlockCount, getBlockCount)
+	HandleFunc(RPCGetBlockHash, getBlockHash)
+	HandleFunc(RPCGetConnectionCount, getConnectionCount)
+	HandleFunc(RPCGetRawMemPool, getRawMemPool)
+	HandleFunc(RPCGetRawTransaction, getRawTransaction)
+	HandleFunc(RPCSendRawTransaction, sendRawTransaction)
+	HandleFunc(RPCGetVersion, getVersion)
+	HandleFunc(RPCGetNeighbor, getNeighbor)
+	HandleFunc(RPCGetNodeState, getNodeState)
 
-	HandleFunc("setdebuginfo", setDebugInfo)
-	HandleFunc("sendtoaddress", sendToAddress)
-	HandleFunc("lockasset", lockAsset)
+	HandleFunc(RPCSetDebugInfo, setDebugInfo)
+	HandleFunc(RPCSendToAddress, sendToAddress)
+	HandleFunc(RPCLockAsset, lockAsset)
 
-	HandleFunc("createmultisigtransaction", createMultisigTransaction)
-	HandleFunc("signmultisigtransaction", signMultisigTransaction)
+	HandleFunc(RPCCreateMultisigTransaction, createMultisigTransaction)
+	HandleFunc(RPCSignMultisigTrasaction, signMultisigTransaction)
 
 	// Following transactions should be passed through
 	// sendrawtrasaction interface of restfull interface.
 	// Put them here only for forum feature testing.
-	HandleFunc("registeruser", registerUser)
-	HandleFunc("postarticle", postArticle)
-	HandleFunc("replyarticle", replyArticle)
-	HandleFunc("likearticle", likeArticle)
-	HandleFunc("withdrawal", withdrawal)
+	HandleFunc(RPCRegisterUser, registerUser)
+	HandleFunc(RPCPostarticle, postArticle)
+	HandleFunc(RPCReplyArticle, replyArticle)
+	HandleFunc(RPCLikeArticle, likeArticle)
+	HandleFunc(RPCWithdrawl, withdrawal)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {
