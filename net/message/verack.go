@@ -49,7 +49,7 @@ func NewVerack() ([]byte, error) {
  *
  */
 // TODO The process should be adjusted based on above table
-func (msg verACK) Handle(node Noder) error {
+func (msg verACK) Handle(node UNode) error {
 	log.Debug()
 
 	s := node.GetState()

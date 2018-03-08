@@ -28,7 +28,7 @@ type trn struct {
 	//hash common.Uint256
 }
 
-func (msg trn) Handle(node Noder) error {
+func (msg trn) Handle(node UNode) error {
 	log.Debug()
 	log.Debug("RX Transaction message")
 	tx := &msg.txn
@@ -46,7 +46,7 @@ func (msg trn) Handle(node Noder) error {
 	return nil
 }
 
-func reqTxnData(node Noder, hash common.Uint256) error {
+func reqTxnData(node UNode, hash common.Uint256) error {
 	var msg dataReq
 	msg.dataType = common.TRANSACTION
 	// TODO handle the hash array case
@@ -163,7 +163,7 @@ type txnPool struct {
 	//TBD
 }
 
-func ReqTxnPool(node Noder) error {
+func ReqTxnPool(node UNode) error {
 	msg := AllocMsg("txnpool", 0)
 	buf, _ := msg.Serialization()
 	go node.Tx(buf)

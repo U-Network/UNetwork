@@ -49,7 +49,7 @@ func (msg ping) Verify(buf []byte) error {
 	return err
 }
 
-func (msg ping) Handle(node Noder) error {
+func (msg ping) Handle(node UNode) error {
 	node.SetHeight(msg.height)
 	buf, err := NewPongMsg()
 	if err != nil {

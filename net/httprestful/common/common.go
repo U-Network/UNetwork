@@ -17,7 +17,7 @@ import (
 
 )
 
-var node Noder
+var node UNode
 
 const TlsPort int = 443
 
@@ -26,7 +26,7 @@ type ApiServer interface {
 	Stop()
 }
 
-func SetNode(n Noder) {
+func SetNode(n UNode) {
 	node = n
 }
 

@@ -24,7 +24,7 @@ type block struct {
 	//event *events.Event
 }
 
-func (msg block) Handle(node Noder) error {
+func (msg block) Handle(node UNode) error {
 	log.Debug("RX block message")
 	hash := msg.blk.Hash()
 	isSync := false
@@ -41,7 +41,7 @@ func (msg block) Handle(node Noder) error {
 		log.Warn("clean transaction pool error")
 		return err
 	}
-	for _, n := range node.LocalNode().GetNeighborNoder() {
+	for _, n := range node.LocalNode().GetNeighborUNode() {
 		if n.ExistFlightHeight(msg.blk.Blockdata.Height) {
 			//sync block
 			n.RemoveFlightHeight(msg.blk.Blockdata.Height)
@@ -56,7 +56,7 @@ func (msg block) Handle(node Noder) error {
 	return nil
 }
 
-func (msg dataReq) Handle(node Noder) error {
+func (msg dataReq) Handle(node UNode) error {
 	log.Debug()
 	reqtype := common.InventoryType(msg.dataType)
 	hash := msg.hash
@@ -132,7 +132,7 @@ func NewBlock(bk *ledger.Block) ([]byte, error) {
 	return m, nil
 }
 
-func ReqBlkData(node Noder, hash common.Uint256) error {
+func ReqBlkData(node UNode, hash common.Uint256) error {
 	var msg dataReq
 	msg.dataType = common.BLOCK
 	msg.hash = hash

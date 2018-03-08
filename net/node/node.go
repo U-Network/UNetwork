@@ -149,7 +149,7 @@ func NewNode() *node {
 	return &n
 }
 
-func InitNode(pubKey *crypto.PubKey) Noder {
+func InitNode(pubKey *crypto.PubKey) UNode {
 	n := NewNode()
 	n.version = PROTOCOLVERSION
 	switch Parameters.NodeType {
@@ -286,7 +286,7 @@ func (node *node) CompareAndSetState(old, new uint32) bool {
 	return atomic.CompareAndSwapUint32(&(node.state), old, new)
 }
 
-func (node *node) LocalNode() Noder {
+func (node *node) LocalNode() UNode {
 	return node.local
 }
 
@@ -514,7 +514,7 @@ func (node *node) RemoveFromRetryList(addr string) {
 
 }
 
-func (node *node) Relay(frmnode Noder, message interface{}) error {
+func (node *node) Relay(frmnode UNode, message interface{}) error {
 	log.Debug()
 	var buffer []byte
 	var err error
