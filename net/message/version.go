@@ -37,11 +37,11 @@ type version struct {
 	pk *crypto.PubKey
 }
 
-func (msg *version) init(n Noder) {
+func (msg *version) init(n UNode) {
 	// Do the init
 }
 
-func NewVersion(n Noder) ([]byte, error) {
+func NewVersion(n UNode) ([]byte, error) {
 	log.Debug()
 	var msg version
 
@@ -159,7 +159,7 @@ func (msg *version) Deserialization(p []byte) error {
  * |          |   No Action     |           | No Action  | No Action       |
  * |------------------------------------------------------------------------
  */
-func (msg version) Handle(node Noder) error {
+func (msg version) Handle(node UNode) error {
 	log.Debug()
 	localNode := node.LocalNode()
 

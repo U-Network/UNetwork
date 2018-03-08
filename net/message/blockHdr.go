@@ -147,7 +147,7 @@ blkHdrErr:
 	return err
 }
 
-func (msg headersReq) Handle(node Noder) error {
+func (msg headersReq) Handle(node UNode) error {
 	log.Debug()
 	// lock
 	var startHash [HASHLEN]byte
@@ -167,7 +167,7 @@ func (msg headersReq) Handle(node Noder) error {
 	return nil
 }
 
-func SendMsgSyncHeaders(node Noder) {
+func SendMsgSyncHeaders(node UNode) {
 	buf, err := NewHeadersReq()
 	if err != nil {
 		log.Error("failed build a new headersReq")
@@ -176,7 +176,7 @@ func SendMsgSyncHeaders(node Noder) {
 	}
 }
 
-func (msg blkHeader) Handle(node Noder) error {
+func (msg blkHeader) Handle(node UNode) error {
 	log.Debug()
 	err := ledger.DefaultLedger.Store.AddHeaders(msg.blkHdr, ledger.DefaultLedger)
 	if err != nil {

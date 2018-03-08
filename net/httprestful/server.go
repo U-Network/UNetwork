@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func StartServer(n Noder) {
+func StartServer(n UNode) {
 	common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2NoticeServer)
 	func() {

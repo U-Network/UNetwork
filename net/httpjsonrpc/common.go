@@ -23,7 +23,7 @@ func init() {
 
 //an instance of the multiplexer
 var mainMux ServeMux
-var node Noder
+var node UNode
 var dBFT *dbft.DbftService
 
 //multiplexer that keeps track of every function to be called on specific rpc call
@@ -135,7 +135,7 @@ type ConsensusInfo struct {
 	// TODO
 }
 
-func RegistRpcNode(n Noder) {
+func RegistRpcNode(n UNode) {
 	if node == nil {
 		node = n
 	}

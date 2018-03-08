@@ -29,7 +29,7 @@ const (
 	serviceNode = "Service Node"
 )
 
-var node Noder
+var node UNode
 
 var templates = template.Must(template.New("info").Parse(page))
 
@@ -50,7 +50,7 @@ func initPageInfo(blockHeight uint32, curNodeType string, ngbrCnt int, ngbrsInfo
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
-	var ngbrNodersInfo []NgbNodeInfo
+	var ngbrUNodesInfo []NgbNodeInfo
 	var ngbId string
 	var ngbAddr string
 	var ngbType string
@@ -68,30 +68,30 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ngbrNoders := node.GetNeighborNoder()
-	ngbrsLen := len(ngbrNoders)
+	ngbrUNodes := node.GetNeighborUNode()
+	ngbrsLen := len(ngbrUNodes)
 	for i := 0; i < ngbrsLen; i++ {
 		ngbType = serviceNode
 		for j := 0; j < bookKeeperLen; j++ {
-			if ngbrNoders[i].GetPubKey().X.Cmp(bookKeepers[j].X) == 0 {
+			if ngbrUNodes[i].GetPubKey().X.Cmp(bookKeepers[j].X) == 0 {
 				ngbType = verifyNode
 				break
 			}
 		}
 
-		ngbAddr = ngbrNoders[i].GetAddr()
-		ngbInfoPort = ngbrNoders[i].GetHttpInfoPort()
-		ngbInfoState = ngbrNoders[i].GetHttpInfoState()
+		ngbAddr = ngbrUNodes[i].GetAddr()
+		ngbInfoPort = ngbrUNodes[i].GetHttpInfoPort()
+		ngbInfoState = ngbrUNodes[i].GetHttpInfoState()
 		ngbHttpInfoAddr = ngbAddr + ":" + strconv.Itoa(ngbInfoPort)
-		ngbId = fmt.Sprintf("0x%x", ngbrNoders[i].GetID())
+		ngbId = fmt.Sprintf("0x%x", ngbrUNodes[i].GetID())
 
 		ngbrInfo := newNgbNodeInfo(ngbId, ngbType, ngbAddr, ngbHttpInfoAddr, ngbInfoPort, ngbInfoState)
-		ngbrNodersInfo = append(ngbrNodersInfo, *ngbrInfo)
+		ngbrUNodesInfo = append(ngbrUNodesInfo, *ngbrInfo)
 	}
-	sort.Sort(NgbNodeInfoSlice(ngbrNodersInfo))
+	sort.Sort(NgbNodeInfoSlice(ngbrUNodesInfo))
 
 	blockHeight := ledger.DefaultLedger.Blockchain.BlockHeight
-	pageInfo, err := initPageInfo(blockHeight, curNodeType, ngbrsLen, ngbrNodersInfo)
+	pageInfo, err := initPageInfo(blockHeight, curNodeType, ngbrsLen, ngbrUNodesInfo)
 	if err != nil {
 		http.Redirect(w, r, "/info", http.StatusFound)
 		return
@@ -103,7 +103,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func StartServer(n Noder) {
+func StartServer(n UNode) {
 	node = n
 	port := int(config.Parameters.HttpInfoPort)
 	http.HandleFunc("/info", viewHandler)

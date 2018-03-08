@@ -15,7 +15,7 @@ type Messager interface {
 	Verify([]byte) error
 	Serialization() ([]byte, error)
 	Deserialization([]byte) error
-	Handle(Noder) error
+	Handle(UNode) error
 }
 
 // The network communication message header
@@ -178,7 +178,7 @@ func MsgType(buf []byte) (string, error) {
 }
 
 // TODO combine all of message alloc in one function via interface
-func NewMsg(t string, n Noder) ([]byte, error) {
+func NewMsg(t string, n UNode) ([]byte, error) {
 	switch t {
 	case "version":
 		return NewVersion(n)
@@ -195,7 +195,7 @@ func NewMsg(t string, n Noder) ([]byte, error) {
 }
 
 // FIXME the length exceed int32 case?
-func HandleNodeMsg(node Noder, buf []byte, len int) error {
+func HandleNodeMsg(node UNode, buf []byte, len int) error {
 	if len < MSGHDRLEN {
 		log.Warn("Unexpected size of received message")
 		return errors.New("Unexpected size of received message")
@@ -315,7 +315,7 @@ func (hdr msgHdr) Serialization() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-func (hdr msgHdr) Handle(n Noder) error {
+func (hdr msgHdr) Handle(n UNode) error {
 	log.Debug()
 	// TBD
 	return nil

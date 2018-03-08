@@ -17,12 +17,12 @@ type Neter interface {
 	GetEvent(eventName string) *events.Event
 	GetBookKeepersAddrs() ([]*crypto.PubKey, uint64)
 	CleanSubmittedTransactions(block *ledger.Block) error
-	GetNeighborNoder() []protocol.Noder
+	GetNeighborUNode() []protocol.UNode
 	Tx(buf []byte)
 	AppendTxnPool(*transaction.Transaction, bool) ErrCode
 }
 
-func StartProtocol(pubKey *crypto.PubKey) protocol.Noder {
+func StartProtocol(pubKey *crypto.PubKey) protocol.UNode {
 	net := node.InitNode(pubKey)
 	net.ConnectSeeds()
 

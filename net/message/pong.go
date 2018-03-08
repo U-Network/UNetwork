@@ -49,7 +49,7 @@ func (msg pong) Verify(buf []byte) error {
 	return err
 }
 
-func (msg pong) Handle(node Noder) error {
+func (msg pong) Handle(node UNode) error {
 	node.SetHeight(msg.height)
 	return nil
 }

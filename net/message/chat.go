@@ -62,7 +62,7 @@ func (msg chat) Verify(buf []byte) error {
 	return msg.msgHdr.Verify(buf)
 }
 
-func (msg chat) Handle(node Noder) error {
+func (msg chat) Handle(node UNode) error {
 	payload := &msg.ChatPayload
 	if !node.LocalNode().ExistedID(payload.Hash()) {
 		node.LocalNode().Relay(node, payload)

@@ -42,7 +42,7 @@ func main() {
 	var acct *account.Account
 	var blockChain *ledger.Blockchain
 	var err error
-	var noder protocol.Noder
+	var noder protocol.UNode
 	log.Trace("Node version: ", config.Version)
 
 	if len(config.Parameters.BookKeepers) < account.DefaultBookKeeperCount {

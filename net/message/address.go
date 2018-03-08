@@ -87,7 +87,7 @@ func (msg addrReq) Verify(buf []byte) error {
 	return err
 }
 
-func (msg addrReq) Handle(node Noder) error {
+func (msg addrReq) Handle(node UNode) error {
 	log.Debug()
 	// lock
 	var addrstr []NodeAddr
@@ -160,7 +160,7 @@ func (msg addr) Verify(buf []byte) error {
 	return err
 }
 
-func (msg addr) Handle(node Noder) error {
+func (msg addr) Handle(node UNode) error {
 	log.Debug()
 	for _, v := range msg.nodeAddrs {
 		var ip net.IP

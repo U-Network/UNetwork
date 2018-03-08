@@ -107,7 +107,7 @@ func (cp *ConsensusPayload) GetMessage() []byte {
 	//return []byte{}
 }
 
-func (msg consensus) Handle(node Noder) error {
+func (msg consensus) Handle(node UNode) error {
 	log.Debug()
 	cp := &msg.cons
 	if !node.LocalNode().ExistedID(cp.Hash()) {
@@ -118,7 +118,7 @@ func (msg consensus) Handle(node Noder) error {
 	return nil
 }
 
-func reqConsensusData(node Noder, hash common.Uint256) error {
+func reqConsensusData(node UNode, hash common.Uint256) error {
 	var msg dataReq
 	msg.dataType = common.CONSENSUS
 	// TODO handle the hash array case

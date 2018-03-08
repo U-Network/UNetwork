@@ -77,7 +77,7 @@ const (
 
 var ReceiveDuplicateBlockCnt uint64 //an index to detecting networking status
 
-type Noder interface {
+type UNode interface {
 	Version() uint32
 	GetID() uint64
 	Services() uint64
@@ -93,9 +93,9 @@ type Noder interface {
 	GetPubKey() *crypto.PubKey
 	CompareAndSetState(old, new uint32) bool
 	UpdateRXTime(t time.Time)
-	LocalNode() Noder
-	DelNbrNode(id uint64) (Noder, bool)
-	AddNbrNode(Noder)
+	LocalNode() UNode
+	DelNbrNode(id uint64) (UNode, bool)
+	AddNbrNode(UNode)
 	CloseConn()
 	GetHeight() uint64
 	GetConnectionCnt() uint
@@ -126,7 +126,7 @@ type Noder interface {
 	SyncNodeHeight()
 	CleanSubmittedTransactions(block *ledger.Block) error
 
-	GetNeighborNoder() []Noder
+	GetNeighborUNode() []UNode
 	GetNbrNodeCnt() uint32
 	StoreFlightHeight(height uint32)
 	GetFlightHeightCnt() int
@@ -142,7 +142,7 @@ type Noder interface {
 	RemoveAddrInConnectingList(addr string)
 	AddInRetryList(addr string)
 	RemoveFromRetryList(addr string)
-	Relay(Noder, interface{}) error
+	Relay(UNode, interface{}) error
 	ExistHash(hash common.Uint256) bool
 	CacheHash(hash common.Uint256)
 	ExistFlightHeight(height uint32) bool

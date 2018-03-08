@@ -34,7 +34,7 @@ type Inv struct {
 	P   InvPayload
 }
 
-func NewBlocksReq(n Noder) ([]byte, error) {
+func NewBlocksReq(n UNode) ([]byte, error) {
 	var h blocksReq
 	log.Debug("request block hash")
 	// Fixme correct with the exactly request length
@@ -66,7 +66,7 @@ func (msg blocksReq) Verify(buf []byte) error {
 	return err
 }
 
-func (msg blocksReq) Handle(node Noder) error {
+func (msg blocksReq) Handle(node UNode) error {
 	log.Debug()
 	log.Debug("handle blocks request")
 	var starthash Uint256
@@ -109,7 +109,7 @@ func (msg Inv) Verify(buf []byte) error {
 	return err
 }
 
-func (msg Inv) Handle(node Noder) error {
+func (msg Inv) Handle(node UNode) error {
 	log.Debug()
 	var id Uint256
 	str := hex.EncodeToString(msg.P.Blk)

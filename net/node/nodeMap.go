@@ -28,7 +28,7 @@ func (nm *nbrNodes) NodeExisted(uid uint64) bool {
 	return ok
 }
 
-func (nm *nbrNodes) AddNbrNode(n Noder) {
+func (nm *nbrNodes) AddNbrNode(n UNode) {
 	nm.Lock()
 	defer nm.Unlock()
 
@@ -44,7 +44,7 @@ func (nm *nbrNodes) AddNbrNode(n Noder) {
 	}
 }
 
-func (nm *nbrNodes) DelNbrNode(id uint64) (Noder, bool) {
+func (nm *nbrNodes) DelNbrNode(id uint64) (UNode, bool) {
 	nm.Lock()
 	defer nm.Unlock()
 
@@ -129,11 +129,11 @@ func (node *node) GetNeighborHeights() ([]uint64, uint64) {
 	return heights, i
 }
 
-func (node *node) GetNeighborNoder() []Noder {
+func (node *node) GetNeighborUNode() []UNode {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 
-	nodes := []Noder{}
+	nodes := []UNode{}
 	for _, n := range node.nbrNodes.List {
 		if n.GetState() == ESTABLISH {
 			node := n

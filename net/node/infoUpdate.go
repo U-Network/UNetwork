@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func keepAlive(from *Noder, dst *Noder) {
+func keepAlive(from *UNode, dst *UNode) {
 	// Need move to node function or keep here?
 }
 
@@ -20,11 +20,11 @@ func (node *node) GetBlkHdrs() {
 	if node.local.GetNbrNodeCnt() < MINCONNCNT {
 		return
 	}
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetNeighborUNode()
 	if len(noders) == 0 {
 		return
 	}
-	nodelist := []Noder{}
+	nodelist := []UNode{}
 	for _, v := range noders {
 		if uint64(ledger.DefaultLedger.Store.GetHeaderHeight()) < v.GetHeight() {
 			nodelist = append(nodelist, v)
@@ -49,7 +49,7 @@ func (node *node) SyncBlk() {
 	var dValue int32
 	var reqCnt uint32
 	var i uint32
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetNeighborUNode()
 
 	for _, n := range noders {
 		if uint32(n.GetHeight()) <= currentBlkHeight {
@@ -82,7 +82,7 @@ func (node *node) SyncBlk() {
 }
 
 func (node *node) SendPingToNbr() {
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetNeighborUNode()
 	for _, n := range noders {
 		if n.GetState() == ESTABLISH {
 			buf, err := NewPingMsg()
@@ -96,7 +96,7 @@ func (node *node) SendPingToNbr() {
 }
 
 func (node *node) HeartBeatMonitor() {
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetNeighborUNode()
 	for _, n := range noders {
 		if n.GetState() == ESTABLISH {
 			t := n.GetLastRXTime()
@@ -119,7 +119,7 @@ func (node *node) ConnectSeeds() {
 		seedNodes := config.Parameters.SeedList
 		for _, nodeAddr := range seedNodes {
 			found := false
-			var n Noder
+			var n UNode
 			var ip net.IP
 			node.nbrNodes.Lock()
 			for _, tn := range node.nbrNodes.List {
