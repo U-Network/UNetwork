@@ -1,25 +1,25 @@
 package httpjsonrpc
 
 var (
-	UnetworkRpcInvalidHash        = responsePacking("invalid hash")
-	UnetworkRpcInvalidBlock       = responsePacking("invalid block")
-	UnetworkRpcInvalidTransaction = responsePacking("invalid transaction")
-	UnetworkRpcInvalidParameter   = responsePacking("invalid parameter")
+	UNetworkRPCInvalidHash        = responsePacking("invalid hash")
+	UNetworkRPCInvalidBlock       = responsePacking("invalid block")
+	UNetworkRPCInvalidTransaction = responsePacking("invalid transaction")
+	UNetworkRPCInvalidParameter   = responsePacking("invalid parameter")
 
-	UnetworkRpcUnknownBlock       = responsePacking("unknown block")
-	UnetworkRpcUnknownTransaction = responsePacking("unknown transaction")
+	UNetworkRPCUnknownBlock       = responsePacking("unknown block")
+	UNetworkRPCUnknownTransaction = responsePacking("unknown transaction")
 
-	UnetworkRpcNil           = responsePacking(nil)
-	UnetworkRpcUnsupported   = responsePacking("Unsupported")
-	UnetworkRpcInternalError = responsePacking("internal error")
-	UnetworkRpcIOError       = responsePacking("internal IO error")
-	UnetworkRpcAPIError      = responsePacking("internal API error")
-	UnetworkRpcSuccess       = responsePacking(true)
-	UnetworkRpcFailed        = responsePacking(false)
+	UNetworkRPCNil           = responsePacking(nil)
+	UNetworkRPCUnsupported   = responsePacking("Unsupported")
+	UNetworkRPCInternalError = responsePacking("internal error")
+	UNetworkRPCIOError       = responsePacking("internal IO error")
+	UNetworkRPCAPIError      = responsePacking("internal API error")
+	UNetworkRPCSuccess       = responsePacking(true)
+	UNetworkRPCFailed        = responsePacking(false)
 
 	// error code for wallet
-	UnetworkRpcWalletAlreadyExists = responsePacking("wallet already exist")
-	UnetworkRpcWalletNotExists     = responsePacking("wallet doesn't exist")
+	UNetworkRPCWalletAlreadyExists = responsePacking("wallet already exist")
+	UNetworkRPCWalletNotExists     = responsePacking("wallet doesn't exist")
 
-	UnetworkRpc = responsePacking
+	UNetworkRPC = responsePacking
 )
