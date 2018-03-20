@@ -57,7 +57,6 @@ const (
 	Api_SendRcdTxByTrans    = "/api/v1/custom/transaction/record"
 	Api_GetStateUpdate      = "/api/v1/stateupdate/:namespace/:key"
 	Api_OauthServerUrl      = "/api/v1/config/oauthserver/url"
-	Api_NoticeServerUrl     = "/api/v1/config/noticeserver/url"
 	Api_NoticeServerState   = "/api/v1/config/noticeserver/state"
 	Api_WebsocketState      = "/api/v1/config/websocket/state"
 	Api_Restart             = "/api/v1/restart"
@@ -162,7 +161,6 @@ func (rt *restServer) registryMethod() {
 		Api_GetLikeInfo:         {name: "getlikeinfo", handler: GetLikeInfo},
 		Api_GetUserArticleInfo:  {name: "getuserarticleinfo", handler: GetUserArticleInfo},
 		Api_OauthServerUrl:      {name: "getoauthserverurl", handler: GetOauthServerUrl},
-		Api_NoticeServerUrl:     {name: "getnoticeserverurl", handler: GetNoticeServerUrl},
 		Api_Restart:             {name: "restart", handler: rt.Restart},
 		Api_GetStateUpdate:      {name: "getstateupdate", handler: GetStateUpdate},
 	}
@@ -183,7 +181,6 @@ func (rt *restServer) registryMethod() {
 		Api_SendChatMessage:   {name: "sendchatmessage", handler: SendChatMessage},
 		Api_SendUserList:      {name: "senduserlist", handler: SendUserList},
 		Api_OauthServerUrl:    {name: "setoauthserverurl", handler: SetOauthServerUrl},
-		Api_NoticeServerUrl:   {name: "setnoticeserverurl", handler: SetNoticeServerUrl},
 		Api_NoticeServerState: {name: "setpostblock", handler: SetPushBlockFlag},
 		Api_WebsocketState:    {name: "setwebsocketstate", handler: rt.setWebsocketState},
 	}
@@ -307,7 +304,6 @@ func (rt *restServer) getParams(r *http.Request, url string, req map[string]inte
 		req["Key"] = getParam(r, "key")
 		break
 	case Api_OauthServerUrl:
-	case Api_NoticeServerUrl:
 	case Api_NoticeServerState:
 	case Api_WebsocketState:
 		break
