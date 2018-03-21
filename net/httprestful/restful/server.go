@@ -228,86 +228,88 @@ func (rt *restServer) getPath(url string) string {
 }
 func (rt *restServer) getParams(r *http.Request, url string, req map[string]interface{}) map[string]interface{} {
 	switch url {
-	case Api_Getconnectioncount:
-		break
-	case Api_GetblockTxsByHeight:
-		req["Height"] = getParam(r, "height")
-		break
-	case Api_Getblockbyheight:
-		req["Raw"] = r.FormValue("raw")
-		req["Height"] = getParam(r, "height")
-		break
-	case Api_Getblockbyhash:
-		req["Raw"] = r.FormValue("raw")
-		req["Hash"] = getParam(r, "hash")
-		break
-	case Api_Getblockheight:
-		break
-	case Api_Getblockhash:
-		req["Height"] = getParam(r, "height")
-		break
-	case Api_GetTotalIssued:
-		req["Assetid"] = getParam(r, "assetid")
-		break
-	case Api_Gettransaction:
-		req["Hash"] = getParam(r, "hash")
-		req["Raw"] = r.FormValue("raw")
-		break
-	case Api_GetContract:
-		req["Hash"] = getParam(r, "hash")
-		req["Raw"] = r.FormValue("raw")
-		break
-	case Api_Getasset:
-		req["Hash"] = getParam(r, "hash")
-		req["Raw"] = r.FormValue("raw")
-		break
-	case Api_GetBalancebyAsset:
-		req["Addr"] = getParam(r, "addr")
-		req["Assetid"] = getParam(r, "assetid")
-		break
-	case Api_GetLockedAsset:
-		req["Addr"] = getParam(r, "addr")
-		req["Assetid"] = getParam(r, "assetid")
-		break
-	case Api_GetUserInfo:
-		req["Username"] = getParam(r, "username")
-		break
-	case Api_GetUserArticleInfo:
-		req["Username"] = getParam(r, "username")
-		break
-	case Api_GetLikeInfo:
-		req["Posthash"] = getParam(r, "posthash")
-		break
-	case Api_GetBalanceByAddr:
-		req["Addr"] = getParam(r, "addr")
-		break
-	case Api_GetUTXObyAddr:
-		req["Addr"] = getParam(r, "addr")
-		break
-	case Api_GetUTXObyAsset:
-		req["Addr"] = getParam(r, "addr")
-		req["Assetid"] = getParam(r, "assetid")
-		break
-	case Api_Restart:
-		break
-	case Api_SendRawTx:
-		userid := r.FormValue("userid")
-		if len(userid) == 0 {
-			req["Userid"] = getParam(r, "userid")
-		}
-		break
-	case Api_SendRcdTxByTrans:
-		req["Raw"] = r.FormValue("raw")
-		break
-	case Api_GetStateUpdate:
-		req["Namespace"] = getParam(r, "namespace")
-		req["Key"] = getParam(r, "key")
-		break
-	case Api_OauthServerUrl:
-	case Api_NoticeServerState:
-	case Api_WebsocketState:
-		break
-	default:
+		case Api_Getconnectioncount:
+
+		case Api_GetblockTxsByHeight:
+			req["Height"] = getParam(r, "height")
+		
+		case Api_Getblockbyheight:
+			req["Raw"] = r.FormValue("raw")
+			req["Height"] = getParam(r, "height")
+		
+		case Api_Getblockbyhash:
+			req["Raw"] = r.FormValue("raw")
+			req["Hash"] = getParam(r, "hash")
+		
+		case Api_Getblockheight:
+		
+		case Api_Getblockhash:
+			req["Height"] = getParam(r, "height")
+		
+		case Api_GetTotalIssued:
+			req["Assetid"] = getParam(r, "assetid")
+		
+		case Api_Gettransaction:
+			req["Hash"] = getParam(r, "hash")
+			req["Raw"] = r.FormValue("raw")
+		
+		case Api_GetContract:
+			req["Hash"] = getParam(r, "hash")
+			req["Raw"] = r.FormValue("raw")
+		
+		case Api_Getasset:
+			req["Hash"] = getParam(r, "hash")
+			req["Raw"] = r.FormValue("raw")
+		
+		case Api_GetBalancebyAsset:
+			req["Addr"] = getParam(r, "addr")
+			req["Assetid"] = getParam(r, "assetid")
+		
+		case Api_GetLockedAsset:
+			req["Addr"] = getParam(r, "addr")
+			req["Assetid"] = getParam(r, "assetid")
+		
+		case Api_GetUserInfo:
+			req["Username"] = getParam(r, "username")
+		
+		case Api_GetUserArticleInfo:
+			req["Username"] = getParam(r, "username")
+		
+		case Api_GetLikeInfo:
+			req["Posthash"] = getParam(r, "posthash")
+		
+		case Api_GetBalanceByAddr:
+			req["Addr"] = getParam(r, "addr")
+		
+		case Api_GetUTXObyAddr:
+			req["Addr"] = getParam(r, "addr")
+		
+		case Api_GetUTXObyAsset:
+			req["Addr"] = getParam(r, "addr")
+			req["Assetid"] = getParam(r, "assetid")
+		
+		case Api_Restart:
+		
+		case Api_SendRawTx:
+			userid := r.FormValue("userid")
+			if len(userid) == 0 {
+				req["Userid"] = getParam(r, "userid")
+			}
+		
+		case Api_SendRcdTxByTrans:
+			req["Raw"] = r.FormValue("raw")
+		
+		case Api_GetStateUpdate:
+			req["Namespace"] = getParam(r, "namespace")
+			req["Key"] = getParam(r, "key")
+		
+		case Api_OauthServerUrl:
+		
+		case Api_NoticeServerState:
+		
+		case Api_WebsocketState:
+		
+		default:
 	}
 	return req
 }
