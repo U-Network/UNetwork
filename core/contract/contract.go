@@ -60,16 +60,16 @@ func (c *Contract) IsMultiSigContract() bool {
 		i++
 		m = int16(c.Code[i])
 		i++
-		break
+
 	case 2:
 		i++
 		m = BytesToInt16(c.Code[i:])
 		i += 2
-		break
+
 	default:
 		m = int16(c.Code[i]) - 80
 		i++
-		break
+		
 	}
 
 	if m < 1 || m > 1024 {
@@ -94,20 +94,20 @@ func (c *Contract) IsMultiSigContract() bool {
 			return false
 		}
 		i++
-		break
+		
 	case 2:
 		i++
 		if n != BytesToInt16(c.Code[i:]) {
 			return false
 		}
 		i += 2
-		break
+		
 	default:
 		if n != (int16(c.Code[i]) - 80) {
 			return false
 		}
 		i++
-		break
+		
 	}
 
 	if c.Code[i] != byte(avm.CHECKMULTISIG) {
