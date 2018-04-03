@@ -1,7 +1,6 @@
 package transaction
 
 import (
-
 	"UNetwork/common"
 	"UNetwork/core/asset"
 	"UNetwork/core/code"
@@ -12,7 +11,6 @@ import (
 	"UNetwork/smartcontract/types"
 	"math/rand"
 	"strconv"
-
 )
 
 //initial a new transaction with asset registration payload

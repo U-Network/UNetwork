@@ -1,12 +1,12 @@
 package ChainStore
 
 import (
+	"UNetwork/common"
+	"UNetwork/core/store"
+	"UNetwork/smartcontract/states"
 	"UNetwork/smartcontract/storage"
 	"bytes"
-	"UNetwork/smartcontract/states"
-	"UNetwork/core/store"
 	"math/big"
-	"UNetwork/common"
 )
 
 type DBCache struct {
@@ -17,7 +17,7 @@ type DBCache struct {
 func NewDBCache(db *ChainStore) *DBCache {
 	return &DBCache{
 		RWSet: storage.NewRWSet(),
-		db: db,
+		db:    db,
 	}
 }
 
@@ -59,9 +59,9 @@ func (cache *DBCache) GetOrAdd(prefix store.DataEntryPrefix, key string, value s
 			return nil, err
 		}
 		write := &storage.Write{
-			Prefix: prefix,
-			Item: item,
-			Key: key,
+			Prefix:    prefix,
+			Item:      item,
+			Key:       key,
 			IsDeleted: false,
 		}
 		if write.Item == nil {
@@ -133,8 +133,3 @@ func (cache *DBCache) Suicide(codeHash common.Uint160) bool {
 	cache.RWSet.Delete(skey)
 	return true
 }
-
-
-
-
-

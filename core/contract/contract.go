@@ -4,10 +4,10 @@ import (
 	. "UNetwork/common"
 	"UNetwork/common/serialization"
 	. "UNetwork/errors"
+	"UNetwork/vm/avm"
 	"bytes"
 	"errors"
 	"io"
-	"UNetwork/vm/avm"
 )
 
 //Contract address is the hash of contract program .
@@ -69,7 +69,7 @@ func (c *Contract) IsMultiSigContract() bool {
 	default:
 		m = int16(c.Code[i]) - 80
 		i++
-		
+
 	}
 
 	if m < 1 || m > 1024 {
@@ -94,20 +94,20 @@ func (c *Contract) IsMultiSigContract() bool {
 			return false
 		}
 		i++
-		
+
 	case 2:
 		i++
 		if n != BytesToInt16(c.Code[i:]) {
 			return false
 		}
 		i += 2
-		
+
 	default:
 		if n != (int16(c.Code[i]) - 80) {
 			return false
 		}
 		i++
-		
+
 	}
 
 	if c.Code[i] != byte(avm.CHECKMULTISIG) {

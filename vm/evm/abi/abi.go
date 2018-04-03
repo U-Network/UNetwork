@@ -1,14 +1,14 @@
 package abi
 
 import (
+	"UNetwork/common"
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
-	"encoding/json"
+	"math/big"
 	"reflect"
 	"strings"
-	"encoding/binary"
-	"math/big"
-	"UNetwork/common"
 )
 
 var (
@@ -354,4 +354,3 @@ func toGoSlice(i int, t Argument, output []byte) (interface{}, error) {
 
 	return refSlice.Interface(), nil
 }
-

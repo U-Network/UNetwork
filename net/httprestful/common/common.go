@@ -14,7 +14,6 @@ import (
 	Err "UNetwork/net/httprestful/error"
 	. "UNetwork/net/protocol"
 	"UNetwork/smartcontract/states"
-
 )
 
 var node UNode

@@ -5,9 +5,9 @@ import (
 	pg "UNetwork/core/contract/program"
 	"UNetwork/crypto"
 	. "UNetwork/errors"
+	"UNetwork/vm/avm"
 	"math/big"
 	"sort"
-	"UNetwork/vm/avm"
 )
 
 //create a Single Singature contract for owner
@@ -51,7 +51,7 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 func CreateMultiSigContract(publicKeyHash Uint160, m int, publicKeys []*crypto.PubKey) (*Contract, error) {
 
 	params := make([]ContractParameterType, m)
-	for i, _ := range params {
+	for i := range params {
 		params[i] = Signature
 	}
 	MultiSigRedeemScript, err := CreateMultiSigRedeemScript(m, publicKeys)

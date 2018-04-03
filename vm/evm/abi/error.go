@@ -1,8 +1,8 @@
 package abi
 
 import (
-	"reflect"
 	"fmt"
+	"reflect"
 )
 
 func formatSliceString(kind reflect.Kind, sliceSize int) string {
@@ -33,7 +33,6 @@ func sliceTypeCheck(t Type, val reflect.Value) error {
 	}
 	return nil
 }
-
 
 func typeCheck(t Type, value reflect.Value) error {
 	if t.IsSlice || t.IsArray {

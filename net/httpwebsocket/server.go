@@ -8,10 +8,9 @@ import (
 	"UNetwork/net/httprestful/common"
 	Err "UNetwork/net/httprestful/error"
 	"UNetwork/net/httpwebsocket/websocket"
-	. "UNetwork/net/protocol"
 	"UNetwork/net/message"
+	. "UNetwork/net/protocol"
 	"bytes"
-
 )
 
 var ws *websocket.WsServer

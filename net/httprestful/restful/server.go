@@ -228,94 +228,94 @@ func (rt *restServer) getPath(url string) string {
 }
 func (rt *restServer) getParams(r *http.Request, url string, req map[string]interface{}) map[string]interface{} {
 	switch url {
-		case Api_Getconnectioncount:
+	case Api_Getconnectioncount:
 
-		case Api_GetblockTxsByHeight:
-			req["Height"] = getParam(r, "height")
-		
-		case Api_Getblockbyheight:
-			req["Raw"] = r.FormValue("raw")
-			req["Height"] = getParam(r, "height")
-		
-		case Api_Getblockbyhash:
-			req["Raw"] = r.FormValue("raw")
-			req["Hash"] = getParam(r, "hash")
-		
-		case Api_Getblockheight:
-		
-		case Api_Getblockhash:
-			req["Height"] = getParam(r, "height")
-		
-		case Api_GetTotalIssued:
-			req["Assetid"] = getParam(r, "assetid")
-		
-		case Api_Gettransaction:
-			req["Hash"] = getParam(r, "hash")
-			req["Raw"] = r.FormValue("raw")
-		
-		case Api_GetContract:
-			req["Hash"] = getParam(r, "hash")
-			req["Raw"] = r.FormValue("raw")
-		
-		case Api_Getasset:
-			req["Hash"] = getParam(r, "hash")
-			req["Raw"] = r.FormValue("raw")
-		
-		case Api_GetBalancebyAsset:
-			req["Addr"] = getParam(r, "addr")
-			req["Assetid"] = getParam(r, "assetid")
-		
-		case Api_GetLockedAsset:
-			req["Addr"] = getParam(r, "addr")
-			req["Assetid"] = getParam(r, "assetid")
-		
-		case Api_GetUserInfo:
-			req["Username"] = getParam(r, "username")
-		
-		case Api_GetUserArticleInfo:
-			req["Username"] = getParam(r, "username")
-		
-		case Api_GetLikeInfo:
-			req["Posthash"] = getParam(r, "posthash")
-		
-		case Api_GetBalanceByAddr:
-			req["Addr"] = getParam(r, "addr")
-		
-		case Api_GetUTXObyAddr:
-			req["Addr"] = getParam(r, "addr")
-		
-		case Api_GetUTXObyAsset:
-			req["Addr"] = getParam(r, "addr")
-			req["Assetid"] = getParam(r, "assetid")
-		
-		case Api_Restart:
-		
-		case Api_SendRawTx:
-			userid := r.FormValue("userid")
-			if len(userid) == 0 {
-				req["Userid"] = getParam(r, "userid")
-			}
-		
-		case Api_SendRcdTxByTrans:
-			req["Raw"] = r.FormValue("raw")
-		
-		case Api_GetStateUpdate:
-			req["Namespace"] = getParam(r, "namespace")
-			req["Key"] = getParam(r, "key")
-		
-		case Api_OauthServerUrl:
-		
-		case Api_NoticeServerState:
-		
-		case Api_WebsocketState:
-		
-		default:
+	case Api_GetblockTxsByHeight:
+		req["Height"] = getParam(r, "height")
+
+	case Api_Getblockbyheight:
+		req["Raw"] = r.FormValue("raw")
+		req["Height"] = getParam(r, "height")
+
+	case Api_Getblockbyhash:
+		req["Raw"] = r.FormValue("raw")
+		req["Hash"] = getParam(r, "hash")
+
+	case Api_Getblockheight:
+
+	case Api_Getblockhash:
+		req["Height"] = getParam(r, "height")
+
+	case Api_GetTotalIssued:
+		req["Assetid"] = getParam(r, "assetid")
+
+	case Api_Gettransaction:
+		req["Hash"] = getParam(r, "hash")
+		req["Raw"] = r.FormValue("raw")
+
+	case Api_GetContract:
+		req["Hash"] = getParam(r, "hash")
+		req["Raw"] = r.FormValue("raw")
+
+	case Api_Getasset:
+		req["Hash"] = getParam(r, "hash")
+		req["Raw"] = r.FormValue("raw")
+
+	case Api_GetBalancebyAsset:
+		req["Addr"] = getParam(r, "addr")
+		req["Assetid"] = getParam(r, "assetid")
+
+	case Api_GetLockedAsset:
+		req["Addr"] = getParam(r, "addr")
+		req["Assetid"] = getParam(r, "assetid")
+
+	case Api_GetUserInfo:
+		req["Username"] = getParam(r, "username")
+
+	case Api_GetUserArticleInfo:
+		req["Username"] = getParam(r, "username")
+
+	case Api_GetLikeInfo:
+		req["Posthash"] = getParam(r, "posthash")
+
+	case Api_GetBalanceByAddr:
+		req["Addr"] = getParam(r, "addr")
+
+	case Api_GetUTXObyAddr:
+		req["Addr"] = getParam(r, "addr")
+
+	case Api_GetUTXObyAsset:
+		req["Addr"] = getParam(r, "addr")
+		req["Assetid"] = getParam(r, "assetid")
+
+	case Api_Restart:
+
+	case Api_SendRawTx:
+		userid := r.FormValue("userid")
+		if len(userid) == 0 {
+			req["Userid"] = getParam(r, "userid")
+		}
+
+	case Api_SendRcdTxByTrans:
+		req["Raw"] = r.FormValue("raw")
+
+	case Api_GetStateUpdate:
+		req["Namespace"] = getParam(r, "namespace")
+		req["Key"] = getParam(r, "key")
+
+	case Api_OauthServerUrl:
+
+	case Api_NoticeServerState:
+
+	case Api_WebsocketState:
+
+	default:
 	}
 	return req
 }
 func (rt *restServer) initGetHandler() {
 
-	for k, _ := range rt.getMap {
+	for k := range rt.getMap {
 		rt.router.Get(k, func(w http.ResponseWriter, r *http.Request) {
 
 			var req = make(map[string]interface{})
@@ -343,7 +343,7 @@ func (rt *restServer) initGetHandler() {
 		})
 	}
 	//Options
-	for k, _ := range rt.getMap {
+	for k := range rt.getMap {
 		rt.router.Options(k, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Access-Control-Allow-Headers", "*")
 			w.Header().Set("content-type", "application/json;charset=utf-8")
@@ -352,7 +352,7 @@ func (rt *restServer) initGetHandler() {
 	}
 }
 func (rt *restServer) initPostHandler() {
-	for k, _ := range rt.postMap {
+	for k := range rt.postMap {
 		rt.router.Post(k, func(w http.ResponseWriter, r *http.Request) {
 
 			body, _ := ioutil.ReadAll(r.Body)
@@ -388,7 +388,7 @@ func (rt *restServer) initPostHandler() {
 		})
 	}
 	//Options
-	for k, _ := range rt.postMap {
+	for k := range rt.postMap {
 		rt.router.Options(k, func(w http.ResponseWriter, r *http.Request) {
 			rt.write(w, []byte{})
 		})

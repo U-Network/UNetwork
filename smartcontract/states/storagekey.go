@@ -2,14 +2,14 @@ package states
 
 import (
 	"UNetwork/common"
-	"io"
 	"UNetwork/common/serialization"
 	. "UNetwork/errors"
+	"io"
 )
 
 type StorageKey struct {
 	CodeHash *common.Uint160
-	Key []byte
+	Key      []byte
 }
 
 func NewStorageKey(codeHash *common.Uint160, key []byte) *StorageKey {
@@ -39,4 +39,3 @@ func (storageKey *StorageKey) Deserialize(r io.Reader) error {
 	storageKey.Key = key
 	return nil
 }
-

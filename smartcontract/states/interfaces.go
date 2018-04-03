@@ -1,10 +1,10 @@
 package states
 
 import (
-	"io"
-	"UNetwork/vm/avm/interfaces"
 	"UNetwork/core/store"
+	"UNetwork/vm/avm/interfaces"
 	"bytes"
+	"io"
 )
 
 type IStateValueInterface interface {
@@ -20,15 +20,15 @@ type IStateKeyInterface interface {
 
 var (
 	StatesMap = map[store.DataEntryPrefix]IStateValueInterface{
-		store.ST_Contract: new(ContractState),
-		store.ST_Storage: new(StorageItem),
-		store.ST_ACCOUNT: new(AccountState),
+		store.ST_Contract:   new(ContractState),
+		store.ST_Storage:    new(StorageItem),
+		store.ST_ACCOUNT:    new(AccountState),
 		store.ST_AssetState: new(AssetState),
-		store.ST_Validator: new(ValidatorState),
+		store.ST_Validator:  new(ValidatorState),
 	}
 )
 
-func GetStateValue(prefix store.DataEntryPrefix, data []byte) (IStateValueInterface, error){
+func GetStateValue(prefix store.DataEntryPrefix, data []byte) (IStateValueInterface, error) {
 	r := bytes.NewBuffer(data)
 	state := StatesMap[prefix]
 	if err := state.Deserialize(r); err != nil {

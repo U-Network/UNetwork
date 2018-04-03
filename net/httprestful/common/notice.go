@@ -28,7 +28,6 @@ func SetPushBlockFlag(cmd map[string]interface{}) map[string]interface{} {
 	return resp
 }
 
-
 func PostRequest(cmd map[string]interface{}, url string) (map[string]interface{}, error) {
 
 	var repMsg = make(map[string]interface{})

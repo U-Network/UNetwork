@@ -1,14 +1,14 @@
 package validation
 
 import (
+	"UNetwork/common"
 	. "UNetwork/common"
 	sig "UNetwork/core/signature"
 	"UNetwork/crypto"
 	. "UNetwork/errors"
 	"UNetwork/vm/avm"
-	"errors"
 	"UNetwork/vm/avm/interfaces"
-	"UNetwork/common"
+	"errors"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {

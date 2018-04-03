@@ -1,10 +1,10 @@
 package abi
 
 import (
-	"reflect"
-	"math/big"
-	"UNetwork/vm/evm/common"
 	. "UNetwork/common"
+	"UNetwork/vm/evm/common"
+	"math/big"
+	"reflect"
 )
 
 var (
@@ -12,7 +12,6 @@ var (
 	ubig_t    = reflect.TypeOf(big.Int{})
 	address_t = reflect.TypeOf(Uint160{})
 )
-
 
 func U256(n *big.Int) []byte {
 	return common.PaddedBigBytes(n, 32)

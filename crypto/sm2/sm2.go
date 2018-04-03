@@ -181,9 +181,9 @@ func Verify(algSet *util.CryptoAlgSet, publicKeyX *big.Int, publicKeyY *big.Int,
 	e := new(big.Int).SetBytes(hash[:])
 	x.Add(x, e)
 	x.Mod(x, N)
-	if x.Cmp(r) == 0{
+	if x.Cmp(r) == 0 {
 		return nil
-	}else {
+	} else {
 		return errors.New("[Validation], Verify failed.")
 	}
 }

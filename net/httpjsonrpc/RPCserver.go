@@ -13,7 +13,7 @@ const (
 
 const (
 	RPCGetBestBlockHash          = "getbestblockhash"
-	RPCGetBlock                  = "getblock" 
+	RPCGetBlock                  = "getblock"
 	RPCGetBlockCount             = "getblockcount"
 	RPCGetBlockHash              = "getblockhash"
 	RPCGetConnectionCount        = "getconnectioncount"

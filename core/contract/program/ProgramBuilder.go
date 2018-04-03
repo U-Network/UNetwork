@@ -2,9 +2,9 @@ package program
 
 import (
 	. "UNetwork/common"
+	"UNetwork/vm/avm"
 	"bytes"
 	"math/big"
-	"UNetwork/vm/avm"
 )
 
 type ProgramBuilder struct {
@@ -48,21 +48,21 @@ func (pb *ProgramBuilder) PushData(data []byte) {
 
 	if len(data) <= int(avm.PUSHBYTES75) {
 		pb.buffer.WriteByte(byte(len(data)))
-		pb.buffer.Write(data[0:len(data)])
+		pb.buffer.Write(data[0:])
 	} else if len(data) < 0x100 {
 		pb.AddOp(avm.PUSHDATA1)
 		pb.buffer.WriteByte(byte(len(data)))
-		pb.buffer.Write(data[0:len(data)])
+		pb.buffer.Write(data[0:])
 	} else if len(data) < 0x10000 {
 		pb.AddOp(avm.PUSHDATA2)
 		dataByte := IntToBytes(len(data))
 		pb.buffer.Write(dataByte[0:2])
-		pb.buffer.Write(data[0:len(data)])
+		pb.buffer.Write(data[0:])
 	} else {
 		pb.AddOp(avm.PUSHDATA4)
 		dataByte := IntToBytes(len(data))
 		pb.buffer.Write(dataByte[0:4])
-		pb.buffer.Write(data[0:len(data)])
+		pb.buffer.Write(data[0:])
 	}
 }
 

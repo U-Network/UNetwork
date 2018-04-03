@@ -1,10 +1,10 @@
 package deal
 
 import (
-	"testing"
-	"UNetwork/vm/evm/test_case"
 	"UNetwork/common"
+	"UNetwork/vm/evm/test_case"
 	"fmt"
+	"testing"
 )
 
 const (
@@ -15,13 +15,19 @@ const (
 func TestGetSigner(t *testing.T) {
 	t.Log("testing greet start")
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN)
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 	input, err := parsed.Pack("getSigner")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 	ret0 := new(common.Uint160)
 	err = parsed.Unpack(ret0, "getSigner", ret)
-	if err != nil { t.Errorf("unpack error:%v", err)}
+	if err != nil {
+		t.Errorf("unpack error:%v", err)
+	}
 	t.Log("ret0:", *ret0)
 	t.Log("testing greet end")
 }
@@ -29,13 +35,19 @@ func TestGetSigner(t *testing.T) {
 func TestGetReceiver(t *testing.T) {
 	t.Log("testing greet start")
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN)
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 	input, err := parsed.Pack("getReceiver")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 	ret1 := new(common.Uint160)
 	err = parsed.Unpack(ret1, "getReceiver", ret)
-	if err != nil { t.Errorf("unpack error:%v", err)}
+	if err != nil {
+		t.Errorf("unpack error:%v", err)
+	}
 	t.Log(fmt.Sprintf("ret1:%x", *ret1))
 	t.Log("testing greet end")
 }
@@ -43,9 +55,13 @@ func TestGetReceiver(t *testing.T) {
 func TestReleasePayment(t *testing.T) {
 	t.Log("testing greet start")
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN)
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 	input, err := parsed.Pack("releasePayment")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 	t.Log("ret3:", ret)
 	//ret2 := new(common.Uint160)
@@ -55,13 +71,16 @@ func TestReleasePayment(t *testing.T) {
 	t.Log("testing greet end")
 }
 
-
 func TestReceiverBalance(t *testing.T) {
 	t.Log("testing receiver balance")
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN)
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 	input, err := parsed.Pack("getReceiverBalance")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 	t.Log("ret4:", ret)
 	//ret2 := new(common.Uint160)
@@ -74,9 +93,13 @@ func TestReceiverBalance(t *testing.T) {
 func TestSignerBalance(t *testing.T) {
 	t.Log("testing receiver balance")
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN)
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 	input, err := parsed.Pack("getSignerBalance")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 	t.Log("ret5:", ret)
 	//ret2 := new(common.Uint160)

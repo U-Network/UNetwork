@@ -2,8 +2,8 @@ package transaction
 
 import (
 	"UNetwork/common"
-	"io"
 	"bytes"
+	"io"
 )
 
 type TxOutput struct {
@@ -24,7 +24,7 @@ func (o *TxOutput) Deserialize(r io.Reader) {
 	o.ProgramHash.Deserialize(r)
 }
 
-func (ui *TxOutput) ToArray() ([]byte) {
+func (ui *TxOutput) ToArray() []byte {
 	b := new(bytes.Buffer)
 	ui.Serialize(b)
 	return b.Bytes()

@@ -1,11 +1,11 @@
 package payload
 
 import (
-	. "UNetwork/core/code"
-	"UNetwork/common/serialization"
-	"io"
-	"UNetwork/smartcontract/types"
 	"UNetwork/common"
+	"UNetwork/common/serialization"
+	. "UNetwork/core/code"
+	"UNetwork/smartcontract/types"
+	"io"
 )
 
 type DeployCode struct {
@@ -126,4 +126,3 @@ func (dc *DeployCode) Deserialize(r io.Reader, version byte) error {
 	dc.ProgramHash = *u
 	return nil
 }
-

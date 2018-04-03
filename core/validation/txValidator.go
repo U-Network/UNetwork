@@ -15,7 +15,6 @@ import (
 	"UNetwork/core/transaction/payload"
 	"UNetwork/crypto"
 	. "UNetwork/errors"
-
 )
 
 func VerifyTransaction(txn *tx.Transaction) ErrCode {
@@ -86,7 +85,7 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 		case tx.IssueAsset:
 			//TODO: use delta mode to improve performance
 			results := txn.GetMergedAssetIDValueFromOutputs()
-			for k, _ := range results {
+			for k := range results {
 				//Get the Asset amount when RegisterAsseted.
 				trx, err := tx.TxStore.GetTransaction(k)
 				if trx.TxType != tx.RegisterAsset {

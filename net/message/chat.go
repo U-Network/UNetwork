@@ -6,12 +6,12 @@ import (
 	"encoding/binary"
 	"io"
 
+	. "UNetwork/common"
+	"UNetwork/common/log"
 	"UNetwork/common/serialization"
 	"UNetwork/core/ledger"
 	"UNetwork/events"
 	. "UNetwork/net/protocol"
-	."UNetwork/common"
-	"UNetwork/common/log"
 )
 
 type ChatPayload struct {
@@ -26,10 +26,10 @@ type chat struct {
 	ChatPayload
 }
 
-func (msg *ChatPayload)Hash() Uint256{
+func (msg *ChatPayload) Hash() Uint256 {
 	var msgHash Uint256
 	buffer := bytes.NewBuffer([]byte{})
-	if err := msg.Serialization(buffer);err != nil {
+	if err := msg.Serialization(buffer); err != nil {
 		log.Error("chat message serialization error")
 		return msgHash
 	}

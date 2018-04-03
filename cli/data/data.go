@@ -19,7 +19,7 @@ func openWallet(name string, passwd []byte) account.Client {
 	if name == account.WalletFileName {
 		fmt.Println("Using default wallet: ", account.WalletFileName)
 	}
-	wallet,err := account.Open(name, passwd)
+	wallet, err := account.Open(name, passwd)
 	if err != nil {
 		fmt.Println("Failed to open wallet: ", name)
 		os.Exit(1)

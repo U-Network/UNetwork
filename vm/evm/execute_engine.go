@@ -2,41 +2,45 @@ package evm
 
 import (
 	"UNetwork/common"
-	"sync/atomic"
+	"UNetwork/smartcontract/storage"
 	"fmt"
 	"math/big"
-	"UNetwork/smartcontract/storage"
+	"sync/atomic"
 )
 
 type ExecutionEngine struct {
-	contract *Contract
-	opCode OpCode
-	stack *Stack
-	pc uint64
-	memory *Memory
-	DBCache storage.DBCache
-	abort int32
-	JumpTable [256]OpExec
-	time *big.Int
+	contract    *Contract
+	opCode      OpCode
+	stack       *Stack
+	pc          uint64
+	memory      *Memory
+	DBCache     storage.DBCache
+	abort       int32
+	JumpTable   [256]OpExec
+	time        *big.Int
 	blockNumber *big.Int
 }
 
 func NewExecutionEngine(dbCache storage.DBCache, time *big.Int, blockNumber *big.Int, gas common.Fixed64) *ExecutionEngine {
-	return &ExecutionEngine {
-		DBCache: dbCache,
-		time: time,
+	return &ExecutionEngine{
+		DBCache:     dbCache,
+		time:        time,
 		blockNumber: blockNumber,
-		JumpTable: NewOpExecList(),
+		JumpTable:   NewOpExecList(),
 	}
 }
 
 func (e *ExecutionEngine) Create(caller common.Uint160, code []byte) (ret []byte, err error) {
 	e.contract = NewContract(caller)
 	codeHash, err := common.ToCodeHash(code)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	e.contract.SetCode(code, codeHash)
 	ret, err = e.run()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	e.DBCache.SetCode(codeHash, ret)
 	return ret, nil
 }
@@ -49,7 +53,9 @@ func (e *ExecutionEngine) Call(caller common.Uint160, codeHash common.Uint160, i
 	}
 	e.contract.SetCallCode(code, input, codeHash)
 	ret, err = e.run()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return ret, nil
 }
 
@@ -61,7 +67,7 @@ func (e *ExecutionEngine) DelegateCall(codeHash common.Uint160, toAddr common.Ui
 	return ret, nil
 }
 
-func(e *ExecutionEngine) run() ([]byte, error) {
+func (e *ExecutionEngine) run() ([]byte, error) {
 	if v, ok := PrecompiledContracts[e.contract.CodeHash]; ok {
 		return v.Run(e.contract.Input)
 	}
@@ -94,7 +100,7 @@ func(e *ExecutionEngine) run() ([]byte, error) {
 			e.pc++
 		}
 		s := e.stack.len()
-		for i:=0; i<s;i++ {
+		for i := 0; i < s; i++ {
 			fmt.Print(" ", e.stack.Back(i))
 		}
 		fmt.Println()

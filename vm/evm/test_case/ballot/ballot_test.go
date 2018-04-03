@@ -1,11 +1,11 @@
 package ballot
 
 import (
-	"testing"
+	"UNetwork/client"
 	"UNetwork/vm/evm/test_case"
 	"fmt"
 	"math/big"
-	"UNetwork/client"
+	"testing"
 )
 
 const (
@@ -16,8 +16,10 @@ const (
 func TestGetSigner(t *testing.T) {
 	t.Log("testing greet start")
 
-	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN, [][32]byte{[32]byte{1}, [32]byte{2}, [32]byte{3}})
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN, [][32]byte{{1}, {2}, {3}})
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 	account1, _ := client.NewAccount()
 	account2, _ := client.NewAccount()
 	account3, _ := client.NewAccount()
@@ -25,31 +27,45 @@ func TestGetSigner(t *testing.T) {
 
 	fmt.Println("deploy finished.")
 	input, err := parsed.Pack("giveRightToVote", account1.ProgramHash)
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 
 	input, err = parsed.Pack("giveRightToVote", account2.ProgramHash)
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 
 	input, err = parsed.Pack("giveRightToVote", account3.ProgramHash)
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 
 	input, err = parsed.Pack("giveRightToVote", account4.ProgramHash)
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 
-	input, err = parsed.Pack("vote",  big.NewInt(1))
-	if err != nil { t.Errorf("pack error:%v", err)}
+	input, err = parsed.Pack("vote", big.NewInt(1))
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	//
-	input, err = parsed.Pack("vote",  big.NewInt(2))
-	if err != nil { t.Errorf("pack error:%v", err)}
+	input, err = parsed.Pack("vote", big.NewInt(2))
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(account1.ProgramHash, *codeHash, input)
 	////
-	input, err = parsed.Pack("vote",  big.NewInt(2))
-	if err != nil { t.Errorf("pack error:%v", err)}
+	input, err = parsed.Pack("vote", big.NewInt(2))
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(account2.ProgramHash, *codeHash, input)
 	//
 	//input, err = parsed.Pack("vote",  big.NewInt(2))
@@ -69,7 +85,9 @@ func TestGetSigner(t *testing.T) {
 	//ret, err = evm.Call(*account, *codeHash, input)
 
 	input, err = parsed.Pack("winningProposal")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("winningProposal ret:", ret)
 
@@ -81,7 +99,6 @@ func TestGetSigner(t *testing.T) {
 	//if err != nil { t.Errorf("unpack error:%v", err)}
 	//fmt.Println("ret0:", ret0)
 
-
 	input, err = parsed.Pack("winnerCount")
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("winnerCount ret:", ret)
@@ -90,4 +107,3 @@ func TestGetSigner(t *testing.T) {
 	//t.Log("ret0:", ret0)
 	t.Log("testing greet end")
 }
-

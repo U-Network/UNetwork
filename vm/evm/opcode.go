@@ -78,7 +78,6 @@ const (
 	JUMPDEST
 )
 
-
 const (
 	LOG0 OpCode = 0xa0 + iota
 	LOG1
@@ -154,7 +153,6 @@ const (
 	SWAP15
 	SWAP16
 )
-
 
 const (
 	PUSH OpCode = 0xb0 + iota

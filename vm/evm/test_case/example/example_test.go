@@ -1,8 +1,8 @@
 package test
 
 import (
-	"testing"
 	"UNetwork/vm/evm/test_case"
+	"testing"
 )
 
 const (
@@ -13,13 +13,19 @@ const (
 func TestGreet(t *testing.T) {
 	t.Log("testing greet start")
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN, "testing")
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 	input, err := parsed.Pack("greet")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 	ret0 := new(string)
 	err = parsed.Unpack(ret0, "greet", ret)
-	if err != nil { t.Errorf("unpack error:%v", err)}
+	if err != nil {
+		t.Errorf("unpack error:%v", err)
+	}
 	t.Log("ret0:", *ret0)
 	t.Log("testing greet end")
 
@@ -29,18 +35,26 @@ func TestSetGreet(t *testing.T) {
 	t.Log("testing set greet start")
 
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN, "testing")
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 
 	input, err := parsed.Pack("setGreeting", "hello world!")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 
 	input, err = parsed.Pack("greet")
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	ret0 := new(string)
 	err = parsed.Unpack(ret0, "greet", ret)
-	if err != nil { t.Errorf("unpack error:%v", err)}
+	if err != nil {
+		t.Errorf("unpack error:%v", err)
+	}
 	t.Log("ret0:", *ret0)
 
 	t.Log("testing set greet end")

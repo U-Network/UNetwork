@@ -185,7 +185,7 @@ func (this *TXNPool) removeTransaction(txn *transaction.Transaction) {
 		log.Info(fmt.Sprintf("Transaction =%x not Exist in Pool when delete.", txn.Hash()))
 		return
 	}
-	for UTXOTxInput, _ := range result {
+	for UTXOTxInput := range result {
 		this.delInputUTXOList(UTXOTxInput)
 	}
 	//3.remove From Asset Issue Summary map
@@ -224,7 +224,7 @@ func (this *TXNPool) apendToUTXOPool(txn *transaction.Transaction) error {
 func (this *TXNPool) cleanUTXOList(txs []*transaction.Transaction) {
 	for _, txn := range txs {
 		inputUtxos, _ := txn.GetReference()
-		for Utxoinput, _ := range inputUtxos {
+		for Utxoinput := range inputUtxos {
 			this.delInputUTXOList(Utxoinput)
 		}
 	}

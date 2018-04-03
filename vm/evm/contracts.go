@@ -2,11 +2,11 @@ package evm
 
 import (
 	"UNetwork/common"
-	"math/big"
 	. "UNetwork/vm/evm/common"
 	"UNetwork/vm/evm/crypto"
 	"crypto/sha256"
 	"github.com/golang/crypto/ripemd160"
+	"math/big"
 )
 
 type PrecompiledContract interface {
@@ -66,8 +66,7 @@ func (c *ripemd160hash) Run(in []byte) ([]byte, error) {
 }
 
 type dataCopy struct{}
+
 func (c *dataCopy) Run(in []byte) ([]byte, error) {
 	return in, nil
 }
-
-

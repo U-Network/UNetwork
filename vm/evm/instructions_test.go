@@ -1,8 +1,8 @@
 package evm
 
 import (
-	"testing"
 	"math/big"
+	"testing"
 )
 
 func TestOpAdd(t *testing.T) {

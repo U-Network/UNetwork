@@ -1,8 +1,8 @@
 package types
 
 import (
-	"math/big"
 	"UNetwork/vm/avm/interfaces"
+	"math/big"
 )
 
 type InteropInterface struct {

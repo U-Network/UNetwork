@@ -3,9 +3,9 @@ package asset
 import (
 	"UNetwork/common/serialization"
 	. "UNetwork/errors"
+	"bytes"
 	"errors"
 	"io"
-	"bytes"
 )
 
 //AssetType
@@ -100,8 +100,7 @@ func (a *Asset) Deserialize(r io.Reader) error {
 	return nil
 }
 
-
-func (a *Asset) ToArray() ([]byte) {
+func (a *Asset) ToArray() []byte {
 	b := new(bytes.Buffer)
 	a.Serialize(b)
 	return b.Bytes()

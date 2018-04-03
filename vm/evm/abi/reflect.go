@@ -1,8 +1,8 @@
 package abi
 
 import (
-	"reflect"
 	"fmt"
+	"reflect"
 )
 
 func indirect(v reflect.Value) reflect.Value {
@@ -39,4 +39,3 @@ func set(dst, src reflect.Value, output Argument) error {
 	}
 	return nil
 }
-

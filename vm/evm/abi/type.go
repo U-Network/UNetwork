@@ -1,10 +1,10 @@
 package abi
 
 import (
-	"reflect"
 	"fmt"
-	"strconv"
+	"reflect"
 	"regexp"
+	"strconv"
 )
 
 type Type struct {
@@ -37,7 +37,7 @@ const (
 
 var (
 	fullTypeRegex = regexp.MustCompile(`([a-zA-Z0-9]+)(\[([0-9]*)\])?`)
-	typeRegex = regexp.MustCompile("([a-zA-Z]+)(([0-9]+)(x([0-9]+))?)?")
+	typeRegex     = regexp.MustCompile("([a-zA-Z]+)(([0-9]+)(x([0-9]+))?)?")
 )
 
 func NewType(t string) (typ Type, err error) {
@@ -140,7 +140,6 @@ func NewType(t string) (typ Type, err error) {
 
 	return
 }
-
 
 func (t Type) String() (out string) {
 	return t.stringKind

@@ -5,13 +5,12 @@ import (
 	"math/big"
 )
 
-
 type Contract struct {
-	Caller common.Uint160
-	Code []byte
+	Caller   common.Uint160
+	Code     []byte
 	CodeHash common.Uint160
-	Input []byte
-	value *big.Int
+	Input    []byte
+	value    *big.Int
 	jumpdest destinations
 }
 

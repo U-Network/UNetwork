@@ -1,8 +1,8 @@
 package abi
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 )
 
 type Argument struct {

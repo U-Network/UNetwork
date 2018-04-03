@@ -11,9 +11,9 @@ import (
 	"UNetwork/crypto"
 	. "UNetwork/errors"
 	"UNetwork/vm/avm"
+	"bytes"
 	"io"
 	"time"
-	"bytes"
 )
 
 const BlockVersion uint32 = 0
@@ -117,7 +117,7 @@ func (b *Block) GetMessage() []byte {
 	return sig.GetHashData(b)
 }
 
-func (b *Block) ToArray() ([]byte) {
+func (b *Block) ToArray() []byte {
 	bf := new(bytes.Buffer)
 	b.Serialize(bf)
 	return bf.Bytes()

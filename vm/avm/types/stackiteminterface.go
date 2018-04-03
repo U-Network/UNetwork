@@ -1,8 +1,8 @@
 package types
 
 import (
-	"math/big"
 	"UNetwork/vm/avm/interfaces"
+	"math/big"
 )
 
 type StackItemInterface interface {
@@ -13,4 +13,3 @@ type StackItemInterface interface {
 	GetInterface() interfaces.IInteropInterface
 	GetArray() []StackItemInterface
 }
-

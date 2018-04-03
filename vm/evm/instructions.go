@@ -1,11 +1,11 @@
 package evm
 
 import (
-	"math/big"
-	"fmt"
+	. "UNetwork/common"
 	"UNetwork/vm/evm/common"
 	"UNetwork/vm/evm/crypto"
-	. "UNetwork/common"
+	"fmt"
+	"math/big"
 )
 
 var (
@@ -123,7 +123,7 @@ func opExp(e *ExecutionEngine) ([]byte, error) {
 func opSignExtend(e *ExecutionEngine) ([]byte, error) {
 	back := pop(e)
 	if back.Cmp(big.NewInt(31)) < 0 {
-		bit := uint(back.Uint64() * 8 + 7)
+		bit := uint(back.Uint64()*8 + 7)
 		num := pop(e)
 		mask := back.Lsh(common.Big1, bit)
 		mask.Sub(mask, common.Big1)
@@ -280,7 +280,7 @@ func opCallDataCopy(e *ExecutionEngine) ([]byte, error) {
 	var (
 		mOff = pop(e)
 		cOff = pop(e)
-		l = pop(e)
+		l    = pop(e)
 	)
 	e.memory.Set(mOff.Uint64(), l.Uint64(), common.GetData(e.contract.Input, cOff, l))
 	return nil, nil
@@ -295,7 +295,7 @@ func opCodeCopy(e *ExecutionEngine) ([]byte, error) {
 	var (
 		mOff = pop(e)
 		cOff = pop(e)
-		l = pop(e)
+		l    = pop(e)
 	)
 	codeCopy := common.GetData(e.contract.Code, cOff, l)
 	e.memory.Set(mOff.Uint64(), l.Uint64(), codeCopy)
@@ -316,9 +316,9 @@ func opExtCodeSize(e *ExecutionEngine) ([]byte, error) {
 func opExtCodeCopy(e *ExecutionEngine) ([]byte, error) {
 	var (
 		codeHash = BigToUint160(pop(e))
-		mOff = pop(e)
-		cOff = pop(e)
-		l = pop(e)
+		mOff     = pop(e)
+		cOff     = pop(e)
+		l        = pop(e)
 	)
 	state, err := e.DBCache.GetCode(codeHash)
 	if err != nil {
@@ -441,7 +441,7 @@ func opCreate(e *ExecutionEngine) ([]byte, error) {
 	pop(e)
 	var (
 		offset, size = pop(e), pop(e)
-		input = e.memory.Get(offset.Int64(), size.Int64())
+		input        = e.memory.Get(offset.Int64(), size.Int64())
 	)
 	engine := NewExecutionEngine(e.DBCache, e.time, e.blockNumber, Fixed64(0))
 	_, err := engine.Create(e.contract.Caller, input)
@@ -503,12 +503,12 @@ func makePush(size uint64, pushByteSize int) executionFunc {
 	return func(e *ExecutionEngine) ([]byte, error) {
 		codeLen := len(e.contract.Code)
 		startMin := codeLen
-		if int(e.pc + 1) < startMin {
+		if int(e.pc+1) < startMin {
 			startMin = int(e.pc + 1)
 		}
 
 		endMin := codeLen
-		if startMin + pushByteSize < endMin {
+		if startMin+pushByteSize < endMin {
 			endMin = startMin + pushByteSize
 		}
 

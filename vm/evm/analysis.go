@@ -1,10 +1,9 @@
 package evm
 
 import (
-	"math/big"
 	"UNetwork/common"
+	"math/big"
 )
-
 
 type destinations map[common.Uint160][]byte
 
@@ -24,7 +23,7 @@ func (d destinations) has(codeHash common.Uint160, code []byte, dest *big.Int) b
 }
 
 func jumpdest(code []byte) []byte {
-	m :=  make([]byte, len(code)/8+1)
+	m := make([]byte, len(code)/8+1)
 	for pc := uint64(0); pc < uint64(len(code)); pc++ {
 		var op OpCode = OpCode(code[pc])
 		if op == JUMPDEST {

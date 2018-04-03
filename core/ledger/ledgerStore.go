@@ -1,7 +1,6 @@
 package ledger
 
 import (
-
 	. "UNetwork/common"
 	"UNetwork/core/account"
 	. "UNetwork/core/asset"
@@ -9,7 +8,6 @@ import (
 	tx "UNetwork/core/transaction"
 	"UNetwork/crypto"
 	"UNetwork/smartcontract/states"
-
 )
 
 // ILedgerStore provides func with store package.

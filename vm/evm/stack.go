@@ -1,14 +1,13 @@
 package evm
 
 import (
-	"math/big"
 	"fmt"
+	"math/big"
 )
 
 type Stack struct {
 	data []*big.Int
 }
-
 
 func newstack() *Stack {
 	return &Stack{data: make([]*big.Int, 0, 1024)}
@@ -23,7 +22,7 @@ func (s *Stack) push(b *big.Int) {
 }
 
 func (s *Stack) dup(n int) {
-	s.push(new(big.Int).Set(s.data[s.len() - n]))
+	s.push(new(big.Int).Set(s.data[s.len()-n]))
 }
 
 func (s *Stack) pushN(bs ...*big.Int) {
@@ -43,17 +42,17 @@ func (s *Stack) len() int {
 
 func (s *Stack) swap(n int) {
 	l := s.len()
-	l1 := l-n-1
-	l2 := l-1
+	l1 := l - n - 1
+	l2 := l - 1
 	s.data[l1], s.data[l2] = s.data[l2], s.data[l1]
 }
 
 func (s *Stack) peek() *big.Int {
-	return s.data[s.len() - 1]
+	return s.data[s.len()-1]
 }
 
 func (s *Stack) Back(n int) *big.Int {
-	return s.data[s.len() - n - 1]
+	return s.data[s.len()-n-1]
 }
 
 func (s *Stack) require(n int) error {

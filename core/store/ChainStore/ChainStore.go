@@ -29,7 +29,6 @@ import (
 	"UNetwork/smartcontract"
 	"UNetwork/smartcontract/service"
 	"UNetwork/smartcontract/states"
-
 )
 
 const (

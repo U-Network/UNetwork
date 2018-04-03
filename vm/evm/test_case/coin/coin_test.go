@@ -1,11 +1,11 @@
 package coin
 
 import (
-	"testing"
-	"UNetwork/vm/evm/test_case"
 	"UNetwork/client"
+	"UNetwork/vm/evm/test_case"
 	"fmt"
 	"math/big"
+	"testing"
 )
 
 const (
@@ -15,7 +15,9 @@ const (
 
 func TestCoin(t *testing.T) {
 	codeHash, account, evm, parsed, err := test_case.NewEngine(ABI, BIN)
-	if err != nil { t.Errorf("new engine error:%v", err)}
+	if err != nil {
+		t.Errorf("new engine error:%v", err)
+	}
 
 	account1, _ := client.NewAccount()
 	account2, _ := client.NewAccount()
@@ -23,48 +25,68 @@ func TestCoin(t *testing.T) {
 	//account4, _ := client.NewAccount()
 
 	input, err := parsed.Pack("mint", account1.ProgramHash, big.NewInt(100))
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err := evm.Call(*account, *codeHash, input)
 	fmt.Println("ret0", ret)
 
 	input, err = parsed.Pack("mint", account2.ProgramHash, big.NewInt(100))
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("ret1", ret)
 
 	input, err = parsed.Pack("mint", account, big.NewInt(100))
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("ret1", ret)
 
 	input, err = parsed.Pack("getBalance", account1.ProgramHash)
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("ret2", ret)
 	var i *big.Int
 	err = parsed.Unpack(&i, "getBalance", ret)
-	if err != nil { t.Errorf("unpack error:%v", err)}
+	if err != nil {
+		t.Errorf("unpack error:%v", err)
+	}
 	fmt.Println("ret2", i)
 
 	input, err = parsed.Pack("send", account3.ProgramHash, big.NewInt(10))
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("ret3", ret)
 
 	input, err = parsed.Pack("getBalance", account3.ProgramHash)
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("ret4", ret)
 	err = parsed.Unpack(&i, "getBalance", ret)
-	if err != nil { t.Errorf("unpack error:%v", err)}
+	if err != nil {
+		t.Errorf("unpack error:%v", err)
+	}
 	fmt.Println("re4", i)
 
 	input, err = parsed.Pack("getBalance", account)
-	if err != nil { t.Errorf("pack error:%v", err)}
+	if err != nil {
+		t.Errorf("pack error:%v", err)
+	}
 	ret, err = evm.Call(*account, *codeHash, input)
 	fmt.Println("ret4", ret)
 	err = parsed.Unpack(&i, "getBalance", ret)
-	if err != nil { t.Errorf("unpack error:%v", err)}
+	if err != nil {
+		t.Errorf("unpack error:%v", err)
+	}
 	fmt.Println("re4", i)
 
 }

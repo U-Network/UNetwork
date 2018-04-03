@@ -117,6 +117,3 @@ func S256(x *big.Int) *big.Int {
 		return new(big.Int).Sub(x, tt256)
 	}
 }
-
-
-

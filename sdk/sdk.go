@@ -12,10 +12,9 @@ import (
 	"UNetwork/common/config"
 	. "UNetwork/core/asset"
 	"UNetwork/core/contract"
+	"UNetwork/core/forum"
 	"UNetwork/core/signature"
 	"UNetwork/core/transaction"
-	"UNetwork/core/forum"
-
 )
 
 type BatchOut struct {

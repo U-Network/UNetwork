@@ -3,9 +3,9 @@ package transaction
 import (
 	"UNetwork/common"
 	"UNetwork/common/serialization"
+	"bytes"
 	"fmt"
 	"io"
-	"bytes"
 )
 
 type UTXOTxInput struct {
@@ -39,7 +39,7 @@ func (ui *UTXOTxInput) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (ui *UTXOTxInput) ToArray() ([]byte) {
+func (ui *UTXOTxInput) ToArray() []byte {
 	b := new(bytes.Buffer)
 	ui.Serialize(b)
 	return b.Bytes()

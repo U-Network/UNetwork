@@ -3,16 +3,16 @@ package evm
 import "fmt"
 
 type Memory struct {
-	store       []byte
-	lastReturn  []byte
+	store      []byte
+	lastReturn []byte
 }
 
-func NewMemory() *Memory{
+func NewMemory() *Memory {
 	return &Memory{}
 }
 
 func (m *Memory) Set(offset, size uint64, value []byte) error {
-	m.Resize(offset+size)
+	m.Resize(offset + size)
 	if size > 0 {
 		copy(m.store[offset:offset+size], value)
 	}
@@ -36,7 +36,7 @@ func (m *Memory) GetPtr(offset, size int64) []byte {
 		return nil
 	}
 	if len(m.store) > int(offset) {
-		return m.store[offset:offset+size]
+		return m.store[offset : offset+size]
 	}
 	return nil
 }

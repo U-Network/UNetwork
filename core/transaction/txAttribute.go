@@ -3,9 +3,9 @@ package transaction
 import (
 	"UNetwork/common/serialization"
 	. "UNetwork/errors"
+	"bytes"
 	"errors"
 	"io"
-	"bytes"
 )
 
 type TransactionAttributeUsage byte
@@ -71,10 +71,8 @@ func (tx *TxAttribute) Deserialize(r io.Reader) error {
 
 }
 
-
-func (tx *TxAttribute) ToArray() ([]byte) {
+func (tx *TxAttribute) ToArray() []byte {
 	b := new(bytes.Buffer)
 	tx.Serialize(b)
 	return b.Bytes()
 }
-
