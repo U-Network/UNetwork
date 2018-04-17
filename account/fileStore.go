@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-
+	
 	. "UNetwork/common"
 	"UNetwork/common/serialization"
 	ct "UNetwork/core/contract"
@@ -82,20 +82,36 @@ func (cs *FileStore) readDB() ([]byte, error) {
 	}
 }
 
+func (cs *FileStore) writeBakFile(data []byte) error {
+	var file *os.File
+	var err error
+	file, err = os.OpenFile("bak_" + cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+	if file != nil {
+		file.Write(data)
+		file.Close()
+	}
+	return nil;
+}
 // Caller holds the lock and writes bytes to DB, then close the DB and release the lock
 func (cs *FileStore) writeDB(data []byte) error {
 	cs.Lock()
 	defer cs.Unlock()
 	defer cs.closeDB()
 
-	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-	if err != nil {
-		return err
-	}
-
-	if cs.file != nil {
-		cs.file.Write(data)
+	if cs.writeBakFile(data) == nil {
+		var err error
+		cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+		if err != nil {
+			return err
+		}
+		if cs.file != nil {
+			cs.file.Write(data)
+		}
+	} else {
+	    return errors.New("wirte bakwalletfile failed")
 	}
 
 	return nil
