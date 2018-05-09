@@ -256,7 +256,6 @@ func getRawTransaction(params []interface{}) map[string]interface{} {
 		return UNetworkRPCInvalidParameter
 	}
 }
-
 // A JSON example for sendrawtransaction method as following:
 //   {"jsonrpc": "2.0", "method": "sendrawtransaction", "params": ["raw transactioin in hex"], "id": 0}
 func sendRawTransaction(params []interface{}) map[string]interface{} {

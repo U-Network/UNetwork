@@ -3,13 +3,12 @@ package websocket
 import (
 	. "UNetwork/common/config"
 	"UNetwork/common/log"
-	. "UNetwork/net/httprestful/common"
-	Err "UNetwork/net/httprestful/error"
+	"UNetwork/errors"
+	."UNetwork/net/httpjsonrpc"
 	. "UNetwork/net/httpwebsocket/session"
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/websocket"
 	"net"
 	"net/http"
@@ -88,7 +87,7 @@ func (ws *WsServer) Start() error {
 
 func (ws *WsServer) registryMethod() {
 	gettxhashmap := func(cmd map[string]interface{}) map[string]interface{} {
-		resp := ResponsePack(Err.SUCCESS)
+		resp := ResponsePack(errors.SUCCESS)
 		ws.Lock()
 		defer ws.Unlock()
 		resp["Result"] = len(ws.TxHashMap)
@@ -105,7 +104,7 @@ func (ws *WsServer) registryMethod() {
 		return resp
 	}
 	heartbeat := func(cmd map[string]interface{}) map[string]interface{} {
-		resp := ResponsePack(Err.SUCCESS)
+		resp := ResponsePack(errors.SUCCESS)
 		resp["Action"] = "heartbeat"
 		resp["Result"] = cmd["Userid"]
 		return resp
@@ -113,14 +112,14 @@ func (ws *WsServer) registryMethod() {
 	sendtest := func(cmd map[string]interface{}) map[string]interface{} {
 		go func() {
 			time.Sleep(time.Second * 5)
-			resp := ResponsePack(Err.SUCCESS)
+			resp := ResponsePack(errors.SUCCESS)
 			resp["Action"] = "pushresult"
 			ws.PushTxResult(cmd["Userid"].(string), resp)
 		}()
 		return heartbeat(cmd)
 	}
 	getsessioncount := func(cmd map[string]interface{}) map[string]interface{} {
-		resp := ResponsePack(Err.SUCCESS)
+		resp := ResponsePack(errors.SUCCESS)
 		resp["Action"] = "getsessioncount"
 		resp["Result"] = ws.SessionList.GetSessionCount()
 		return resp
@@ -171,7 +170,7 @@ func (ws *WsServer) checkSessionsTimeout(done chan bool) {
 			var closeList []*Session
 			ws.SessionList.ForEachSession(func(v *Session) {
 				if v.SessionTimeoverCheck() {
-					resp := ResponsePack(Err.SESSION_EXPIRED)
+					resp := ResponsePack(errors.SESSION_EXPIRED)
 					ws.response(v.GetSessionId(), resp)
 					closeList = append(closeList, v)
 				}
@@ -242,25 +241,25 @@ func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Req
 	var req = make(map[string]interface{})
 
 	if err := json.Unmarshal(bysMsg, &req); err != nil {
-		resp := ResponsePack(Err.ILLEGAL_DATAFORMAT)
+		resp := ResponsePack(errors.ILLEGAL_DATAFORMAT)
 		ws.response(curSession.GetSessionId(), resp)
 		log.Error("websocket OnDataHandle:", err)
 		return false
 	}
 	actionName, ok := req["Action"].(string)
 	if !ok {
-		resp := ResponsePack(Err.INVALID_METHOD)
+		resp := ResponsePack(errors.INVALID_METHOD)
 		ws.response(curSession.GetSessionId(), resp)
 		return false
 	}
 	action, ok := ws.ActionMap[actionName]
 	if !ok {
-		resp := ResponsePack(Err.INVALID_METHOD)
+		resp := ResponsePack(errors.INVALID_METHOD)
 		ws.response(curSession.GetSessionId(), resp)
 		return false
 	}
 	if !ws.IsValidMsg(req) {
-		resp := ResponsePack(Err.INVALID_PARAMS)
+		resp := ResponsePack(errors.INVALID_PARAMS)
 		ws.response(curSession.GetSessionId(), resp)
 		return true
 	}
@@ -315,7 +314,7 @@ func (ws *WsServer) deleteTxHashs(sSessionId string) {
 	}
 }
 func (ws *WsServer) response(sSessionId string, resp map[string]interface{}) {
-	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
+	resp["Desc"] = errors.ErrMap[resp["Error"].(int64)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket response:", err)
@@ -334,7 +333,7 @@ func (ws *WsServer) PushTxResult(txHashStr string, resp map[string]interface{}) 
 	ws.PushResult(resp)
 }
 func (ws *WsServer) PushResult(resp map[string]interface{}) {
-	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
+	resp["Desc"] = errors.ErrMap[resp["Error"].(int64)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket PushResult:", err)
@@ -345,7 +344,7 @@ func (ws *WsServer) PushResult(resp map[string]interface{}) {
 func (ws *WsServer) send(sSessionId string, data []byte) error {
 	session := ws.SessionList.GetSessionById(sSessionId)
 	if session == nil {
-		return errors.New("websocket sessionId Not Exist:" + sSessionId)
+		return errors.NewErr("websocket sessionId Not Exist:" + sSessionId)
 	}
 	return session.Send(data)
 }

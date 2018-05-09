@@ -6,7 +6,6 @@ import (
 	"UNetwork/core/ledger"
 	"UNetwork/core/transaction"
 	. "UNetwork/net/httpjsonrpc"
-	"UNetwork/net/httprestful/common"
 	"UNetwork/smartcontract/states"
 )
 
@@ -40,11 +39,6 @@ func GetHeaderInfo(header *ledger.Header) *BlockHead {
 		Hash: BytesToHexString(h.ToArrayReverse()),
 	}
 
-}
-
-func GetBlockInfo(block *ledger.Block) *BlockInfo {
-	blockInfo := common.GetBlockInfo(block)
-	return &blockInfo
 }
 
 func GetTransactionInfo(transaction *transaction.Transaction) *Transactions {

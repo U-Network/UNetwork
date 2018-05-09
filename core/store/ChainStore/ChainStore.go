@@ -2,13 +2,12 @@ package ChainStore
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 	"sync"
 	"time"
-
+    "UNetwork/errors"
 	. "UNetwork/common"
 	"UNetwork/common/log"
 	"UNetwork/common/serialization"
@@ -24,7 +23,6 @@ import (
 	"UNetwork/core/validation"
 	"UNetwork/crypto"
 	"UNetwork/events"
-	. "UNetwork/net/httprestful/error"
 	"UNetwork/net/httpwebsocket"
 	"UNetwork/smartcontract"
 	"UNetwork/smartcontract/service"
@@ -40,7 +38,7 @@ const (
 )
 
 var (
-	ErrDBNotFound = errors.New("leveldb: not found")
+	ErrDBNotFound = errors.NewErr("leveldb: not found")
 )
 
 type persistTask interface{}
@@ -173,7 +171,7 @@ func (bd *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defau
 		// GenesisBlock should exist in chain
 		// Or the bookkeepers are not consistent with the chain
 		if !bd.IsBlockInStore(hash) {
-			return 0, errors.New("bookkeepers are not consistent with the chain")
+			return 0, errors.NewErr("bookkeepers are not consistent with the chain")
 		}
 		// Get Current Block
 		currentBlockPrefix := []byte{byte(SYS_CurrentBlock)}
@@ -909,19 +907,19 @@ func (bd *ChainStore) persist(b *Block) error {
 			})
 
 			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
 				return err
 			}
 
 			ret, err := smartContract.DeployContract()
 			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
 				continue
 			}
 
 			hash, err := ToCodeHash(ret)
 			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
 				return err
 			}
 
@@ -935,13 +933,13 @@ func (bd *ChainStore) persist(b *Block) error {
 			contract, err := bd.GetContract(invokeCode.CodeHash)
 			if err != nil {
 				log.Error("db getcontract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
 				continue
 			}
 			state, err := states.GetStateValue(ST_Contract, contract)
 			if err != nil {
 				log.Error("states GetStateValue err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
 				return err
 			}
 			contractState := state.(*states.ContractState)
@@ -963,13 +961,13 @@ func (bd *ChainStore) persist(b *Block) error {
 			})
 			if err != nil {
 				log.Error("smartcontract NewSmartContract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
 				continue
 			}
 			ret, err := smartContract.InvokeContract()
 			if err != nil {
 				log.Error("smartContract InvokeContract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
 				continue
 			}
 			stateMachine.CloneCache.Commit()
@@ -1037,7 +1035,7 @@ func (bd *ChainStore) persist(b *Block) error {
 				accounts[programHash] = accountState
 			}
 			if accounts[programHash].Balances[assetId] < 0 {
-				return errors.New(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
+				return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
 			}
 
 			// delete utxoUnspent
@@ -1048,7 +1046,7 @@ func (bd *ChainStore) persist(b *Block) error {
 			if _, ok := utxoUnspents[programHash][assetId]; !ok {
 				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
 				if err != nil {
-					return errors.New(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
+					return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
 				}
 			}
 
@@ -1065,7 +1063,7 @@ func (bd *ChainStore) persist(b *Block) error {
 			}
 
 			if !flag {
-				return errors.New(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
+				return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
 			}
 
 		}
@@ -1498,7 +1496,7 @@ func (bd *ChainStore) GetUnspent(txid Uint256, index uint16) (*tx.TxOutput, erro
 		return Tx.Outputs[index], nil
 	}
 
-	return nil, errors.New("[GetUnspent] NOT ContainsUnspent.")
+	return nil, errors.NewErr("[GetUnspent] NOT ContainsUnspent.")
 }
 
 func (bd *ChainStore) ContainsUnspent(txid Uint256, index uint16) (bool, error) {

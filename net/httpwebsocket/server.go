@@ -5,12 +5,12 @@ import (
 	. "UNetwork/common/config"
 	"UNetwork/core/ledger"
 	"UNetwork/events"
-	"UNetwork/net/httprestful/common"
-	Err "UNetwork/net/httprestful/error"
+	."UNetwork/net/httpjsonrpc"
 	"UNetwork/net/httpwebsocket/websocket"
 	"UNetwork/net/message"
 	. "UNetwork/net/protocol"
 	"bytes"
+	"UNetwork/errors"
 )
 
 var ws *websocket.WsServer
@@ -21,11 +21,11 @@ var (
 )
 
 func StartServer(n UNode) {
-	common.SetNode(n)
+	//common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventChatMessage, SendChatMessage2WSclient)
 	go func() {
-		ws = websocket.InitWsServer(common.CheckAccessToken)
+		ws = websocket.InitWsServer(CheckAccessToken)
 		ws.Start()
 	}()
 }
@@ -58,7 +58,7 @@ func Stop() {
 }
 func ReStartServer() {
 	if ws == nil {
-		ws = websocket.InitWsServer(common.CheckAccessToken)
+		ws = websocket.InitWsServer(CheckAccessToken)
 		ws.Start()
 		return
 	}
@@ -91,11 +91,11 @@ func SetTxHashMap(txhash string, sessionid string) {
 
 func PushResult(txHash Uint256, errcode int64, action string, result interface{}) {
 	if ws != nil {
-		resp := common.ResponsePack(Err.SUCCESS)
+		resp := ResponsePack(errors.SUCCESS)
 		resp["Result"] = result
 		resp["Error"] = errcode
 		resp["Action"] = action
-		resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
+		resp["Desc"] = errors.ErrMap[resp["Error"].(int64)]
 		ws.PushTxResult(BytesToHexString(txHash.ToArrayReverse()), resp)
 	}
 }
@@ -104,7 +104,7 @@ func PushSmartCodeInvokeResult(txHash Uint256, errcode int64, result interface{}
 	if ws == nil {
 		return
 	}
-	resp := common.ResponsePack(Err.SUCCESS)
+	resp := ResponsePack(errors.SUCCESS)
 	var Result = make(map[string]interface{})
 	txHashStr := BytesToHexString(txHash.ToArray())
 	Result["TxHash"] = txHashStr
@@ -113,21 +113,21 @@ func PushSmartCodeInvokeResult(txHash Uint256, errcode int64, result interface{}
 	resp["Result"] = Result
 	resp["Action"] = "sendsmartcodeinvoke"
 	resp["Error"] = errcode
-	resp["Desc"] = Err.ErrMap[errcode]
+	resp["Desc"] = errors.ErrMap[errcode]
 	ws.PushTxResult(txHashStr, resp)
 }
 func PushBlock(v interface{}) {
 	if ws == nil {
 		return
 	}
-	resp := common.ResponsePack(Err.SUCCESS)
+	resp := ResponsePack(errors.SUCCESS)
 	if block, ok := v.(*ledger.Block); ok {
 		if pushRawBlockFlag {
 			w := bytes.NewBuffer(nil)
 			block.Serialize(w)
 			resp["Result"] = BytesToHexString(w.Bytes())
 		} else {
-			resp["Result"] = common.GetBlockInfo(block)
+			resp["Result"] = GetBlockInfo(block)
 		}
 		resp["Action"] = "sendrawblock"
 		ws.PushResult(resp)
@@ -137,10 +137,10 @@ func PushBlockTransactions(v interface{}) {
 	if ws == nil {
 		return
 	}
-	resp := common.ResponsePack(Err.SUCCESS)
+	resp := ResponsePack(errors.SUCCESS)
 	if block, ok := v.(*ledger.Block); ok {
 		if pushBlockTxsFlag {
-			resp["Result"] = common.GetBlockTransactions(block)
+			resp["Result"] = GetBlockTransactions(block)
 		}
 		resp["Action"] = "sendblocktransactions"
 		ws.PushResult(resp)
@@ -151,7 +151,7 @@ func PushChatMessage(v interface{}) {
 	if ws == nil {
 		return
 	}
-	resp := common.ResponsePack(Err.SUCCESS)
+	resp := ResponsePack(errors.SUCCESS)
 	if chatMessage, ok := v.(*message.ChatPayload); ok {
 		resp["Action"] = "pushchatmessage"
 		resp["Address"] = chatMessage.Address

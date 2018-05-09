@@ -16,7 +16,6 @@ import (
 	"UNetwork/net"
 	"UNetwork/net/httpjsonrpc"
 	"UNetwork/net/httpnodeinfo"
-	"UNetwork/net/httprestful"
 	"UNetwork/net/httpwebsocket"
 	"UNetwork/net/protocol"
 )
@@ -112,7 +111,6 @@ func main() {
 
 	log.Info("--Start the RPC interface")
 	go httpjsonrpc.StartRPCServer()
-	go httprestful.StartServer(noder)
 	go httpwebsocket.StartServer(noder)
 	if config.Parameters.HttpInfoStart {
 		go httpnodeinfo.StartServer(noder)
