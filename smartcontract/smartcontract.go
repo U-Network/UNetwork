@@ -15,12 +15,13 @@ import (
 	"UNetwork/smartcontract/types"
 	"UNetwork/vm/avm"
 	"UNetwork/vm/avm/interfaces"
-	. "UNetwork/vm/avm/types"
+	."UNetwork/vm/avm/types"
 	// "UNetwork/vm/evm"
 	// "UNetwork/vm/evm/abi"
 	"bytes"
 	"math/big"
 	"strconv"
+	. "UNetwork/net/httpjsonrpc"
 )
 
 type SmartContract struct {
@@ -139,7 +140,8 @@ func (sc *SmartContract) InvokeResult() (interface{}, error) {
 					case *ledger.Header:
 						return service.GetHeaderInfo(interop.(*ledger.Header)), nil
 					case *ledger.Block:
-						return service.GetBlockInfo(interop.(*ledger.Block)), nil
+						blockinfo := GetBlockInfo(interop.(*ledger.Block))
+						return &blockinfo, nil
 					case *transaction.Transaction:
 						return service.GetTransactionInfo(interop.(*transaction.Transaction)), nil
 					case *states.AccountState:

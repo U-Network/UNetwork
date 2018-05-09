@@ -12,7 +12,28 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"net/http"
+	"net"
+	"time"
 )
+
+
+func NewOauthClient() *http.Client {
+	c := &http.Client{
+		Transport: &http.Transport{
+			Dial: func(netw, addr string) (net.Conn, error) {
+				conn, err := net.DialTimeout(netw, addr, time.Second*10)
+				if err != nil {
+					return nil, err
+				}
+				conn.SetDeadline(time.Now().Add(time.Second * 10))
+				return conn, nil
+			},
+			DisableKeepAlives: false,
+		},
+	}
+	return c
+}
 
 func ToCodeHash(code []byte) (Uint160, error) {
 	temp := sha256.Sum256(code)
