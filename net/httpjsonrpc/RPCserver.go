@@ -34,6 +34,7 @@ const (
 	RPCReplyArticle = "replyarticle"
 	RPCLikeArticle  = "likearticle"
 	RPCWithdrawl    = "withdrawal"
+	RPCGetUTXOByAddr    = "getUtxoByAddr"
 )
 
 func StartRPCServer() {
@@ -67,6 +68,7 @@ func StartRPCServer() {
 	HandleFunc(RPCReplyArticle, replyArticle)
 	HandleFunc(RPCLikeArticle, likeArticle)
 	HandleFunc(RPCWithdrawl, withdrawal)
+	HandleFunc(RPCGetUTXOByAddr, getUtxoByAddr)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {

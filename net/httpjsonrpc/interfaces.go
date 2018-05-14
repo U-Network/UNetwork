@@ -28,6 +28,47 @@ const (
 	RANDBYTELEN = 4
 )
 
+func getUtxoByAddr(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return UNetworkRPCNil
+	}
+	addr := params[0].(string)
+
+	var programHash Uint160
+	programHash, err := ToScriptHash(addr)
+	if err != nil {
+		return UNetworkRPC("Address Wrong!")
+	}
+
+	type UTXOUnspentInfo struct {
+		Txid  string
+		Index uint32
+		Value string
+	}
+	type Result struct {
+		AssetId   string
+		AssetName string
+		Utxo      []UTXOUnspentInfo
+	}
+	var results []Result
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+
+	for k, u := range unspends {
+		assetid := BytesToHexString(k.ToArrayReverse())
+		asset, err := ledger.DefaultLedger.Store.GetAsset(k)
+		if err != nil {
+			return UNetworkRPC("INTERNAL_ERROR!")
+		}
+		var unspendsInfo []UTXOUnspentInfo
+		for _, v := range u {
+			unspendsInfo = append(unspendsInfo, UTXOUnspentInfo{BytesToHexString(v.Txid.ToArrayReverse()), v.Index, v.Value.String()})
+		}
+		results = append(results, Result{assetid, asset.Name, unspendsInfo})
+	}
+
+	return UNetworkRPC(results)
+}
+
 func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 
 	trans := new(Transactions)
