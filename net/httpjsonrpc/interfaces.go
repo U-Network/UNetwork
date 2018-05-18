@@ -27,7 +27,33 @@ import (
 const (
 	RANDBYTELEN = 4
 )
+func getUtxoCoins(params []interface{}) map[string]interface{} {
+	if Wallet == nil {
+		return UNetworkRPC("open wallet first")
+	}
+	type CoinInfo struct {
+		ReferTxID string
+		ReferTxOutputIndex uint16
+		AssetID     string
+		Value       Fixed64
+		ProgramHash string
+		AddressType byte
+	}
+	var results []CoinInfo
+	coins, err := Wallet.GetCoins()
+	if (err != nil) {
+		return UNetworkRPC(err.Error())
+	}
+	for k, coin := range coins {
+		ReferTxIDstr := BytesToHexString(k.ReferTxID.ToArrayReverse())
+		AssetIDstr := BytesToHexString(coin.Output.AssetID.ToArrayReverse())
+		ProgramHashstr := BytesToHexString(coin.Output.ProgramHash.ToArrayReverse())
+		results = append(results, CoinInfo{ReferTxIDstr, k.ReferTxOutputIndex,
+			AssetIDstr, coin.Output.Value, ProgramHashstr, byte(coin.AddressType)})
+	}
 
+	return UNetworkRPC(results)
+}
 func getUtxoByAddr(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return UNetworkRPCNil
@@ -634,9 +660,6 @@ func deleteAccount(params []interface{}) map[string]interface{} {
 	if err := Wallet.DeleteContract(programHash); err != nil {
 		return UNetworkRPC("Delete contract error:" + err.Error())
 	}
-	if err := Wallet.DeleteCoinsData(programHash); err != nil {
-		return UNetworkRPC("Delete coins error:" + err.Error())
-	}
 
 	return UNetworkRPC(true)
 }
@@ -939,43 +962,6 @@ func createMultisigTransaction(params []interface{}) map[string]interface{} {
 		txn.Serialize(&buffer)
 		return UNetworkRPC(BytesToHexString(buffer.Bytes()))
 	}
-}
-
-func getBalance(params []interface{}) map[string]interface{} {
-	if Wallet == nil {
-		return UNetworkRPC("open wallet first")
-	}
-	type AssetInfo struct {
-		AssetID string
-		Value   string
-	}
-	balances := make(map[string][]*AssetInfo)
-	accounts := Wallet.GetAccounts()
-	coins := Wallet.GetCoins()
-	for _, account := range accounts {
-		assetList := []*AssetInfo{}
-		programHash := account.ProgramHash
-		for _, coin := range coins {
-			if programHash == coin.Output.ProgramHash {
-				var existed bool
-				assetString := BytesToHexString(coin.Output.AssetID.ToArray())
-				for _, info := range assetList {
-					if info.AssetID == assetString {
-						info.Value += coin.Output.Value.String()
-						existed = true
-						break
-					}
-				}
-				if !existed {
-					assetList = append(assetList, &AssetInfo{AssetID: assetString, Value: coin.Output.Value.String()})
-				}
-			}
-		}
-		address, _ := programHash.ToAddress()
-		balances[address] = assetList
-	}
-
-	return UNetworkRPC(balances)
 }
 
 func registerUser(params []interface{}) map[string]interface{} {

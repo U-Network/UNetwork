@@ -19,6 +19,7 @@ import (
 	"UNetwork/events/signalset"
 
 	"github.com/urfave/cli"
+	"UNetwork/net/httpjsonrpc"
 )
 
 const (
@@ -53,7 +54,8 @@ func showDefaultAccountInfo(wallet account.Client) {
 func showMultisigInfo(wallet account.Client) {
 	contracts := wallet.GetContracts()
 	accounts := wallet.GetAccounts()
-	coins := wallet.GetCoins()
+	resp, _ := httpjsonrpc.Call(Address(), "getutxocoins", 0, []interface{}{})
+	coins := account.GetCoinsFromBytes(resp)
 
 	multisign := []Uint160{}
 	// find multisign address
@@ -98,7 +100,8 @@ func showMultisigInfo(wallet account.Client) {
 }
 
 func showBalancesInfo(wallet account.Client) {
-	coins := wallet.GetCoins()
+	resp, _ := httpjsonrpc.Call(Address(), "getutxocoins", 0, []interface{}{})
+	coins := account.GetCoinsFromBytes(resp)
 	assets := make(map[Uint256]Fixed64)
 	for _, out := range coins {
 		if out.AddressType == account.SingleSign {
@@ -115,6 +118,7 @@ func showBalancesInfo(wallet account.Client) {
 	}
 	fmt.Println(" ID   Asset ID\t\t\t\t\t\t\t\tAmount")
 	fmt.Println("----  --------\t\t\t\t\t\t\t\t------")
+
 	i := 0
 	for id, amount := range assets {
 		fmt.Printf("%4s  %s  %v\n", strconv.Itoa(i), BytesToHexString(id.ToArrayReverse()), amount)
@@ -124,8 +128,8 @@ func showBalancesInfo(wallet account.Client) {
 
 func showVerboseInfo(wallet account.Client) {
 	accounts := wallet.GetAccounts()
-	coins := wallet.GetCoins()
-
+	resp, _ := httpjsonrpc.Call(Address(), "getutxocoins", 0, []interface{}{})
+	coins := account.GetCoinsFromBytes(resp)
 	for _, account := range accounts {
 		programHash := account.ProgramHash
 		assets := make(map[Uint256]Fixed64)
@@ -229,7 +233,6 @@ func walletAction(c *cli.Context) error {
 		os.Exit(1)
 	}
 	passwd := c.String("password")
-
 	// create wallet
 	if c.Bool("create") {
 		if FileExisted(name) {
