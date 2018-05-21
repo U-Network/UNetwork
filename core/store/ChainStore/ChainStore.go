@@ -712,6 +712,190 @@ func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey,
 	return currBookKeeper, nextBookKeeper, nil
 }
 
+//map[string][]*forum.ArticleInfo
+
+func (bd *ChainStore) ProcessTransaction(t *tx.Transaction,
+										 b *Block, 
+										 quantities map[Uint256]Fixed64, 
+										 dbCache *DBCache,
+										 lockedAssets map[Uint160]map[Uint256][]*LockAsset,
+										 articleInfo map[string][]*forum.ArticleInfo, 
+										 likeInfo map[Uint256][]*forum.LikeInfo,
+										 ) (error, bool) {
+	txHash := t.Hash()
+	var err error 
+	switch t.TxType {
+	case tx.RegisterAsset:
+		ar := t.Payload.(*payload.RegisterAsset)
+		err = bd.SaveAsset(t.Hash(), ar.Asset)
+		if err != nil {
+			return err, false
+		}
+	case tx.RegisterUser:
+		payload := t.Payload.(*payload.RegisterUser)
+		userInfo := &forum.UserInfo{
+			UserProgramHash: payload.UserProgramHash,
+			Reputation:      payload.Reputation,
+		}
+		err = bd.SaveUserInfo(payload.UserName, userInfo)
+		if err != nil {
+			return err, false
+		}
+	case tx.PostArticle:
+		author := t.Payload.(*payload.PostArticle).Author
+		tmp := &forum.ArticleInfo{
+			ContentHash: t.Payload.(*payload.PostArticle).ContentHash,
+			ContentType: forum.Post,
+		}
+		articleInfo[author] = append(articleInfo[author], tmp)
+	case tx.LikeArticle:
+		hash := t.Payload.(*payload.LikeArticle).PostTxnHash
+		liker := t.Payload.(*payload.LikeArticle).Liker
+		liketype := t.Payload.(*payload.LikeArticle).LikeType
+		tmp := &forum.LikeInfo{
+			Liker:    liker,
+			LikeType: liketype,
+		}
+		likeInfo[hash] = append(likeInfo[hash], tmp)
+	case tx.ReplyArticle:
+		replier := t.Payload.(*payload.ReplyArticle).Replier
+		tmp := &forum.ArticleInfo{
+			ParentTxnHash: t.Payload.(*payload.ReplyArticle).PostHash,
+			ContentHash:   t.Payload.(*payload.ReplyArticle).ContentHash,
+			ContentType:   forum.Reply,
+		}
+		articleInfo[replier] = append(articleInfo[replier], tmp)
+	case tx.Withdrawal:
+		payee := t.Payload.(*payload.Withdrawal).Payee
+		info := &forum.TokenInfo{
+			Number: t.Outputs[0].Value,
+		}
+		if err := bd.UpdateUserWithdrawnToken(payee, forum.WithdrawnToken, info); err != nil {
+			log.Error("Failed to update withdraw info")
+			return nil, true
+		}
+	case tx.LockAsset:
+		lp := t.Payload.(*payload.LockAsset)
+		if _, ok := lockedAssets[lp.ProgramHash]; !ok {
+			lockedAssets[lp.ProgramHash] = make(map[Uint256][]*LockAsset)
+		}
+		if _, ok := lockedAssets[lp.ProgramHash][lp.AssetID]; !ok {
+			lockedAssets[lp.ProgramHash][lp.AssetID], err = bd.GetLockedFromProgramHash(lp.ProgramHash, lp.AssetID)
+			if err != nil {
+				lockedAssets[lp.ProgramHash][lp.AssetID] = make([]*LockAsset, 0)
+			}
+		}
+		newAsset := &LockAsset{
+			Lock:   b.Blockdata.Height,
+			Unlock: lp.UnlockHeight,
+			Amount: lp.Amount,
+		}
+		lockedAssets[lp.ProgramHash][lp.AssetID] = append(lockedAssets[lp.ProgramHash][lp.AssetID], newAsset)
+
+	case tx.IssueAsset:
+		results := t.GetMergedAssetIDValueFromOutputs()
+		for assetId, value := range results {
+			if _, ok := quantities[assetId]; !ok {
+				quantities[assetId] += value
+			} else {
+				quantities[assetId] = value
+			}
+		}
+	case tx.DeployCode:
+		deployCode := t.Payload.(*payload.DeployCode)
+		codeHash := deployCode.Code.CodeHash()
+		dbCache.GetOrAdd(ST_Contract, string(codeHash.ToArray()), &states.ContractState{
+			Code:        deployCode.Code,
+			Name:        deployCode.Name,
+			Version:     deployCode.CodeVersion,
+			Author:      deployCode.Author,
+			Email:       deployCode.Email,
+			Description: deployCode.Description,
+			Language:    deployCode.Language,
+			ProgramHash: deployCode.ProgramHash,
+		})
+
+		smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
+			Language:     deployCode.Language,
+			Caller:       deployCode.ProgramHash,
+			StateMachine: service.NewStateMachine(dbCache, NewDBCache(bd)),
+			DBCache:      dbCache,
+			Code:         deployCode.Code.Code,
+			Time:         big.NewInt(int64(b.Blockdata.Timestamp)),
+			BlockNumber:  big.NewInt(int64(b.Blockdata.Height)),
+			Gas:          Fixed64(0),
+		})
+
+		if err != nil {
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+			return err, false
+		}
+
+		ret, err := smartContract.DeployContract()
+		if err != nil {
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+			return nil, true
+		}
+
+		hash, err := ToCodeHash(ret)
+		if err != nil {
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+			return err, false
+		}
+
+		httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, BytesToHexString(hash.ToArrayReverse()))
+		err = dbCache.Commit()
+		if err != nil {
+			return err, false
+		}
+	case tx.InvokeCode:
+		invokeCode := t.Payload.(*payload.InvokeCode)
+		contract, err := bd.GetContract(invokeCode.CodeHash)
+		if err != nil {
+			log.Error("db getcontract err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return nil, true
+		}
+		state, err := states.GetStateValue(ST_Contract, contract)
+		if err != nil {
+			log.Error("states GetStateValue err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return err, false
+		}
+		contractState := state.(*states.ContractState)
+		stateMachine := service.NewStateMachine(dbCache, NewDBCache(bd))
+		smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
+			Language:       contractState.Language,
+			Caller:         invokeCode.ProgramHash,
+			StateMachine:   stateMachine,
+			DBCache:        dbCache,
+			CodeHash:       invokeCode.CodeHash,
+			Input:          invokeCode.Code,
+			SignableData:   t,
+			CacheCodeTable: NewCacheCodeTable(dbCache),
+			Time:           big.NewInt(int64(b.Blockdata.Timestamp)),
+			BlockNumber:    big.NewInt(int64(b.Blockdata.Height)),
+			Gas:            Fixed64(0),
+			ReturnType:     contractState.Code.ReturnType,
+			ParameterTypes: contractState.Code.ParameterTypes,
+		})
+		if err != nil {
+			log.Error("smartcontract NewSmartContract err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return nil, true
+		}
+		ret, err := smartContract.InvokeContract()
+		if err != nil {
+			log.Error("smartContract InvokeContract err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return nil, true
+		}
+		stateMachine.CloneCache.Commit()
+		httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
+	}
+	return nil, false
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -799,180 +983,20 @@ func (bd *ChainStore) persist(b *Block) error {
 	nLen := len(b.Transactions)
 
 	for i := 0; i < nLen; i++ {
+		
 		err = bd.SaveTransaction(b.Transactions[i], b.Blockdata.Height)
 		if err != nil {
 			return err
 		}
-		txHash := b.Transactions[i].Hash()
-		switch b.Transactions[i].TxType {
-		case tx.RegisterAsset:
-			ar := b.Transactions[i].Payload.(*payload.RegisterAsset)
-			err = bd.SaveAsset(b.Transactions[i].Hash(), ar.Asset)
-			if err != nil {
-				return err
-			}
-		case tx.RegisterUser:
-			payload := b.Transactions[i].Payload.(*payload.RegisterUser)
-			userInfo := &forum.UserInfo{
-				UserProgramHash: payload.UserProgramHash,
-				Reputation:      payload.Reputation,
-			}
-			err = bd.SaveUserInfo(payload.UserName, userInfo)
-			if err != nil {
-				return err
-			}
-		case tx.PostArticle:
-			author := b.Transactions[i].Payload.(*payload.PostArticle).Author
-			tmp := &forum.ArticleInfo{
-				ContentHash: b.Transactions[i].Payload.(*payload.PostArticle).ContentHash,
-				ContentType: forum.Post,
-			}
-			articleInfo[author] = append(articleInfo[author], tmp)
-		case tx.LikeArticle:
-			hash := b.Transactions[i].Payload.(*payload.LikeArticle).PostTxnHash
-			liker := b.Transactions[i].Payload.(*payload.LikeArticle).Liker
-			liketype := b.Transactions[i].Payload.(*payload.LikeArticle).LikeType
-			tmp := &forum.LikeInfo{
-				Liker:    liker,
-				LikeType: liketype,
-			}
-			likeInfo[hash] = append(likeInfo[hash], tmp)
-		case tx.ReplyArticle:
-			replier := b.Transactions[i].Payload.(*payload.ReplyArticle).Replier
-			tmp := &forum.ArticleInfo{
-				ParentTxnHash: b.Transactions[i].Payload.(*payload.ReplyArticle).PostHash,
-				ContentHash:   b.Transactions[i].Payload.(*payload.ReplyArticle).ContentHash,
-				ContentType:   forum.Reply,
-			}
-			articleInfo[replier] = append(articleInfo[replier], tmp)
-		case tx.Withdrawal:
-			payee := b.Transactions[i].Payload.(*payload.Withdrawal).Payee
-			info := &forum.TokenInfo{
-				Number: b.Transactions[i].Outputs[0].Value,
-			}
-			if err := bd.UpdateUserWithdrawnToken(payee, forum.WithdrawnToken, info); err != nil {
-				log.Error("Failed to update withdraw info")
-				continue
-			}
-		case tx.LockAsset:
-			lp := b.Transactions[i].Payload.(*payload.LockAsset)
-			if _, ok := lockedAssets[lp.ProgramHash]; !ok {
-				lockedAssets[lp.ProgramHash] = make(map[Uint256][]*LockAsset)
-			}
-			if _, ok := lockedAssets[lp.ProgramHash][lp.AssetID]; !ok {
-				lockedAssets[lp.ProgramHash][lp.AssetID], err = bd.GetLockedFromProgramHash(lp.ProgramHash, lp.AssetID)
-				if err != nil {
-					lockedAssets[lp.ProgramHash][lp.AssetID] = make([]*LockAsset, 0)
-				}
-			}
-			newAsset := &LockAsset{
-				Lock:   b.Blockdata.Height,
-				Unlock: lp.UnlockHeight,
-				Amount: lp.Amount,
-			}
-			lockedAssets[lp.ProgramHash][lp.AssetID] = append(lockedAssets[lp.ProgramHash][lp.AssetID], newAsset)
 
-		case tx.IssueAsset:
-			results := b.Transactions[i].GetMergedAssetIDValueFromOutputs()
-			for assetId, value := range results {
-				if _, ok := quantities[assetId]; !ok {
-					quantities[assetId] += value
-				} else {
-					quantities[assetId] = value
-				}
-			}
-		case tx.DeployCode:
-			deployCode := b.Transactions[i].Payload.(*payload.DeployCode)
-			codeHash := deployCode.Code.CodeHash()
-			dbCache.GetOrAdd(ST_Contract, string(codeHash.ToArray()), &states.ContractState{
-				Code:        deployCode.Code,
-				Name:        deployCode.Name,
-				Version:     deployCode.CodeVersion,
-				Author:      deployCode.Author,
-				Email:       deployCode.Email,
-				Description: deployCode.Description,
-				Language:    deployCode.Language,
-				ProgramHash: deployCode.ProgramHash,
-			})
-
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:     deployCode.Language,
-				Caller:       deployCode.ProgramHash,
-				StateMachine: service.NewStateMachine(dbCache, NewDBCache(bd)),
-				DBCache:      dbCache,
-				Code:         deployCode.Code.Code,
-				Time:         big.NewInt(int64(b.Blockdata.Timestamp)),
-				BlockNumber:  big.NewInt(int64(b.Blockdata.Height)),
-				Gas:          Fixed64(0),
-			})
-
-			if err != nil {
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			ret, err := smartContract.DeployContract()
-			if err != nil {
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				continue
-			}
-
-			hash, err := ToCodeHash(ret)
-			if err != nil {
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, BytesToHexString(hash.ToArrayReverse()))
-			err = dbCache.Commit()
-			if err != nil {
-				return err
-			}
-		case tx.InvokeCode:
-			invokeCode := b.Transactions[i].Payload.(*payload.InvokeCode)
-			contract, err := bd.GetContract(invokeCode.CodeHash)
-			if err != nil {
-				log.Error("db getcontract err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			state, err := states.GetStateValue(ST_Contract, contract)
-			if err != nil {
-				log.Error("states GetStateValue err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				return err
-			}
-			contractState := state.(*states.ContractState)
-			stateMachine := service.NewStateMachine(dbCache, NewDBCache(bd))
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:       contractState.Language,
-				Caller:         invokeCode.ProgramHash,
-				StateMachine:   stateMachine,
-				DBCache:        dbCache,
-				CodeHash:       invokeCode.CodeHash,
-				Input:          invokeCode.Code,
-				SignableData:   b.Transactions[i],
-				CacheCodeTable: NewCacheCodeTable(dbCache),
-				Time:           big.NewInt(int64(b.Blockdata.Timestamp)),
-				BlockNumber:    big.NewInt(int64(b.Blockdata.Height)),
-				Gas:            Fixed64(0),
-				ReturnType:     contractState.Code.ReturnType,
-				ParameterTypes: contractState.Code.ParameterTypes,
-			})
-			if err != nil {
-				log.Error("smartcontract NewSmartContract err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			ret, err := smartContract.InvokeContract()
-			if err != nil {
-				log.Error("smartContract InvokeContract err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			stateMachine.CloneCache.Commit()
-			httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
+		err, skip := bd.ProcessTransaction(b.Transactions[i], b, quantities, dbCache, lockedAssets, articleInfo, likeInfo)
+		if err != nil {
+			return err
 		}
+		if skip == true {
+			continue;
+		}
+
 		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
 			output := b.Transactions[i].Outputs[index]
 			programHash := output.ProgramHash
