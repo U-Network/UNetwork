@@ -943,6 +943,66 @@ func (bd *ChainStore) updateUTXOUnspentWithOutput (utxoUnspents map[Uint160]map[
 	return nil
 }
 
+func (bd *ChainStore) updateUTXOUnspentWithInput (utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent, 
+												   accounts map[Uint160]*account.AccountState,
+												   b * Block,
+												   i int) error {
+	for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
+		input := b.Transactions[i].UTXOInputs[index]
+		transaction, err := bd.GetTransaction(input.ReferTxID)
+		if err != nil {
+			return err
+		}
+		index := input.ReferTxOutputIndex
+		output := transaction.Outputs[index]
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		if value, ok := accounts[programHash]; ok {
+			value.Balances[assetId] -= output.Value
+		} else {
+			accountState, err := bd.GetAccount(programHash)
+			if err != nil {
+				return err
+			}
+			accountState.Balances[assetId] -= output.Value
+			accounts[programHash] = accountState
+		}
+		if accounts[programHash].Balances[assetId] < 0 {
+			return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
+		}
+
+		// delete utxoUnspent
+		if _, ok := utxoUnspents[programHash]; !ok {
+			utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+		}
+
+		if _, ok := utxoUnspents[programHash][assetId]; !ok {
+			utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
+			if err != nil {
+				return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
+			}
+		}
+
+		flag := false
+		listnum := len(utxoUnspents[programHash][assetId])
+		for i := 0; i < listnum; i++ {
+			if utxoUnspents[programHash][assetId][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][i].Index == uint32(index) {
+				utxoUnspents[programHash][assetId][i] = utxoUnspents[programHash][assetId][listnum-1]
+				utxoUnspents[programHash][assetId] = utxoUnspents[programHash][assetId][:listnum-1]
+
+				flag = true
+				break
+			}
+		}
+
+		if !flag {
+			return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
+		}
+
+	}
+	return nil
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -1050,58 +1110,9 @@ func (bd *ChainStore) persist(b *Block) error {
 		}
 		
 
-		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
-			input := b.Transactions[i].UTXOInputs[index]
-			transaction, err := bd.GetTransaction(input.ReferTxID)
-			if err != nil {
-				return err
-			}
-			index := input.ReferTxOutputIndex
-			output := transaction.Outputs[index]
-			programHash := output.ProgramHash
-			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] -= output.Value
-			} else {
-				accountState, err := bd.GetAccount(programHash)
-				if err != nil {
-					return err
-				}
-				accountState.Balances[assetId] -= output.Value
-				accounts[programHash] = accountState
-			}
-			if accounts[programHash].Balances[assetId] < 0 {
-				return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
-			}
-
-			// delete utxoUnspent
-			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
-			}
-
-			if _, ok := utxoUnspents[programHash][assetId]; !ok {
-				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
-				if err != nil {
-					return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
-				}
-			}
-
-			flag := false
-			listnum := len(utxoUnspents[programHash][assetId])
-			for i := 0; i < listnum; i++ {
-				if utxoUnspents[programHash][assetId][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][i].Index == uint32(index) {
-					utxoUnspents[programHash][assetId][i] = utxoUnspents[programHash][assetId][listnum-1]
-					utxoUnspents[programHash][assetId] = utxoUnspents[programHash][assetId][:listnum-1]
-
-					flag = true
-					break
-				}
-			}
-
-			if !flag {
-				return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
-			}
-
+		err = bd.updateUTXOUnspentWithInput(utxoUnspents, accounts, b, i)
+		if err != nil {
+			return err
 		}
 
 		// init unspent in tx
