@@ -1,7 +1,7 @@
 package httpjsonrpc
 
 import (
-	. "UNetwork/common/config"
+	."UNetwork/common/config"
 	"UNetwork/common/log"
 	"net/http"
 	"strconv"
@@ -34,7 +34,8 @@ const (
 	RPCReplyArticle = "replyarticle"
 	RPCLikeArticle  = "likearticle"
 	RPCWithdrawl    = "withdrawal"
-	RPCGetUTXOByAddr    = "getUtxoByAddr"
+	RPCGetUTXOByAddr    = "getutxobyaddr"
+	RPCGetUtxoCoins  = "getutxocoins"
 )
 
 func StartRPCServer() {
@@ -69,6 +70,7 @@ func StartRPCServer() {
 	HandleFunc(RPCLikeArticle, likeArticle)
 	HandleFunc(RPCWithdrawl, withdrawal)
 	HandleFunc(RPCGetUTXOByAddr, getUtxoByAddr)
+	HandleFunc(RPCGetUtxoCoins, getUtxoCoins)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {

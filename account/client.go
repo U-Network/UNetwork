@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -19,7 +18,6 @@ import (
 	. "UNetwork/common"
 	"UNetwork/common/config"
 	"UNetwork/common/log"
-	"UNetwork/common/password"
 	"UNetwork/core/contract"
 	ct "UNetwork/core/contract"
 	"UNetwork/core/ledger"
@@ -28,6 +26,8 @@ import (
 	"UNetwork/crypto"
 	. "UNetwork/errors"
 	"UNetwork/events/signalset"
+	"encoding/json"
+	"UNetwork/common/password"
 )
 
 const (
@@ -54,8 +54,7 @@ type Client interface {
 	GetContracts() []*ct.Contract
 	DeleteContract(programHash Uint160) error
 
-	GetCoins() map[*transaction.UTXOTxInput]*Coin
-	DeleteCoinsData(programHash Uint160) error
+	GetCoins() (map[*transaction.UTXOTxInput]*Coin, error)
 }
 
 type ClientImpl struct {
@@ -68,7 +67,6 @@ type ClientImpl struct {
 	mainAccount Uint160
 	accounts    map[Uint160]*Account
 	contracts   map[Uint160]*ct.Contract
-	coins       map[*transaction.UTXOTxInput]*Coin
 
 	watchOnly     []Uint160
 	currentHeight uint32
@@ -80,7 +78,7 @@ type ClientImpl struct {
 func Create(path string, passwordKey []byte) (*ClientImpl, error) {
 	client := NewClient(path, passwordKey, true)
 	if client == nil {
-		return nil, errors.New("client nil")
+		return nil, NewErr("client nil")
 	}
 	account, err := client.CreateAccount()
 	if err != nil {
@@ -97,25 +95,21 @@ func Create(path string, passwordKey []byte) (*ClientImpl, error) {
 func Open(path string, passwordKey []byte) (*ClientImpl, error) {
 	client := NewClient(path, passwordKey, false)
 	if client == nil {
-		return nil, errors.New("client nil")
+		return nil, NewErr("client nil")
 	}
 	if err := client.LoadAccounts(); err != nil {
-		return nil, errors.New("Load accounts failure")
+		return nil, NewErr("Load accounts failure")
 	}
 	if err := client.LoadContracts(); err != nil {
-		return nil, errors.New("Load contracts failure")
+		return nil, NewErr("Load contracts failure")
 	}
-	if err := client.LoadCoins(); err != nil {
-		return nil, errors.New("Load coins failure")
-	}
-
 	return client, nil
 }
 
 func Recover(path string, password []byte, privateKeyHex string) (*ClientImpl, error) {
 	client := NewClient(path, password, true)
 	if client == nil {
-		return nil, errors.New("client nil")
+		return nil, NewErr("client nil")
 	}
 
 	privateKeyBytes, err := HexStringToBytes(privateKeyHex)
@@ -160,46 +154,6 @@ func (client *ClientImpl) ProcessOneBlock(block *ledger.Block) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
 
-	var needUpdate bool
-	// received coins
-	for _, tx := range block.Transactions {
-		for index, output := range tx.Outputs {
-			if contract, ok := client.contracts[output.ProgramHash]; ok {
-				input := &transaction.UTXOTxInput{ReferTxID: tx.Hash(), ReferTxOutputIndex: uint16(index)}
-				if _, ok := client.coins[input]; !ok {
-					var newCoin Coin
-					switch {
-					case contract.IsStandard():
-						newCoin = Coin{Output: output, AddressType: SingleSign}
-					case contract.IsMultiSigContract():
-						newCoin = Coin{Output: output, AddressType: MultiSign}
-					}
-					client.coins[input] = &newCoin
-					needUpdate = true
-				}
-			}
-		}
-	}
-
-	// spent coins
-	for _, tx := range block.Transactions {
-		for _, input := range tx.UTXOInputs {
-			for k := range client.coins {
-				if k.ReferTxOutputIndex == input.ReferTxOutputIndex && k.ReferTxID == input.ReferTxID {
-					delete(client.coins, k)
-					needUpdate = true
-				}
-			}
-		}
-	}
-
-	// update wallet store
-	if needUpdate {
-		if err := client.SaveCoins(); err != nil {
-			fmt.Fprintf(os.Stderr, "saving coins error: %v\n", err)
-		}
-	}
-
 	// update height
 	bytesBuffer := bytes.NewBuffer([]byte{})
 	binary.Write(bytesBuffer, binary.LittleEndian, &client.currentHeight)
@@ -239,7 +193,6 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 		path:          path,
 		accounts:      map[Uint160]*Account{},
 		contracts:     map[Uint160]*ct.Contract{},
-		coins:         map[*transaction.UTXOTxInput]*Coin{},
 		currentHeight: 0,
 		FileStore:     FileStore{path: path},
 		isRunning:     true,
@@ -425,13 +378,13 @@ func (cl *ClientImpl) Sign(context *ct.ContractContext) error {
 	for _, hash := range context.ProgramHashes {
 		contract := cl.GetContract(hash)
 		if contract == nil {
-			return errors.New("no available contract in wallet")
+			return NewErr("no available contract in wallet")
 		}
 		switch {
 		case contract.IsStandard():
 			acct := cl.GetAccountByProgramHash(hash)
 			if acct == nil {
-				return errors.New("no available account in wallet to do single-sign")
+				return NewErr("no available account in wallet to do single-sign")
 			}
 			signature, err := sig.SignBySigner(context.Data, acct)
 			if err != nil {
@@ -457,7 +410,7 @@ func (cl *ClientImpl) Sign(context *ct.ContractContext) error {
 				}
 			}
 			if !found {
-				return errors.New("no available account detected")
+				return NewErr("no available account detected")
 			}
 		}
 	}
@@ -495,10 +448,10 @@ func (cl *ClientImpl) EncryptPrivateKey(prikey []byte) ([]byte, error) {
 
 func (cl *ClientImpl) DecryptPrivateKey(prikey []byte) ([]byte, error) {
 	if prikey == nil {
-		return nil, NewDetailErr(errors.New("The PriKey is nil"), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("The PriKey is nil"), ErrNoCode, "")
 	}
 	if len(prikey) != 96 {
-		return nil, NewDetailErr(errors.New("The len of PriKeyEnc is not 96bytes"), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("The len of PriKeyEnc is not 96bytes"), ErrNoCode, "")
 	}
 
 	dec, err := crypto.AesDecrypt(prikey, cl.masterKey, cl.iv)
@@ -682,36 +635,6 @@ func (client *ClientImpl) GetContracts() []*ct.Contract {
 	return contracts
 }
 
-func (client *ClientImpl) LoadCoins() error {
-	loadedCoin, err := client.LoadCoinsData()
-	if err != nil {
-		return err
-	}
-	for input, coin := range loadedCoin {
-		client.coins[input] = coin
-	}
-	return nil
-}
-func (client *ClientImpl) SaveCoins() error {
-	if err := client.SaveCoinsData(client.coins); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (client *ClientImpl) DeleteCoins() error {
-	for in, coin := range client.coins {
-		// remove from memory
-		delete(client.coins, in)
-		// remove from db
-		if err := client.DeleteCoinsData(coin.Output.ProgramHash); err != nil {
-			fmt.Fprintf(os.Stderr, "delete coin error: %v\n", err)
-			continue
-		}
-	}
-	return nil
-}
-
 func clientIsDefaultBookKeeper(publicKey string) bool {
 	for _, bookKeeper := range config.Parameters.BookKeepers {
 		if strings.Compare(bookKeeper, publicKey) == 0 {
@@ -727,10 +650,11 @@ func GetClient() Client {
 		os.Exit(1)
 	}
 	passwd, err := password.GetAccountPassword()
-	if err != nil {
-		log.Fatal("Get password error.")
-		os.Exit(1)
-	}
+
+	//if err != nil {
+	//	log.Fatal("Get password error.")
+	//	os.Exit(1)
+	//}
 	c, err := Open(WalletFileName, passwd)
 	if err != nil {
 		return nil
@@ -755,12 +679,113 @@ func GetBookKeepers() []*crypto.PubKey {
 
 	return pubKeys
 }
+func GetCoinsFromBytes(data []byte) map[*transaction.UTXOTxInput]*Coin {
+	var dat map[string]interface{}
+	json.Unmarshal(data, &dat)
+	coins := make(map[*transaction.UTXOTxInput]*Coin)
+	if item, ok := dat["result"]; ok {
+		if array,ok:= item.([]interface{}); ok {
+			for _, itemofarray := range array {
+				//vint := value.(float64)
+				var str string
+				mapobj := itemofarray.(map[string]interface{})
+				input := new(transaction.UTXOTxInput)
+				if _, ok := mapobj["ReferTxOutputIndex"].(float64); !ok {
+					return nil
+				}
+				input.ReferTxOutputIndex = uint16(mapobj["ReferTxOutputIndex"].(float64))
 
-func (client *ClientImpl) GetCoins() map[*transaction.UTXOTxInput]*Coin {
+				str = mapobj["ReferTxID"].(string)
+				bys, _ := HexStringToBytesReverse(str)
+				input.ReferTxID.Deserialize(bytes.NewReader(bys))
+				coin := new(Coin)
+				coin.Output = new(transaction.TxOutput)
+				str = mapobj["AssetID"].(string)
+				bysAssetID, _ := HexStringToBytesReverse(str)
+				coin.Output.AssetID.Deserialize(bytes.NewReader(bysAssetID))
+				str = mapobj["ProgramHash"].(string)
+				bysProgramHash, _ := HexStringToBytesReverse(str)
+				coin.Output.ProgramHash.Deserialize(bytes.NewReader(bysProgramHash))
+
+				if _, ok := mapobj["Value"].(float64); !ok {
+					return nil
+				}
+				coin.Output.Value = Fixed64(mapobj["Value"].(float64))
+				coins[input] = coin
+			}
+		} else {
+			return nil
+		}
+	} else {
+		return nil
+	}
+	return coins
+}
+func (client *ClientImpl) GetCoins() (map[*transaction.UTXOTxInput]*Coin, error) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
 
-	return client.coins
+	coins := make(map[*transaction.UTXOTxInput]*Coin)
+	if ledger.DefaultLedger == nil {
+		return nil, NewErr("ledger DefaultLedger nil")
+	}
+	if ledger.DefaultLedger.Store == nil {
+		return nil, NewErr("ledger.DefaultLedger.Store nil")
+	}
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(client.mainAccount)
+	if err != nil {
+		return nil,  err
+	}
+	for k, _ := range client.accounts {
+		if k == client.mainAccount {
+			continue
+		}
+		unsds,err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(k)
+		if err != nil {
+			return nil,  err
+		}
+		for ik, iv := range unsds {
+			if _, ok := unspends[ik]; ok {
+				for _, vitem := range unsds[ik] {
+					unspends[ik] = append(unspends[ik], vitem)
+				}
+			} else {
+				unspends[ik] = iv
+			}
+		}
+	}
+
+	for _, u := range unspends {
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range u {
+			input := new(transaction.UTXOTxInput)
+			input.ReferTxID = v.Txid
+			input.ReferTxOutputIndex = uint16(v.Index)
+
+			txn, err := ledger.DefaultLedger.Store.GetTransaction(v.Txid)
+			if err != nil {
+				return nil, err
+			}
+			if contract, ok := client.contracts[txn.Outputs[v.Index].ProgramHash]; ok {
+				coin := new(Coin)
+				coin.Output = new(transaction.TxOutput)
+				coin.Output.AssetID = txn.Outputs[v.Index].AssetID
+				coin.Output.ProgramHash = txn.Outputs[v.Index].ProgramHash
+				coin.Output.Value = txn.Outputs[v.Index].Value
+				switch {
+				    case contract.IsStandard():
+					    coin.AddressType = SingleSign
+				    case contract.IsMultiSigContract():
+					    coin.AddressType = MultiSign
+				}
+				coins[input] = coin
+			}
+
+		}
+	}
+	return coins, nil
 }
 
 func (client *ClientImpl) GetAccounts() []*Account {
@@ -781,11 +806,6 @@ func (client *ClientImpl) Rebuild() error {
 	bytesBuffer := bytes.NewBuffer([]byte{})
 	binary.Write(bytesBuffer, binary.LittleEndian, &height)
 	if err := client.SaveStoredData("Height", bytesBuffer.Bytes()); err != nil {
-		return err
-	}
-
-	// reset coins
-	if err := client.DeleteCoins(); err != nil {
 		return err
 	}
 

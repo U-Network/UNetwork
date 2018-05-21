@@ -190,7 +190,10 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 	}
 
 	// construct transaction inputs and changes
-	coins := wallet.GetCoins()
+	coins,err:= wallet.GetCoins()
+	if (err != nil) {
+		return nil, err
+	}
 	sorted := sortCoinsByValue(coins, account.SingleSign)
 	for _, coinItem := range sorted {
 		if coinItem.coin.Output.AssetID == assetID {
@@ -274,7 +277,10 @@ func MakeMultisigTransferTransaction(wallet account.Client, assetID Uint256, fro
 	}
 
 	// construct transaction inputs and changes
-	coins := wallet.GetCoins()
+	coins, err:= wallet.GetCoins()
+	if (err !=nil) {
+		return nil, err
+	}
 	sorted := sortCoinsByValue(coins, account.MultiSign)
 	for _, coinItem := range sorted {
 		if coinItem.coin.Output.AssetID == assetID && coinItem.coin.Output.ProgramHash == spendAddress {
