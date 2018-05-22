@@ -1003,6 +1003,38 @@ func (bd *ChainStore) updateUTXOUnspentWithInput (utxoUnspents map[Uint160]map[U
 	return nil
 }
 
+func (bd *ChainStore) deductUTXOInput (unspents map[Uint256][]uint16, t * tx.Transaction, unspentPrefix []byte) error {
+	// delete unspent when spent in input
+	for index := 0; index < len(t.UTXOInputs); index++ {
+		txhash := t.UTXOInputs[index].ReferTxID
+
+		// if get unspent by utxo
+		if _, ok := unspents[txhash]; !ok {
+			unspentValue, err_get := bd.st.Get(append(unspentPrefix, txhash.ToArray()...))
+
+			if err_get != nil {
+				return err_get
+			}
+
+			unspents[txhash], err_get = GetUint16Array(unspentValue)
+			if err_get != nil {
+				return err_get
+			}
+		}
+
+		// find Transactions[i].UTXOInputs[index].ReferTxOutputIndex and delete it
+		unspentLen := len(unspents[txhash])
+		for k, outputIndex := range unspents[txhash] {
+			if outputIndex == uint16(t.UTXOInputs[index].ReferTxOutputIndex) {
+				unspents[txhash][k] = unspents[txhash][unspentLen-1]
+				unspents[txhash] = unspents[txhash][:unspentLen-1]
+				break
+			}
+		}
+	}
+	return nil
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -1121,33 +1153,9 @@ func (bd *ChainStore) persist(b *Block) error {
 			unspents[txhash] = append(unspents[txhash], uint16(index))
 		}
 
-		// delete unspent when spent in input
-		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
-			txhash := b.Transactions[i].UTXOInputs[index].ReferTxID
-
-			// if get unspent by utxo
-			if _, ok := unspents[txhash]; !ok {
-				unspentValue, err_get := bd.st.Get(append(unspentPrefix, txhash.ToArray()...))
-
-				if err_get != nil {
-					return err_get
-				}
-
-				unspents[txhash], err_get = GetUint16Array(unspentValue)
-				if err_get != nil {
-					return err_get
-				}
-			}
-
-			// find Transactions[i].UTXOInputs[index].ReferTxOutputIndex and delete it
-			unspentLen := len(unspents[txhash])
-			for k, outputIndex := range unspents[txhash] {
-				if outputIndex == uint16(b.Transactions[i].UTXOInputs[index].ReferTxOutputIndex) {
-					unspents[txhash][k] = unspents[txhash][unspentLen-1]
-					unspents[txhash] = unspents[txhash][:unspentLen-1]
-					break
-				}
-			}
+		err = bd.deductUTXOInput(unspents, b.Transactions[i], unspentPrefix)
+		if err != nil {
+			return err
 		}
 
 		// bookkeeper
