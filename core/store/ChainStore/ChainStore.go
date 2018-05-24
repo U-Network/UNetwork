@@ -1090,6 +1090,77 @@ func (bd *ChainStore) updateBookKeeper (currBookKeeper []*crypto.PubKey ,nextBoo
 	bd.st.BatchPut(bkListKey.Bytes(), bkListValue.Bytes())
 }
 
+func (bd *ChainStore) batchPutUTXO (utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent, 
+									unspents map[Uint256][]uint16,
+									quantities map[Uint256]Fixed64,
+									accounts map[Uint160]*account.AccountState,
+									lockedAssets map[Uint160]map[Uint256][]*LockAsset) error {
+
+	for programHash, programHash_value := range utxoUnspents {
+		for assetId, unspents := range programHash_value {
+			err := bd.saveUnspentWithProgramHash(programHash, assetId, unspents)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// batch put the unspents
+	for txhash, value := range unspents {
+		unspentKey := bytes.NewBuffer(nil)
+		unspentKey.WriteByte(byte(IX_Unspent))
+		txhash.Serialize(unspentKey)
+
+		if len(value) == 0 {
+			bd.st.BatchDelete(unspentKey.Bytes())
+		} else {
+			unspentArray := ToByteArray(value)
+			bd.st.BatchPut(unspentKey.Bytes(), unspentArray)
+		}
+	}
+
+	// batch put quantities
+	for assetId, value := range quantities {
+		quantityKey := bytes.NewBuffer(nil)
+		quantityKey.WriteByte(byte(ST_QuantityIssued))
+		assetId.Serialize(quantityKey)
+
+		qt, err := bd.GetQuantityIssued(assetId)
+		if err != nil {
+			return err
+		}
+
+		qt = qt + value
+
+		quantityArray := bytes.NewBuffer(nil)
+		qt.Serialize(quantityArray)
+
+		bd.st.BatchPut(quantityKey.Bytes(), quantityArray.Bytes())
+		log.Debug(fmt.Sprintf("quantityKey: %x\n", quantityKey.Bytes()))
+		log.Debug(fmt.Sprintf("quantityArray: %x\n", quantityArray.Bytes()))
+	}
+
+	for programHash, value := range accounts {
+		accountKey := new(bytes.Buffer)
+		accountKey.WriteByte(byte(ST_ACCOUNT))
+		programHash.Serialize(accountKey)
+
+		accountValue := new(bytes.Buffer)
+		value.Serialize(accountValue)
+
+		bd.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
+	}
+
+	for programHash, assets := range lockedAssets {
+		for assetID, locked := range assets {
+			if err := bd.SaveLockedAsset(programHash, assetID, locked); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -1223,68 +1294,10 @@ func (bd *ChainStore) persist(b *Block) error {
 	///////////////////////////////////////////////////////
 	//*/
 
-	// batch put the utxoUnspents
-	for programHash, programHash_value := range utxoUnspents {
-		for assetId, unspents := range programHash_value {
-			err := bd.saveUnspentWithProgramHash(programHash, assetId, unspents)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// batch put the unspents
-	for txhash, value := range unspents {
-		unspentKey := bytes.NewBuffer(nil)
-		unspentKey.WriteByte(byte(IX_Unspent))
-		txhash.Serialize(unspentKey)
-
-		if len(value) == 0 {
-			bd.st.BatchDelete(unspentKey.Bytes())
-		} else {
-			unspentArray := ToByteArray(value)
-			bd.st.BatchPut(unspentKey.Bytes(), unspentArray)
-		}
-	}
-
-	// batch put quantities
-	for assetId, value := range quantities {
-		quantityKey := bytes.NewBuffer(nil)
-		quantityKey.WriteByte(byte(ST_QuantityIssued))
-		assetId.Serialize(quantityKey)
-
-		qt, err := bd.GetQuantityIssued(assetId)
-		if err != nil {
-			return err
-		}
-
-		qt = qt + value
-
-		quantityArray := bytes.NewBuffer(nil)
-		qt.Serialize(quantityArray)
-
-		bd.st.BatchPut(quantityKey.Bytes(), quantityArray.Bytes())
-		log.Debug(fmt.Sprintf("quantityKey: %x\n", quantityKey.Bytes()))
-		log.Debug(fmt.Sprintf("quantityArray: %x\n", quantityArray.Bytes()))
-	}
-
-	for programHash, value := range accounts {
-		accountKey := new(bytes.Buffer)
-		accountKey.WriteByte(byte(ST_ACCOUNT))
-		programHash.Serialize(accountKey)
-
-		accountValue := new(bytes.Buffer)
-		value.Serialize(accountValue)
-
-		bd.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
-	}
-
-	for programHash, assets := range lockedAssets {
-		for assetID, locked := range assets {
-			if err := bd.SaveLockedAsset(programHash, assetID, locked); err != nil {
-				return err
-			}
-		}
+	// batch put the UTXO related properties
+	err = bd.batchPutUTXO(utxoUnspents, unspents, quantities, accounts, lockedAssets)
+	if err != nil {
+		return err
 	}
 
 	for user, info := range articleInfo {
