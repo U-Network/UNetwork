@@ -713,14 +713,15 @@ func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey,
 }
 
 
-func (bd *ChainStore) ProcessTransaction(t *tx.Transaction,
+func (bd *ChainStore) ProcessTransactionBaseOnTheType(t *tx.Transaction,
 										 b *Block, 
 										 quantities map[Uint256]Fixed64, 
 										 dbCache *DBCache,
 										 lockedAssets map[Uint160]map[Uint256][]*LockAsset,
 										 articleInfo map[string][]*forum.ArticleInfo, 
 										 likeInfo map[Uint256][]*forum.LikeInfo,
-										 ) (error, bool) {
+										 needUpdateBookKeeper * bool, 
+										 nextBookKeeper []*crypto.PubKey) (error, bool) {
 	txHash := t.Hash()
 	var err error 
 	switch t.TxType {
@@ -891,7 +892,35 @@ func (bd *ChainStore) ProcessTransaction(t *tx.Transaction,
 		}
 		stateMachine.CloneCache.Commit()
 		httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
+	
+	case tx.BookKeeper:
+		bk := t.Payload.(*payload.BookKeeper)
+		if bk.Action == payload.BookKeeperAction_ADD {
+			findflag := false
+			for k := 0; k < len(nextBookKeeper); k++ {
+				if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
+					findflag = true
+					break
+				}
+			}
+
+			if !findflag {
+				*needUpdateBookKeeper = true
+				nextBookKeeper = append(nextBookKeeper, bk.PubKey)
+				sort.Sort(crypto.PubKeySlice(nextBookKeeper))
+			}
+		} else if bk.Action == payload.BookKeeperAction_SUB {
+			for k := 0; k < len(nextBookKeeper); k++ {
+				if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
+					*needUpdateBookKeeper = true
+					nextBookKeeper = append(nextBookKeeper[:k], nextBookKeeper[k+1:]...)
+					break
+				}
+			}		
+		}
+
 	}
+
 	return nil, false
 }
 
@@ -1133,7 +1162,15 @@ func (bd *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		err, skip := bd.ProcessTransaction(b.Transactions[i], b, quantities, dbCache, lockedAssets, articleInfo, likeInfo)
+		err, skip := bd.ProcessTransactionBaseOnTheType(b.Transactions[i], 
+														b, 
+														quantities, 
+														dbCache, 
+														lockedAssets, 
+														articleInfo, 
+														likeInfo, 
+														&needUpdateBookKeeper, 
+														nextBookKeeper)
 		if err != nil {
 			return err
 		}
@@ -1155,43 +1192,7 @@ func (bd *ChainStore) persist(b *Block) error {
 		if err != nil {
 			return err
 		}
-
-		// bookkeeper
-		if b.Transactions[i].TxType == tx.BookKeeper {
-			bk := b.Transactions[i].Payload.(*payload.BookKeeper)
-
-			switch bk.Action {
-			case payload.BookKeeperAction_ADD:
-				findflag := false
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						findflag = true
-						break
-					}
-				}
-
-				if !findflag {
-					needUpdateBookKeeper = true
-					nextBookKeeper = append(nextBookKeeper, bk.PubKey)
-					sort.Sort(crypto.PubKeySlice(nextBookKeeper))
-				}
-			case payload.BookKeeperAction_SUB:
-				ind := -1
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						ind = k
-						break
-					}
-				}
-
-				if ind != -1 {
-					needUpdateBookKeeper = true
-					// already sorted
-					nextBookKeeper = append(nextBookKeeper[:ind], nextBookKeeper[ind+1:]...)
-				}
-			}
-
-		}
+		// Bookkeeper is updated in bd.ProcessTransactionBaseOnTheType
 
 	}
 
