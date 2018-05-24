@@ -1069,6 +1069,27 @@ func (bd *ChainStore) deductUTXOInput (unspents map[Uint256][]uint16, t * tx.Tra
 	return nil
 }
 
+func (bd *ChainStore) updateBookKeeper (currBookKeeper []*crypto.PubKey ,nextBookKeeper []*crypto.PubKey) {
+	bkListKey := bytes.NewBuffer(nil)
+	bkListKey.WriteByte(byte(SYS_CurrentBookKeeper))
+
+	//bookKeeper value
+	bkListValue := bytes.NewBuffer(nil)
+
+	serialization.WriteUint8(bkListValue, uint8(len(currBookKeeper)))
+	for k := 0; k < len(currBookKeeper); k++ {
+		currBookKeeper[k].Serialize(bkListValue)
+	}
+
+	serialization.WriteUint8(bkListValue, uint8(len(nextBookKeeper)))
+	for k := 0; k < len(nextBookKeeper); k++ {
+		nextBookKeeper[k].Serialize(bkListValue)
+	}
+
+	// BookKeeper put value
+	bd.st.BatchPut(bkListKey.Bytes(), bkListValue.Bytes())
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -1197,27 +1218,7 @@ func (bd *ChainStore) persist(b *Block) error {
 	}
 
 	if needUpdateBookKeeper {
-		//bookKeeper key
-		bkListKey := bytes.NewBuffer(nil)
-		bkListKey.WriteByte(byte(SYS_CurrentBookKeeper))
-
-		//bookKeeper value
-		bkListValue := bytes.NewBuffer(nil)
-
-		serialization.WriteUint8(bkListValue, uint8(len(currBookKeeper)))
-		for k := 0; k < len(currBookKeeper); k++ {
-			currBookKeeper[k].Serialize(bkListValue)
-		}
-
-		serialization.WriteUint8(bkListValue, uint8(len(nextBookKeeper)))
-		for k := 0; k < len(nextBookKeeper); k++ {
-			nextBookKeeper[k].Serialize(bkListValue)
-		}
-
-		// BookKeeper put value
-		bd.st.BatchPut(bkListKey.Bytes(), bkListValue.Bytes())
-
-		///////////////////////////////////////////////////////
+		bd.updateBookKeeper(currBookKeeper, nextBookKeeper)
 	}
 	///////////////////////////////////////////////////////
 	//*/
