@@ -1004,6 +1004,11 @@ func (bd *ChainStore) updateUTXOUnspentWithInput (utxoUnspents map[Uint160]map[U
 }
 
 func (bd *ChainStore) deductUTXOInput (unspents map[Uint256][]uint16, t * tx.Transaction, unspentPrefix []byte) error {
+	// init unspent in tx
+	txhash := t.Hash()
+	for index := 0; index < len(t.Outputs); index++ {
+		unspents[txhash] = append(unspents[txhash], uint16(index))
+	}
 	// delete unspent when spent in input
 	for index := 0; index < len(t.UTXOInputs); index++ {
 		txhash := t.UTXOInputs[index].ReferTxID
@@ -1141,16 +1146,9 @@ func (bd *ChainStore) persist(b *Block) error {
 			return err
 		}
 		
-
 		err = bd.updateUTXOUnspentWithInput(utxoUnspents, accounts, b, i)
 		if err != nil {
 			return err
-		}
-
-		// init unspent in tx
-		txhash := b.Transactions[i].Hash()
-		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-			unspents[txhash] = append(unspents[txhash], uint16(index))
 		}
 
 		err = bd.deductUTXOInput(unspents, b.Transactions[i], unspentPrefix)
