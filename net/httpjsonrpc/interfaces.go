@@ -1207,3 +1207,39 @@ func withdrawal(params []interface{}) map[string]interface{} {
 
 	return UNetworkRPC(BytesToHexString(hash.ToArrayReverse()))
 }
+
+func getLikeArticleAdresslist(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return UNetworkRPCNil
+	}
+	var ahashstr string
+	switch params[0].(type) {
+	case string:
+		ahashstr = params[0].(string)
+	default:
+		return UNetworkRPCInvalidParameter
+	}
+	ahashbt, err := HexStringToBytesReverse(ahashstr)
+	if err != nil {
+		return UNetworkRPCInvalidParameter
+	}
+	ahash256, err := Uint256ParseFromBytes(ahashbt)
+	if err != nil {
+		return UNetworkRPCInvalidParameter
+	}
+	var results []string
+	likeinfoarray,err := ledger.DefaultLedger.Store.GetLikeInfo(ahash256)
+	if (err != nil) {
+		return UNetworkRPC(err.Error())
+	}
+	for _, likeinfo := range likeinfoarray {
+		author := likeinfo.Liker
+		userinfo, err := ledger.DefaultLedger.Store.GetUserInfo(author)
+		if (err != nil) {
+			return UNetworkRPC(err.Error())
+		}
+		ProgramHashstr := BytesToHexString(userinfo.UserProgramHash.ToArrayReverse())
+		results = append(results, ProgramHashstr)
+	}
+	return UNetworkRPC(results)
+}

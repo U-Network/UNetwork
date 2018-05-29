@@ -36,6 +36,7 @@ const (
 	RPCWithdrawl    = "withdrawal"
 	RPCGetUTXOByAddr    = "getutxobyaddr"
 	RPCGetUtxoCoins  = "getutxocoins"
+	RPCGetLikeArticleAdresslist ="getlikearticleadresslist"
 )
 
 func StartRPCServer() {
@@ -71,6 +72,7 @@ func StartRPCServer() {
 	HandleFunc(RPCWithdrawl, withdrawal)
 	HandleFunc(RPCGetUTXOByAddr, getUtxoByAddr)
 	HandleFunc(RPCGetUtxoCoins, getUtxoCoins)
+	HandleFunc(RPCGetLikeArticleAdresslist, getLikeArticleAdresslist)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {
