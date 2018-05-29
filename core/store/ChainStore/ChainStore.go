@@ -1161,6 +1161,76 @@ func (bd *ChainStore) batchPutUTXO (utxoUnspents map[Uint160]map[Uint256][]*tx.U
 	return nil
 }
 
+func (bd *ChainStore) batchPutForumData (articleInfo map[string][]*forum.ArticleInfo, 
+										 likeInfo map[Uint256][]*forum.LikeInfo) error {
+
+	for user, info := range articleInfo {
+		if err := bd.UpdateUserArticleInfo(user, info); err != nil {
+			return err
+		}
+	}
+
+	userTokenInfo := make(map[string]*forum.TokenInfo)
+	userReputationInfo := make(map[string]*forum.UserInfo)
+	for postTxnHash, liker := range likeInfo {
+		// update like info for each post/reply transaction
+		if err := bd.UpdateLikeInfo(postTxnHash, liker); err != nil {
+			return err
+		}
+
+		// get author of each post/reply transaction
+		txn, err := bd.GetTransaction(postTxnHash)
+		if err != nil {
+			return err
+		}
+		author := txn.Payload.(*payload.PostArticle).Author
+
+		if _, ok := userTokenInfo[author]; !ok {
+			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
+			if err != nil {
+				return err
+			}
+			userTokenInfo[author] = existedTokenInfo
+		}
+		if _, ok := userReputationInfo[author]; !ok {
+			existedReputationInfo, err := bd.GetUserInfo(author)
+			if err != nil {
+				return err
+			}
+			userReputationInfo[author] = existedReputationInfo
+		}
+
+		// calculate total token and reputation info for each author
+		for _, l := range liker {
+			userInfo, err := bd.GetUserInfo(l.Liker)
+			if err != nil {
+				return err
+			}
+			switch l.LikeType {
+			case forum.LikePost:
+				userTokenInfo[author].Number += userInfo.Reputation / 1000
+				userReputationInfo[author].Reputation += userInfo.Reputation / 1000
+			case forum.DislikePost:
+				userReputationInfo[author].Reputation -= userInfo.Reputation / 1000
+			}
+		}
+	}
+	for user, tokenInfo := range userTokenInfo {
+		if err := bd.SaveTokenInfo(user, forum.TotalToken, tokenInfo); err != nil {
+			return err
+		}
+	}
+	for user, reputationInfo := range userReputationInfo {
+		if reputationInfo.Reputation <= Fixed64(100000000) {
+			reputationInfo.Reputation = 100000000
+		}
+		if err := bd.SaveUserInfo(user, reputationInfo); err != nil {
+			return err
+		}
+	}
+	return nil;
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -1300,69 +1370,9 @@ func (bd *ChainStore) persist(b *Block) error {
 		return err
 	}
 
-	for user, info := range articleInfo {
-		if err := bd.UpdateUserArticleInfo(user, info); err != nil {
-			return err
-		}
-	}
-
-	userTokenInfo := make(map[string]*forum.TokenInfo)
-	userReputationInfo := make(map[string]*forum.UserInfo)
-	for postTxnHash, liker := range likeInfo {
-		// update like info for each post/reply transaction
-		if err := bd.UpdateLikeInfo(postTxnHash, liker); err != nil {
-			return err
-		}
-
-		// get author of each post/reply transaction
-		txn, err := bd.GetTransaction(postTxnHash)
-		if err != nil {
-			return err
-		}
-		author := txn.Payload.(*payload.PostArticle).Author
-
-		if _, ok := userTokenInfo[author]; !ok {
-			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
-			if err != nil {
-				return err
-			}
-			userTokenInfo[author] = existedTokenInfo
-		}
-		if _, ok := userReputationInfo[author]; !ok {
-			existedReputationInfo, err := bd.GetUserInfo(author)
-			if err != nil {
-				return err
-			}
-			userReputationInfo[author] = existedReputationInfo
-		}
-
-		// calculate total token and reputation info for each author
-		for _, l := range liker {
-			userInfo, err := bd.GetUserInfo(l.Liker)
-			if err != nil {
-				return err
-			}
-			switch l.LikeType {
-			case forum.LikePost:
-				userTokenInfo[author].Number += userInfo.Reputation / 1000
-				userReputationInfo[author].Reputation += userInfo.Reputation / 1000
-			case forum.DislikePost:
-				userReputationInfo[author].Reputation -= userInfo.Reputation / 1000
-			}
-		}
-	}
-	for user, tokenInfo := range userTokenInfo {
-		if err := bd.SaveTokenInfo(user, forum.TotalToken, tokenInfo); err != nil {
-			return err
-		}
-	}
-	for user, reputationInfo := range userReputationInfo {
-		if reputationInfo.Reputation <= Fixed64(100000000) {
-			reputationInfo.Reputation = 100000000
-		}
-		if err := bd.SaveUserInfo(user, reputationInfo); err != nil {
-			return err
-		}
+	err = bd.batchPutForumData(articleInfo, likeInfo)
+	if err != nil {
+		return err
 	}
 
 	currentBlockKey := bytes.NewBuffer(nil)
