@@ -28,30 +28,44 @@ const (
 	RANDBYTELEN = 4
 )
 func getUtxoCoins(params []interface{}) map[string]interface{} {
-	if Wallet == nil {
-		return UNetworkRPC("open wallet first")
-	}
 	type CoinInfo struct {
 		ReferTxID string
 		ReferTxOutputIndex uint16
 		AssetID     string
 		Value       Fixed64
 		ProgramHash string
-		AddressType byte
 	}
 	var results []CoinInfo
-	coins, err := Wallet.GetCoins()
-	if (err != nil) {
-		return UNetworkRPC(err.Error())
-	}
-	for k, coin := range coins {
-		ReferTxIDstr := BytesToHexString(k.ReferTxID.ToArrayReverse())
-		AssetIDstr := BytesToHexString(coin.Output.AssetID.ToArrayReverse())
-		ProgramHashstr := BytesToHexString(coin.Output.ProgramHash.ToArrayReverse())
-		results = append(results, CoinInfo{ReferTxIDstr, k.ReferTxOutputIndex,
-			AssetIDstr, coin.Output.Value, ProgramHashstr, byte(coin.AddressType)})
-	}
 
+	if len(params) < 1 {
+		coins, err := Wallet.GetCoins()
+		if (err != nil) {
+			return UNetworkRPC(err.Error())
+		}
+		for k, coin := range coins {
+			ReferTxIDstr := BytesToHexString(k.ReferTxID.ToArrayReverse())
+			AssetIDstr := BytesToHexString(coin.Output.AssetID.ToArrayReverse())
+			ProgramHashstr,_:= coin.Output.ProgramHash.ToAddress()
+			results = append(results, CoinInfo{ReferTxIDstr, k.ReferTxOutputIndex,
+				AssetIDstr, coin.Output.Value, ProgramHashstr})
+		}
+	}else {
+		addr := params[0].(string)
+		var programHash Uint160
+		programHash, err := ToScriptHash(addr)
+		if err != nil {
+			return UNetworkRPC("Address Wrong!")
+		}
+		unspends, err := ledger.DefaultLedger.Store.GetUnspentOutputFromProgramHash(programHash)
+
+		for k, coin := range unspends {
+			ReferTxIDstr := BytesToHexString(k.ReferTxID.ToArrayReverse())
+			AssetIDstr := BytesToHexString(coin.AssetID.ToArrayReverse())
+			ProgramHashstr := BytesToHexString(coin.ProgramHash.ToArrayReverse())
+			results = append(results, CoinInfo{ReferTxIDstr, k.ReferTxOutputIndex,
+				AssetIDstr, coin.Value, ProgramHashstr})
+		}
+	}
 	return UNetworkRPC(results)
 }
 func getUtxoByAddr(params []interface{}) map[string]interface{} {

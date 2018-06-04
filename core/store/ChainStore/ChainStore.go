@@ -1743,6 +1743,33 @@ func (bd *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint2
 	return uxtoUnspents, nil
 }
 
+func (bd *ChainStore) GetUnspentOutputFromProgramHash(programHash Uint160) (map[*tx.UTXOTxInput]*tx.TxOutput, error) {
+	unspends, err := bd.GetUnspentsFromProgramHash(programHash)
+	if err != nil {
+		return nil,  err
+	}
+	results := make(map[*tx.UTXOTxInput]*tx.TxOutput)
+	for _, u := range unspends {
+		for _, v := range u {
+			input := new(tx.UTXOTxInput)
+			input.ReferTxID = v.Txid
+			input.ReferTxOutputIndex = uint16(v.Index)
+
+			txn, err := bd.GetTransaction(v.Txid)
+			if err != nil {
+				return nil, err
+			}
+			output := new(tx.TxOutput)
+			output.AssetID = txn.Outputs[v.Index].AssetID
+			output.ProgramHash = txn.Outputs[v.Index].ProgramHash
+			output.Value = txn.Outputs[v.Index].Value
+			results[input] = output
+
+		}
+	}
+	return results, nil
+}
+
 func (bd *ChainStore) GetAssets() map[Uint256]*Asset {
 	assets := make(map[Uint256]*Asset)
 
