@@ -55,7 +55,7 @@ func showMultisigInfo(wallet account.Client) {
 	contracts := wallet.GetContracts()
 	accounts := wallet.GetAccounts()
 	resp, _ := httpjsonrpc.Call(Address(), "getutxocoins", 0, []interface{}{})
-	coins := account.GetCoinsFromBytes(resp)
+	coins := wallet.GetCoinsFromBytes(resp)
 
 	multisign := []Uint160{}
 	// find multisign address
@@ -101,9 +101,9 @@ func showMultisigInfo(wallet account.Client) {
 
 func showBalancesInfo(wallet account.Client) {
 	resp, _ := httpjsonrpc.Call(Address(), "getutxocoins", 0, []interface{}{})
-	coins := account.GetCoinsFromBytes(resp)
+	coins := wallet.GetCoinsFromBytes(resp)
 	assets := make(map[Uint256]Fixed64)
-	for _, out := range coins {
+		for _, out := range coins {
 		if out.AddressType == account.SingleSign {
 			if _, ok := assets[out.Output.AssetID]; !ok {
 				assets[out.Output.AssetID] = out.Output.Value
@@ -129,7 +129,7 @@ func showBalancesInfo(wallet account.Client) {
 func showVerboseInfo(wallet account.Client) {
 	accounts := wallet.GetAccounts()
 	resp, _ := httpjsonrpc.Call(Address(), "getutxocoins", 0, []interface{}{})
-	coins := account.GetCoinsFromBytes(resp)
+	coins := wallet.GetCoinsFromBytes(resp)
 	for _, account := range accounts {
 		programHash := account.ProgramHash
 		assets := make(map[Uint256]Fixed64)

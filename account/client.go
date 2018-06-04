@@ -55,6 +55,7 @@ type Client interface {
 	DeleteContract(programHash Uint160) error
 
 	GetCoins() (map[*transaction.UTXOTxInput]*Coin, error)
+    GetCoinsFromBytes(data []byte) map[*transaction.UTXOTxInput]*Coin
 }
 
 type ClientImpl struct {
@@ -651,10 +652,10 @@ func GetClient() Client {
 	}
 	passwd, err := password.GetAccountPassword()
 
-	//if err != nil {
-	//	log.Fatal("Get password error.")
-	//	os.Exit(1)
-	//}
+	if err != nil {
+		log.Fatal("Get password error.")
+		os.Exit(1)
+	}
 	c, err := Open(WalletFileName, passwd)
 	if err != nil {
 		return nil
@@ -679,7 +680,7 @@ func GetBookKeepers() []*crypto.PubKey {
 
 	return pubKeys
 }
-func GetCoinsFromBytes(data []byte) map[*transaction.UTXOTxInput]*Coin {
+func (client *ClientImpl)GetCoinsFromBytes(data []byte) map[*transaction.UTXOTxInput]*Coin {
 	var dat map[string]interface{}
 	json.Unmarshal(data, &dat)
 	coins := make(map[*transaction.UTXOTxInput]*Coin)
@@ -704,14 +705,26 @@ func GetCoinsFromBytes(data []byte) map[*transaction.UTXOTxInput]*Coin {
 				bysAssetID, _ := HexStringToBytesReverse(str)
 				coin.Output.AssetID.Deserialize(bytes.NewReader(bysAssetID))
 				str = mapobj["ProgramHash"].(string)
-				bysProgramHash, _ := HexStringToBytesReverse(str)
-				coin.Output.ProgramHash.Deserialize(bytes.NewReader(bysProgramHash))
+				var programHash Uint160
+				programHash, err := ToScriptHash(str)
+				if err != nil {
+					return nil
+				}
+				coin.Output.ProgramHash = programHash
 
 				if _, ok := mapobj["Value"].(float64); !ok {
 					return nil
 				}
 				coin.Output.Value = Fixed64(mapobj["Value"].(float64))
-				coins[input] = coin
+				if contract, ok := client.contracts[coin.Output.ProgramHash]; ok {
+					switch {
+					case contract.IsStandard():
+						coin.AddressType = SingleSign
+					case contract.IsMultiSigContract():
+						coin.AddressType = MultiSign
+					}
+					coins[input] = coin
+				}
 			}
 		} else {
 			return nil
@@ -756,9 +769,6 @@ func (client *ClientImpl) GetCoins() (map[*transaction.UTXOTxInput]*Coin, error)
 	}
 
 	for _, u := range unspends {
-		if err != nil {
-			return nil, err
-		}
 		for _, v := range u {
 			input := new(transaction.UTXOTxInput)
 			input.ReferTxID = v.Txid
