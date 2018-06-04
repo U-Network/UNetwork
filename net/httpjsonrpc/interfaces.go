@@ -61,7 +61,7 @@ func getUtxoCoins(params []interface{}) map[string]interface{} {
 		for k, coin := range unspends {
 			ReferTxIDstr := BytesToHexString(k.ReferTxID.ToArrayReverse())
 			AssetIDstr := BytesToHexString(coin.AssetID.ToArrayReverse())
-			ProgramHashstr := BytesToHexString(coin.ProgramHash.ToArrayReverse())
+			ProgramHashstr,_ := coin.ProgramHash.ToAddress()
 			results = append(results, CoinInfo{ReferTxIDstr, k.ReferTxOutputIndex,
 				AssetIDstr, coin.Value, ProgramHashstr})
 		}
