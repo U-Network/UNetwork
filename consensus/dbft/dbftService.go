@@ -5,7 +5,6 @@ import (
 	. "UNetwork/common"
 	"UNetwork/common/config"
 	"UNetwork/common/log"
-	con "UNetwork/consensus"
 	ct "UNetwork/core/contract"
 	"UNetwork/core/contract/program"
 	"UNetwork/core/ledger"
@@ -469,7 +468,6 @@ func (ds *DbftService) PrepareResponseReceived(payload *msg.ConsensusPayload, me
 
 func (ds *DbftService) RefreshPolicy() {
 	log.Debug()
-	con.DefaultPolicy.Refresh()
 }
 
 func (ds *DbftService) RequestChangeView() {
