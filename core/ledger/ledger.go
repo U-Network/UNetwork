@@ -8,7 +8,6 @@ import (
 	tx "UNetwork/core/transaction"
 	"UNetwork/crypto"
 	. "UNetwork/errors"
-	"errors"
 )
 
 var DefaultLedger *Ledger
@@ -30,7 +29,7 @@ func (l *Ledger) IsDoubleSpend(Tx *tx.Transaction) bool {
 //Note: the later version will support the mutiLedger.So this func mybe expired later.
 func GetDefaultLedger() (*Ledger, error) {
 	if DefaultLedger == nil {
-		return nil, NewDetailErr(errors.New("[Ledger], GetDefaultLedger failed, DefaultLedger not Exist."), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("[Ledger], GetDefaultLedger failed, DefaultLedger not Exist."), ErrNoCode, "")
 	}
 	return DefaultLedger, nil
 }
@@ -41,7 +40,7 @@ func GetBookKeeperAddress(bookKeepers []*crypto.PubKey) (Uint160, error) {
 	//return Uint160{}
 	//CreateSignatureRedeemScript
 	if len(bookKeepers) < 1 {
-		return Uint160{}, NewDetailErr(errors.New("[Ledger] , GetBookKeeperAddress with no bookKeeper"), ErrNoCode, "")
+		return Uint160{}, NewDetailErr(NewErr("[Ledger] , GetBookKeeperAddress with no bookKeeper"), ErrNoCode, "")
 	}
 	var temp []byte
 	var err error

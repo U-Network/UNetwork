@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -78,7 +77,7 @@ func (cs *FileStore) readDB() ([]byte, error) {
 		}
 		return data, nil
 	} else {
-		return nil, NewDetailErr(errors.New("[readDB] file handle is nil"), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("[readDB] file handle is nil"), ErrNoCode, "")
 	}
 }
 
@@ -111,7 +110,7 @@ func (cs *FileStore) writeDB(data []byte) error {
 			cs.file.Write(data)
 		}
 	} else {
-	    return errors.New("wirte bakwalletfile failed")
+	    return NewErr("wirte bakwalletfile failed")
 	}
 
 	return nil
@@ -137,10 +136,10 @@ func (cs *FileStore) BuildDatabase(path string) {
 func (cs *FileStore) SaveAccountData(programHash []byte, encryptedPrivateKey []byte) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return errors.New("error: reading db")
+		return NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+		return NewErr("error: unmarshal db")
 	}
 
 	var accountType string
@@ -152,11 +151,11 @@ func (cs *FileStore) SaveAccountData(programHash []byte, encryptedPrivateKey []b
 
 	pHash, err := Uint160ParseFromBytes(programHash)
 	if err != nil {
-		return errors.New("invalid program hash")
+		return NewErr("invalid program hash")
 	}
 	addr, err := pHash.ToAddress()
 	if err != nil {
-		return errors.New("invalid address")
+		return NewErr("invalid address")
 	}
 	a := AccountData{
 		Address:             addr,
@@ -168,7 +167,7 @@ func (cs *FileStore) SaveAccountData(programHash []byte, encryptedPrivateKey []b
 
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
-		return errors.New("error: marshal db")
+		return NewErr("error: marshal db")
 	}
 	cs.writeDB(JSONBlob)
 
@@ -178,16 +177,16 @@ func (cs *FileStore) SaveAccountData(programHash []byte, encryptedPrivateKey []b
 func (cs *FileStore) DeleteAccountData(programHash string) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return errors.New("error: reading db")
+		return NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+		return NewErr("error: unmarshal db")
 	}
 
 	for i, v := range cs.data.Account {
 		if programHash == v.ProgramHash {
 			if v.Type == MAINACCOUNT {
-				return errors.New("Can't remove main account")
+				return NewErr("Can't remove main account")
 			}
 			cs.data.Account = append(cs.data.Account[:i], cs.data.Account[i+1:]...)
 		}
@@ -195,7 +194,7 @@ func (cs *FileStore) DeleteAccountData(programHash string) error {
 
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
-		return errors.New("error: marshal db")
+		return NewErr("error: marshal db")
 	}
 	cs.writeDB(JSONBlob)
 
@@ -205,10 +204,10 @@ func (cs *FileStore) DeleteAccountData(programHash string) error {
 func (cs *FileStore) LoadAccountData() ([]AccountData, error) {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return nil, errors.New("error: reading db")
+		return nil, NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return nil, errors.New("error: unmarshal db")
+		return nil, NewErr("error: unmarshal db")
 	}
 	return cs.data.Account, nil
 }
@@ -216,10 +215,10 @@ func (cs *FileStore) LoadAccountData() ([]AccountData, error) {
 func (cs *FileStore) SaveContractData(ct *ct.Contract) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return errors.New("error: reading db")
+		return NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+		return NewErr("error: unmarshal db")
 	}
 	c := ContractData{
 		ProgramHash: BytesToHexString(ct.ProgramHash.ToArray()),
@@ -229,7 +228,7 @@ func (cs *FileStore) SaveContractData(ct *ct.Contract) error {
 
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
-		return errors.New("error: marshal db")
+		return NewErr("error: marshal db")
 	}
 	cs.writeDB(JSONBlob)
 
@@ -239,10 +238,10 @@ func (cs *FileStore) SaveContractData(ct *ct.Contract) error {
 func (cs *FileStore) DeleteContractData(programHash string) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return errors.New("error: reading db")
+		return NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+		return NewErr("error: unmarshal db")
 	}
 
 	for i, v := range cs.data.Contract {
@@ -253,7 +252,7 @@ func (cs *FileStore) DeleteContractData(programHash string) error {
 
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
-		return errors.New("error: marshal db")
+		return NewErr("error: marshal db")
 	}
 	cs.writeDB(JSONBlob)
 
@@ -263,10 +262,10 @@ func (cs *FileStore) DeleteContractData(programHash string) error {
 func (cs *FileStore) LoadContractData() ([]ContractData, error) {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return nil, errors.New("error: reading db")
+		return nil, NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return nil, errors.New("error: unmarshal db")
+		return nil, NewErr("error: unmarshal db")
 	}
 
 	return cs.data.Contract, nil
@@ -275,10 +274,10 @@ func (cs *FileStore) LoadContractData() ([]ContractData, error) {
 func (cs *FileStore) SaveCoinsData(coins map[*transaction.UTXOTxInput]*Coin) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return errors.New("error: reading db")
+		return NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+		return NewErr("error: unmarshal db")
 	}
 
 	length := uint32(len(coins))
@@ -296,7 +295,7 @@ func (cs *FileStore) SaveCoinsData(coins map[*transaction.UTXOTxInput]*Coin) err
 
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
-		return errors.New("error: marshal db")
+		return NewErr("error: marshal db")
 	}
 	cs.writeDB(JSONBlob)
 
@@ -306,10 +305,10 @@ func (cs *FileStore) SaveCoinsData(coins map[*transaction.UTXOTxInput]*Coin) err
 func (cs *FileStore) DeleteCoinsData(programHash Uint160) error {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return errors.New("error: reading db")
+		return NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+		return NewErr("error: unmarshal db")
 	}
 	if cs.data.Coins == "" {
 		return nil
@@ -342,10 +341,10 @@ func (cs *FileStore) DeleteCoinsData(programHash Uint160) error {
 func (cs *FileStore) LoadCoinsData() (map[*transaction.UTXOTxInput]*Coin, error) {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return nil, errors.New("error: reading db")
+		return nil, NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return nil, errors.New("error: unmarshal db")
+		return nil, NewErr("error: unmarshal db")
 	}
 	coins := make(map[*transaction.UTXOTxInput]*Coin)
 	rawCoins, _ := HexStringToBytes(string(cs.data.Coins))
@@ -367,12 +366,13 @@ func (cs *FileStore) LoadCoinsData() (map[*transaction.UTXOTxInput]*Coin, error)
 }
 
 func (cs *FileStore) SaveStoredData(name string, value []byte) error {
+
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return errors.New("error: reading db")
+		return NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+		return NewErr("error: unmarshal db")
 	}
 
 	hexValue := BytesToHexString(value)
@@ -394,7 +394,7 @@ func (cs *FileStore) SaveStoredData(name string, value []byte) error {
 	}
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
-		return errors.New("error: marshal db")
+		return NewErr("error: marshal db")
 	}
 	cs.writeDB(JSONBlob)
 
@@ -404,10 +404,10 @@ func (cs *FileStore) SaveStoredData(name string, value []byte) error {
 func (cs *FileStore) LoadStoredData(name string) ([]byte, error) {
 	JSONData, err := cs.readDB()
 	if err != nil {
-		return nil, errors.New("error: reading db")
+		return nil, NewErr("error: reading db")
 	}
 	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return nil, errors.New("error: unmarshal db")
+		return nil, NewErr("error: unmarshal db")
 	}
 	switch name {
 	case "Version":
@@ -424,5 +424,5 @@ func (cs *FileStore) LoadStoredData(name string) ([]byte, error) {
 		return bytesBuffer.Bytes(), nil
 	}
 
-	return nil, errors.New("Can't find the key: " + name)
+	return nil, NewErr("Can't find the key: " + name)
 }

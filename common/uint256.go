@@ -3,7 +3,6 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 
 	. "UNetwork/errors"
@@ -77,7 +76,7 @@ func (u *Uint256) ToString() string {
 
 func Uint256ParseFromBytes(f []byte) (Uint256, error) {
 	if len(f) != UINT256SIZE {
-		return Uint256{}, NewDetailErr(errors.New("[Common]: Uint256ParseFromBytes err, len != 32"), ErrNoCode, "")
+		return Uint256{}, NewDetailErr(NewErr("[Common]: Uint256ParseFromBytes err, len != 32"), ErrNoCode, "")
 	}
 
 	var hash [32]uint8

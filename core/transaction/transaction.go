@@ -11,7 +11,6 @@ import (
 	. "UNetwork/errors"
 	"bytes"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -120,7 +119,7 @@ func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
 	w.Write([]byte{tx.PayloadVersion})
 	//Payload
 	if tx.Payload == nil {
-		return errors.New("Transaction Payload is nil.")
+		return NewErr("Transaction Payload is nil.")
 	}
 	tx.Payload.Serialize(w, tx.PayloadVersion)
 	//[]*txAttribute
@@ -241,7 +240,7 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	case Withdrawal:
 		tx.Payload = new(payload.Withdrawal)
 	default:
-		return errors.New("[Transaction],invalide transaction type.")
+		return NewErr("[Transaction],invalide transaction type.")
 	}
 	err = tx.Payload.Deserialize(r, tx.PayloadVersion)
 	if err != nil {
@@ -300,7 +299,7 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 
 func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	if tx == nil {
-		return []Uint160{}, errors.New("[Transaction],GetProgramHashes transaction is nil.")
+		return []Uint160{}, NewErr("[Transaction],GetProgramHashes transaction is nil.")
 	}
 	hashs := []Uint160{}
 	uniqHashes := []Uint160{}
@@ -317,7 +316,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if attribute.Usage == Script {
 			dataHash, err := Uint160ParseFromBytes(attribute.Data)
 			if err != nil {
-				return nil, NewDetailErr(errors.New("[Transaction], GetProgramHashes err."), ErrNoCode, "")
+				return nil, NewDetailErr(NewErr("[Transaction], GetProgramHashes err."), ErrNoCode, "")
 			}
 			hashs = append(hashs, Uint160(dataHash))
 		}
@@ -348,14 +347,14 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 				return nil, NewDetailErr(err, ErrNoCode, fmt.Sprintf("[Transaction], GetTransaction failed With AssetID:=%x", k))
 			}
 			if tx.TxType != RegisterAsset {
-				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], Transaction Type ileage With AssetID:=%x", k))
+				return nil, NewDetailErr(NewErr("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], Transaction Type ileage With AssetID:=%x", k))
 			}
 
 			switch v1 := tx.Payload.(type) {
 			case *payload.RegisterAsset:
 				hashs = append(hashs, v1.Controller)
 			default:
-				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload is illegal", k))
+				return nil, NewDetailErr(NewErr("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload is illegal", k))
 			}
 		}
 	case DataFile:
@@ -600,7 +599,7 @@ func (tx *Transaction) ParseTransactionCode() []Uint160 {
 
 func (tx *Transaction) ParseTransactionSig() (havesig, needsig int, err error) {
 	if len(tx.Programs) <= 0 {
-		return -1, -1, errors.New("missing transation program")
+		return -1, -1, NewErr("missing transation program")
 	}
 	x := len(tx.Programs[0].Parameter) / SignatureScriptLen
 	y := len(tx.Programs[0].Parameter) % SignatureScriptLen
@@ -610,7 +609,7 @@ func (tx *Transaction) ParseTransactionSig() (havesig, needsig int, err error) {
 
 func (tx *Transaction) AppendNewSignature(sig []byte) error {
 	if len(tx.Programs) <= 0 {
-		return errors.New("missing transation program")
+		return NewErr("missing transation program")
 	}
 
 	newsig := []byte{}

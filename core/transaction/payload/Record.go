@@ -3,7 +3,6 @@ package payload
 import (
 	"UNetwork/common/serialization"
 	. "UNetwork/errors"
-	"errors"
 	"io"
 )
 
@@ -37,11 +36,11 @@ func (a *Record) Deserialize(r io.Reader, version byte) error {
 	var err error
 	a.RecordType, err = serialization.ReadVarString(r)
 	if err != nil {
-		return NewDetailErr(errors.New("[RecordDetail], RecordType deserialize failed."), ErrNoCode, "")
+		return NewDetailErr(NewErr("[RecordDetail], RecordType deserialize failed."), ErrNoCode, "")
 	}
 	a.RecordData, err = serialization.ReadVarBytes(r)
 	if err != nil {
-		return NewDetailErr(errors.New("[RecordDetail], RecordData deserialize failed."), ErrNoCode, "")
+		return NewDetailErr(NewErr("[RecordDetail], RecordData deserialize failed."), ErrNoCode, "")
 	}
 	return nil
 }

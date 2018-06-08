@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"errors"
 	"math/big"
 )
 
@@ -222,7 +221,7 @@ func deCompress(yTilde int, xValue []byte, curve *elliptic.CurveParams) (*PubKey
 
 	yValue := curveSqrt(ySqare, curve)
 	if nil == yValue {
-		return nil, NewDetailErr(errors.New("Invalid point compression"), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("Invalid point compression"), ErrNoCode, "")
 	}
 
 	yCoord := big.NewInt(0)
@@ -236,7 +235,7 @@ func deCompress(yTilde int, xValue []byte, curve *elliptic.CurveParams) (*PubKey
 
 func DecodePoint(encodeData []byte) (*PubKey, error) {
 	if nil == encodeData {
-		return nil, NewDetailErr(errors.New("The encodeData cann't be nil"), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("The encodeData cann't be nil"), ErrNoCode, "")
 	}
 
 	expectedLength := (algSet.EccParams.P.BitLen() + 7) / 8
@@ -247,7 +246,7 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 
 	case 0x02, 0x03: //compressed
 		if len(encodeData) != expectedLength+1 {
-			return nil, NewDetailErr(errors.New("The encodeData format is error"), ErrNoCode, "")
+			return nil, NewDetailErr(NewErr("The encodeData format is error"), ErrNoCode, "")
 		}
 
 		yTilde := int(encodeData[0] & 1)
@@ -264,7 +263,7 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 		return &PubKey{pubKeyX, pubKeyY}, nil
 
 	default:
-		return nil, NewDetailErr(errors.New("The encodeData format is error"), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("The encodeData format is error"), ErrNoCode, "")
 	}
 }
 

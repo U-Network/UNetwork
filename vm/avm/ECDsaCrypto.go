@@ -5,7 +5,6 @@ import (
 	"UNetwork/common/log"
 	"UNetwork/crypto"
 	. "UNetwork/errors"
-	"errors"
 )
 
 type ECDsaCrypto struct {
@@ -28,12 +27,12 @@ func (c *ECDsaCrypto) VerifySignature(message []byte, signature []byte, pubkey [
 
 	pk, err := crypto.DecodePoint(pubkey)
 	if err != nil {
-		return false, NewDetailErr(errors.New("[ECDsaCrypto], crypto.DecodePoint failed."), ErrNoCode, "")
+		return false, NewDetailErr(NewErr("[ECDsaCrypto], crypto.DecodePoint failed."), ErrNoCode, "")
 	}
 
 	err = crypto.Verify(*pk, message, signature)
 	if err != nil {
-		return false, NewDetailErr(errors.New("[ECDsaCrypto], VerifySignature failed."), ErrNoCode, "")
+		return false, NewDetailErr(NewErr("[ECDsaCrypto], VerifySignature failed."), ErrNoCode, "")
 	}
 
 	return true, nil

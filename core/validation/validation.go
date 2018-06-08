@@ -8,7 +8,6 @@ import (
 	. "UNetwork/errors"
 	"UNetwork/vm/avm"
 	"UNetwork/vm/avm/interfaces"
-	"errors"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {
@@ -21,14 +20,14 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 	programs := signableData.GetPrograms()
 	Length := len(hashes)
 	if Length != len(programs) {
-		return false, errors.New("The number of data hashes is different with number of programs.")
+		return false, NewErr("The number of data hashes is different with number of programs.")
 	}
 
 	programs = signableData.GetPrograms()
 	for i := 0; i < len(programs); i++ {
 		temp, _ := ToCodeHash(programs[i].Code)
 		if hashes[i] != temp {
-			return false, errors.New("The data hashes is different with corresponding program code.")
+			return false, NewErr("The data hashes is different with corresponding program code.")
 		}
 		//execute program on VM
 		var cryptos interfaces.ICrypto
@@ -43,16 +42,16 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 		}
 
 		if se.GetState() != avm.HALT {
-			return false, NewDetailErr(errors.New("[VM] Finish State not equal to HALT."), ErrNoCode, "")
+			return false, NewDetailErr(NewErr("[VM] Finish State not equal to HALT."), ErrNoCode, "")
 		}
 
 		if se.GetEvaluationStack().Count() != 1 {
-			return false, NewDetailErr(errors.New("[VM] Execute Engine Stack Count Error."), ErrNoCode, "")
+			return false, NewDetailErr(NewErr("[VM] Execute Engine Stack Count Error."), ErrNoCode, "")
 		}
 
 		flag := se.GetExecuteResult()
 		if !flag {
-			return false, NewDetailErr(errors.New("[VM] Check Sig FALSE."), ErrNoCode, "")
+			return false, NewDetailErr(NewErr("[VM] Check Sig FALSE."), ErrNoCode, "")
 		}
 	}
 

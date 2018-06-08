@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"errors"
 	"fmt"
 	"math"
 
@@ -72,7 +71,7 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 	for _, txn := range TxPool {
 		//1.check weather have duplicate transaction.
 		if _, exist := txnlist[txn.Hash()]; exist {
-			return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
+			return NewErr("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
 		} else {
 			txnlist[txn.Hash()] = txn
 		}
@@ -89,7 +88,7 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 				//Get the Asset amount when RegisterAsseted.
 				trx, err := tx.TxStore.GetTransaction(k)
 				if trx.TxType != tx.RegisterAsset {
-					return errors.New("[VerifyTransaction], TxType is illegal.")
+					return NewErr("[VerifyTransaction], TxType is illegal.")
 				}
 				AssetReg := trx.Payload.(*payload.RegisterAsset)
 
@@ -100,7 +99,7 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 				} else {
 					quantity_issued, err = tx.TxStore.GetQuantityIssued(k)
 					if err != nil {
-						return errors.New("[VerifyTransaction], GetQuantityIssued failed.")
+						return NewErr("[VerifyTransaction], GetQuantityIssued failed.")
 					}
 				}
 
@@ -122,7 +121,7 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 				//quantity_issued : amount has been issued of this assedID
 				//txPoolAmounts   : amount in transactionPool of this assedID of issue transaction.
 				if AssetReg.Amount-quantity_issued < txPoolAmounts {
-					return errors.New("[VerifyTransaction], Amount check error.")
+					return NewErr("[VerifyTransaction], Amount check error.")
 				}
 			}
 		}
@@ -170,7 +169,7 @@ func CheckLockedAsset(txn *tx.Transaction, ledger *ledger.Ledger) error {
 				return err
 			}
 			if total < spend+locked {
-				return errors.New("token is not enough, locked token can't be used.")
+				return NewErr("token is not enough, locked token can't be used.")
 			}
 		}
 	}
@@ -206,7 +205,7 @@ func CheckDuplicateInput(tx *tx.Transaction) error {
 	for i, utxoin := range tx.UTXOInputs {
 		for j := 0; j < i; j++ {
 			if utxoin.ReferTxID == tx.UTXOInputs[j].ReferTxID && utxoin.ReferTxOutputIndex == tx.UTXOInputs[j].ReferTxOutputIndex {
-				return errors.New("invalid transaction")
+				return NewErr("invalid transaction")
 			}
 		}
 	}
@@ -216,11 +215,11 @@ func CheckDuplicateInput(tx *tx.Transaction) error {
 func CheckTransactionOutput(txn *tx.Transaction) error {
 	if txn.TxType == tx.Withdrawal {
 		if len(txn.Outputs) != 1 {
-			return errors.New("invaild transaction output num in withdrawal transaction")
+			return NewErr("invaild transaction output num in withdrawal transaction")
 		}
 		_, err := txn.Outputs[0].ProgramHash.ToAddress()
 		if err != nil {
-			return errors.New("invaild withdrawal address")
+			return NewErr("invaild withdrawal address")
 		}
 
 		//TODO: check asset ID
@@ -230,10 +229,10 @@ func CheckTransactionOutput(txn *tx.Transaction) error {
 			return err
 		}
 		if availableTokenInfo.Number <= Fixed64(0) {
-			return errors.New("All tokens has been withdrawn")
+			return NewErr("All tokens has been withdrawn")
 		}
 		if txn.Outputs[0].Value > availableTokenInfo.Number {
-			return errors.New("available tokens is not enough")
+			return NewErr("available tokens is not enough")
 		}
 	}
 
@@ -248,7 +247,7 @@ func CheckDuplicateUtxoInBlock(tx *tx.Transaction, txPoolInputs []string) error 
 	for _, i := range txInputs {
 		for _, j := range txPoolInputs {
 			if i == j {
-				return errors.New("Duplicated UTXO inputs found in tx pool")
+				return NewErr("Duplicated UTXO inputs found in tx pool")
 			}
 		}
 	}
@@ -271,12 +270,12 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 	for k, outputs := range assetOutputs {
 		asset, err := ledger.DefaultLedger.GetAsset(k)
 		if err != nil {
-			return errors.New("The asset not exist in local blockchain.")
+			return NewErr("The asset not exist in local blockchain.")
 		}
 		precision := asset.Precision
 		for _, output := range outputs {
 			if checkAmountPrecise(output.Value, precision) {
-				return errors.New("The precision of asset is incorrect.")
+				return NewErr("The precision of asset is incorrect.")
 			}
 		}
 	}
@@ -286,12 +285,12 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 func CheckTransactionBalance(Tx *tx.Transaction) error {
 	for _, v := range Tx.Outputs {
 		if v.Value <= Fixed64(0) {
-			return errors.New("Invalid transaction UTXO output.")
+			return NewErr("Invalid transaction UTXO output.")
 		}
 	}
 	if Tx.TxType == tx.IssueAsset || Tx.TxType == tx.Withdrawal {
 		if len(Tx.UTXOInputs) > 0 {
-			return errors.New("Invalide Issue transaction.")
+			return NewErr("Invalide Issue transaction.")
 		}
 		return nil
 	}
@@ -303,18 +302,18 @@ func CheckTransactionBalance(Tx *tx.Transaction) error {
 		// if transaction fee is not configured, input amount must equal to output
 		if fee, ok := config.Parameters.TransactionFee["Transfer"]; !ok {
 			if v != 0 {
-				return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x, balance unmatched when fee is not set.", k, Tx.Hash()))
+				return NewErr(fmt.Sprintf("AssetID %x in Transfer transactions %x, balance unmatched when fee is not set.", k, Tx.Hash()))
 			}
 		} else {
 			switch fee {
 			case 0.0:
 				if v != 0 {
-					return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x, balance unmatched when fee is 0.", k, Tx.Hash()))
+					return NewErr(fmt.Sprintf("AssetID %x in Transfer transactions %x, balance unmatched when fee is 0.", k, Tx.Hash()))
 				}
 			default:
 				// due to non-zero transaction fee, the input amount must > output amount
 				if v <= 0 {
-					return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x, output >= input.", k, Tx.Hash()))
+					return NewErr(fmt.Sprintf("AssetID %x in Transfer transactions %x, output >= input.", k, Tx.Hash()))
 				}
 			}
 		}
@@ -348,10 +347,10 @@ func IsForumUserExist(user string) bool {
 func CheckForumPostTransaction(hash Uint256) error {
 	txn, err := tx.TxStore.GetTransaction(hash)
 	if err != nil {
-		return errors.New(fmt.Sprintf("The main post hash '%s' is invaild", BytesToHexString(hash.ToArrayReverse())))
+		return NewErr(fmt.Sprintf("The main post hash '%s' is invaild", BytesToHexString(hash.ToArrayReverse())))
 	}
 	if txn.TxType != tx.PostArticle && txn.TxType != tx.ReplyArticle {
-		return errors.New("The transaction type is invalid in main post")
+		return NewErr("The transaction type is invalid in main post")
 	}
 
 	return nil
@@ -360,7 +359,7 @@ func CheckForumPostTransaction(hash Uint256) error {
 func CheckForumLikeInfo(hash Uint256, liker string, likeType forum.LikeType) error {
 	likeInfo, err := ledger.DefaultLedger.Store.GetLikeInfo(hash)
 	if err != nil {
-		return errors.New("The like info of main post is invalid")
+		return NewErr("The like info of main post is invalid")
 	}
 	flag := false
 	for _, v := range likeInfo {
@@ -373,7 +372,7 @@ func CheckForumLikeInfo(hash Uint256, liker string, likeType forum.LikeType) err
 		}
 	}
 	if flag {
-		return errors.New(fmt.Sprintf("The post has been click by user '%s'\n", liker))
+		return NewErr(fmt.Sprintf("The post has been click by user '%s'\n", liker))
 	}
 
 	return nil
@@ -403,28 +402,28 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 		bookKeepers, _, _ := ledger.DefaultLedger.Store.GetBookKeeperList()
 		r := checkIssuerInBookkeeperList(pld.Issuer, bookKeepers)
 		if r == false {
-			return errors.New("The issuer isn't bookekeeper, can't add other in bookkeepers list.")
+			return NewErr("The issuer isn't bookekeeper, can't add other in bookkeepers list.")
 		}
 		return nil
 	case *payload.RegisterAsset:
 		if pld.Asset.Precision < asset.MinPrecision || pld.Asset.Precision > asset.MaxPrecision {
-			return errors.New("Invalide asset Precision.")
+			return NewErr("Invalide asset Precision.")
 		}
 		if checkAmountPrecise(pld.Amount, pld.Asset.Precision) {
-			return errors.New("Invalid asset precision.")
+			return NewErr("Invalid asset precision.")
 		}
 	case *payload.IssueAsset:
 	case *payload.LockAsset:
 		total, locked, err := ledger.DefaultLedger.Store.GetAvailableAsset(pld.ProgramHash, pld.AssetID)
 		if err != nil {
-			return errors.New("no available asset")
+			return NewErr("no available asset")
 		}
 		if locked+pld.Amount > total {
-			return errors.New("no enough asset to be locked")
+			return NewErr("no enough asset to be locked")
 		}
 		// TODO: add a height accept range
 		if pld.UnlockHeight <= ledger.DefaultLedger.Store.GetHeight() {
-			return errors.New("expired LockAsset transaction detected")
+			return NewErr("expired LockAsset transaction detected")
 		}
 	case *payload.TransferAsset:
 	case *payload.BookKeeping:
@@ -436,14 +435,14 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 	case *payload.RegisterUser:
 		username := pld.UserName
 		if len(username) < MinUserNameLen || len(username) > MaxUserNameLen {
-			return errors.New("invalid username")
+			return NewErr("invalid username")
 		}
 		if IsForumUserExist(pld.UserName) {
-			return errors.New("user already exists")
+			return NewErr("user already exists")
 		}
 	case *payload.PostArticle:
 		if !IsForumUserExist(pld.Author) {
-			return errors.New("invalid post user")
+			return NewErr("invalid post user")
 		}
 	case *payload.LikeArticle:
 		liker := pld.Liker
@@ -451,7 +450,7 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 		liketype := pld.LikeType
 		// check if the liker is a valid user registered on blockchain
 		if !IsForumUserExist(liker) {
-			return errors.New("invalid like user")
+			return NewErr("invalid like user")
 		}
 		// check if the post user liked is valid
 		if err := CheckForumPostTransaction(txnHash); err != nil {
@@ -463,17 +462,17 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 		}
 	case *payload.ReplyArticle:
 		if !IsForumUserExist(pld.Replier) {
-			return errors.New("invalid reply user")
+			return NewErr("invalid reply user")
 		}
 		if err := CheckForumPostTransaction(pld.PostHash); err != nil {
 			return err
 		}
 	case *payload.Withdrawal:
 		if !IsForumUserExist(pld.Payee) {
-			return errors.New("invalid withdraw user")
+			return NewErr("invalid withdraw user")
 		}
 	default:
-		return errors.New("[txValidator],invalidate transaction payload type.")
+		return NewErr("[txValidator],invalidate transaction payload type.")
 	}
 	return nil
 }

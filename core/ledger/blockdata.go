@@ -8,7 +8,6 @@ import (
 	. "UNetwork/errors"
 	"bytes"
 	"crypto/sha256"
-	"errors"
 	"io"
 )
 
@@ -56,10 +55,10 @@ func (bd *Blockdata) Deserialize(r io.Reader) error {
 		x := []byte(p[:])
 
 		if x[0] != byte(1) {
-			return NewDetailErr(errors.New("Blockdata Deserialize get format error."), ErrNoCode, "")
+			return NewDetailErr(NewErr("Blockdata Deserialize get format error."), ErrNoCode, "")
 		}
 	} else {
-		return NewDetailErr(errors.New("Blockdata Deserialize get format error."), ErrNoCode, "")
+		return NewDetailErr(NewErr("Blockdata Deserialize get format error."), ErrNoCode, "")
 	}
 
 	pg := new(program.Program)

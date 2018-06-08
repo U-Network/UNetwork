@@ -9,7 +9,6 @@ import (
 	"UNetwork/core/transaction/payload"
 	va "UNetwork/core/validation"
 	. "UNetwork/errors"
-	"errors"
 	"fmt"
 	"sync"
 )
@@ -132,42 +131,42 @@ func (this *TXNPool) checkTransactionCharacter(txn *transaction.Transaction) err
 		payload := txn.Payload.(*payload.LockAsset)
 		str := payload.ToString()
 		if _, ok := this.lockAssetList[str]; ok {
-			return errors.New("duplicated locking asset detected")
+			return NewErr("duplicated locking asset detected")
 		}
 		this.lockAssetList[str] = struct{}{}
 	case transaction.RegisterUser:
 		payload := txn.Payload.(*payload.RegisterUser)
 		str := payload.ToString()
 		if _, ok := this.characterList[str]; ok {
-			return errors.New("duplicated register user transaction detected")
+			return NewErr("duplicated register user transaction detected")
 		}
 		this.characterList[str] = struct{}{}
 	case transaction.LikeArticle:
 		payload := txn.Payload.(*payload.LikeArticle)
 		str := payload.ToString()
 		if _, ok := this.characterList[str]; ok {
-			return errors.New("duplicated like transaction detected")
+			return NewErr("duplicated like transaction detected")
 		}
 		this.characterList[str] = struct{}{}
 	case transaction.PostArticle:
 		payload := txn.Payload.(*payload.PostArticle)
 		str := payload.ToString()
 		if _, ok := this.characterList[str]; ok {
-			return errors.New("duplicated post transaction detected")
+			return NewErr("duplicated post transaction detected")
 		}
 		this.characterList[str] = struct{}{}
 	case transaction.ReplyArticle:
 		payload := txn.Payload.(*payload.ReplyArticle)
 		str := payload.ToString()
 		if _, ok := this.characterList[str]; ok {
-			return errors.New("duplicated reply transaction detected")
+			return NewErr("duplicated reply transaction detected")
 		}
 		this.characterList[str] = struct{}{}
 	case transaction.Withdrawal:
 		payload := txn.Payload.(*payload.Withdrawal)
 		str := payload.ToString()
 		if _, ok := this.characterList[str]; ok {
-			return errors.New("duplicated withdrawal transaction detected")
+			return NewErr("duplicated withdrawal transaction detected")
 		}
 		this.characterList[str] = struct{}{}
 	}
@@ -207,7 +206,7 @@ func (this *TXNPool) apendToUTXOPool(txn *transaction.Transaction) error {
 	inputs := []*transaction.UTXOTxInput{}
 	for k := range reference {
 		if txn := this.getInputUTXOList(k); txn != nil {
-			return errors.New(fmt.Sprintf("double spent UTXO inputs detected, "+
+			return NewErr(fmt.Sprintf("double spent UTXO inputs detected, "+
 				"transaction hash: %x, input: %s, index: %s",
 				txn.Hash(), k.ToString()[:64], k.ToString()[64:]))
 		}
