@@ -6,8 +6,7 @@ import (
 	pg "UNetwork/core/contract/program"
 	sig "UNetwork/core/signature"
 	"UNetwork/crypto"
-	_ "UNetwork/errors"
-	"errors"
+	."UNetwork/errors"
 	"math/big"
 	"sort"
 )
@@ -87,7 +86,7 @@ func (cxt *ContractContext) AddContract(contract *Contract, pubkey *crypto.PubKe
 		for i := 0; i < len(contract.Parameters); i++ {
 			if contract.Parameters[i] == Signature {
 				if index >= 0 {
-					return errors.New("Contract Parameters are not supported.")
+					return NewErr("Contract Parameters are not supported.")
 				} else {
 					index = i
 				}
@@ -119,14 +118,14 @@ func (cxt *ContractContext) AddSignatureToMultiList(contractIndex int, contract 
 func (cxt *ContractContext) AddMultiSignatures(index int, contract *Contract, pubkey *crypto.PubKey, parameter []byte) error {
 	pkIndexs, err := cxt.ParseContractPubKeys(contract)
 	if err != nil {
-		return errors.New("Contract Parameters are not supported.")
+		return NewErr("Contract Parameters are not supported.")
 	}
 
 	paraIndexs := []ParameterIndex{}
 	for _, pubkeyPara := range cxt.MultiPubkeyPara[index] {
 		pubKeyBytes, err := HexStringToBytes(pubkeyPara.Parameter)
 		if err != nil {
-			return errors.New("Contract AddContract pubKeyBytes HexStringToBytes failed.")
+			return NewErr("Contract AddContract pubKeyBytes HexStringToBytes failed.")
 		}
 
 		paraIndex := ParameterIndex{
@@ -170,7 +169,7 @@ func (cxt *ContractContext) ParseContractPubKeys(contract *Contract) (map[string
 		i++
 		//pubkey, err := crypto.DecodePoint(contract.Code[i:33])
 		//if err != nil {
-		//	return nil, errors.New("[Contract],AddContract DecodePoint failed.")
+		//	return nil, NewErr("[Contract],AddContract DecodePoint failed.")
 		//}
 
 		//add to parameter index

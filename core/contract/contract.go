@@ -6,7 +6,6 @@ import (
 	. "UNetwork/errors"
 	"UNetwork/vm/avm"
 	"bytes"
-	"errors"
 	"io"
 )
 
@@ -154,7 +153,7 @@ func (c *Contract) Serialize(w io.Writer) error {
 		return err
 	}
 	if len != 20 {
-		return NewDetailErr(errors.New("PubkeyHash.Serialize(): len != len(Uint160)"), ErrNoCode, "")
+		return NewDetailErr(NewErr("PubkeyHash.Serialize(): len != len(Uint160)"), ErrNoCode, "")
 	}
 
 	err = serialization.WriteVarBytes(w, ContractParameterTypeToByte(c.Parameters))

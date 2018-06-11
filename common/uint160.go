@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
-	"errors"
 	"io"
 	"math/big"
 
@@ -91,7 +90,7 @@ func (f *Uint160) ToAddress() (string, error) {
 
 func Uint160ParseFromBytes(f []byte) (Uint160, error) {
 	if len(f) != UINT160SIZE {
-		return Uint160{}, NewDetailErr(errors.New("[Common]: Uint160ParseFromBytes err, len != 20"), ErrNoCode, "")
+		return Uint160{}, NewDetailErr(NewErr("[Common]: Uint160ParseFromBytes err, len != 20"), ErrNoCode, "")
 	}
 
 	var hash [20]uint8
@@ -110,7 +109,7 @@ func ToScriptHash(address string) (Uint160, error) {
 
 	x, _ := new(big.Int).SetString(string(decoded), 10)
 	if len(x.Bytes()) < UINT160SIZE+1 {
-		return Uint160{}, errors.New("invalid address format")
+		return Uint160{}, NewErr("invalid address format")
 	}
 	ph, err := Uint160ParseFromBytes(x.Bytes()[1:21])
 	if err != nil {
@@ -123,7 +122,7 @@ func ToScriptHash(address string) (Uint160, error) {
 	}
 
 	if addr != address {
-		return Uint160{}, errors.New("[AddressToProgramHash]: decode address verify failed.")
+		return Uint160{}, NewErr("[AddressToProgramHash]: decode address verify failed.")
 	}
 
 	return ph, nil

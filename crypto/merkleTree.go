@@ -5,7 +5,6 @@ import (
 	. "UNetwork/errors"
 	"bytes"
 	"crypto/sha256"
-	"errors"
 )
 
 var (
@@ -38,7 +37,7 @@ func (t *MerkleTreeNode) IsLeaf() bool {
 //use []Uint256 to create a new MerkleTree
 func NewMerkleTree(hashes []Uint256) (*MerkleTree, error) {
 	if len(hashes) == 0 {
-		return nil, NewDetailErr(errors.New("NewMerkleTree input no item error."), ErrNoCode, "")
+		return nil, NewDetailErr(NewErr("NewMerkleTree input no item error."), ErrNoCode, "")
 	}
 	var height uint
 
@@ -101,7 +100,7 @@ func levelUp(nodes []*MerkleTreeNode) []*MerkleTreeNode {
 //input a []uint256, create a MerkleTree & calc the root hash
 func ComputeRoot(hashes []Uint256) (Uint256, error) {
 	if len(hashes) == 0 {
-		return Uint256{}, NewDetailErr(errors.New("NewMerkleTree input no item error."), ErrNoCode, "")
+		return Uint256{}, NewDetailErr(NewErr("NewMerkleTree input no item error."), ErrNoCode, "")
 	}
 	if len(hashes) == 1 {
 		return hashes[0], nil
