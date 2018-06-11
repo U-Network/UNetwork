@@ -712,6 +712,525 @@ func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey,
 	return currBookKeeper, nextBookKeeper, nil
 }
 
+
+func (bd *ChainStore) ProcessTransactionBaseOnTheType(t *tx.Transaction,
+										 b *Block, 
+										 quantities map[Uint256]Fixed64, 
+										 dbCache *DBCache,
+										 lockedAssets map[Uint160]map[Uint256][]*LockAsset,
+										 articleInfo map[string][]*forum.ArticleInfo, 
+										 likeInfo map[Uint256][]*forum.LikeInfo,
+										 needUpdateBookKeeper * bool, 
+										 nextBookKeeper []*crypto.PubKey) (error, bool) {
+	txHash := t.Hash()
+	var err error 
+	switch t.TxType {
+	case tx.RegisterAsset:
+		ar := t.Payload.(*payload.RegisterAsset)
+		err = bd.SaveAsset(t.Hash(), ar.Asset)
+		if err != nil {
+			return err, false
+		}
+	case tx.RegisterUser:
+		payload := t.Payload.(*payload.RegisterUser)
+		userInfo := &forum.UserInfo{
+			UserProgramHash: payload.UserProgramHash,
+			Reputation:      payload.Reputation,
+		}
+		err = bd.SaveUserInfo(payload.UserName, userInfo)
+		if err != nil {
+			return err, false
+		}
+	case tx.PostArticle:
+		author := t.Payload.(*payload.PostArticle).Author
+		tmp := &forum.ArticleInfo{
+			ContentHash: t.Payload.(*payload.PostArticle).ContentHash,
+			ContentType: forum.Post,
+		}
+		articleInfo[author] = append(articleInfo[author], tmp)
+	case tx.LikeArticle:
+		hash := t.Payload.(*payload.LikeArticle).PostTxnHash
+		liker := t.Payload.(*payload.LikeArticle).Liker
+		liketype := t.Payload.(*payload.LikeArticle).LikeType
+		tmp := &forum.LikeInfo{
+			Liker:    liker,
+			LikeType: liketype,
+		}
+		likeInfo[hash] = append(likeInfo[hash], tmp)
+	case tx.ReplyArticle:
+		replier := t.Payload.(*payload.ReplyArticle).Replier
+		tmp := &forum.ArticleInfo{
+			ParentTxnHash: t.Payload.(*payload.ReplyArticle).PostHash,
+			ContentHash:   t.Payload.(*payload.ReplyArticle).ContentHash,
+			ContentType:   forum.Reply,
+		}
+		articleInfo[replier] = append(articleInfo[replier], tmp)
+	case tx.Withdrawal:
+		payee := t.Payload.(*payload.Withdrawal).Payee
+		info := &forum.TokenInfo{
+			Number: t.Outputs[0].Value,
+		}
+		if err := bd.UpdateUserWithdrawnToken(payee, forum.WithdrawnToken, info); err != nil {
+			log.Error("Failed to update withdraw info")
+			return nil, true
+		}
+	case tx.LockAsset:
+		lp := t.Payload.(*payload.LockAsset)
+		if _, ok := lockedAssets[lp.ProgramHash]; !ok {
+			lockedAssets[lp.ProgramHash] = make(map[Uint256][]*LockAsset)
+		}
+		if _, ok := lockedAssets[lp.ProgramHash][lp.AssetID]; !ok {
+			lockedAssets[lp.ProgramHash][lp.AssetID], err = bd.GetLockedFromProgramHash(lp.ProgramHash, lp.AssetID)
+			if err != nil {
+				lockedAssets[lp.ProgramHash][lp.AssetID] = make([]*LockAsset, 0)
+			}
+		}
+		newAsset := &LockAsset{
+			Lock:   b.Blockdata.Height,
+			Unlock: lp.UnlockHeight,
+			Amount: lp.Amount,
+		}
+		lockedAssets[lp.ProgramHash][lp.AssetID] = append(lockedAssets[lp.ProgramHash][lp.AssetID], newAsset)
+
+	case tx.IssueAsset:
+		results := t.GetMergedAssetIDValueFromOutputs()
+		for assetId, value := range results {
+			if _, ok := quantities[assetId]; !ok {
+				quantities[assetId] += value
+			} else {
+				quantities[assetId] = value
+			}
+		}
+	case tx.DeployCode:
+		deployCode := t.Payload.(*payload.DeployCode)
+		codeHash := deployCode.Code.CodeHash()
+		dbCache.GetOrAdd(ST_Contract, string(codeHash.ToArray()), &states.ContractState{
+			Code:        deployCode.Code,
+			Name:        deployCode.Name,
+			Version:     deployCode.CodeVersion,
+			Author:      deployCode.Author,
+			Email:       deployCode.Email,
+			Description: deployCode.Description,
+			Language:    deployCode.Language,
+			ProgramHash: deployCode.ProgramHash,
+		})
+
+		smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
+			Language:     deployCode.Language,
+			Caller:       deployCode.ProgramHash,
+			StateMachine: service.NewStateMachine(dbCache, NewDBCache(bd)),
+			DBCache:      dbCache,
+			Code:         deployCode.Code.Code,
+			Time:         big.NewInt(int64(b.Blockdata.Timestamp)),
+			BlockNumber:  big.NewInt(int64(b.Blockdata.Height)),
+			Gas:          Fixed64(0),
+		})
+
+		if err != nil {
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+			return err, false
+		}
+
+		ret, err := smartContract.DeployContract()
+		if err != nil {
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+			return nil, true
+		}
+
+		hash, err := ToCodeHash(ret)
+		if err != nil {
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
+			return err, false
+		}
+
+		httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, BytesToHexString(hash.ToArrayReverse()))
+		err = dbCache.Commit()
+		if err != nil {
+			return err, false
+		}
+	case tx.InvokeCode:
+		invokeCode := t.Payload.(*payload.InvokeCode)
+		contract, err := bd.GetContract(invokeCode.CodeHash)
+		if err != nil {
+			log.Error("db getcontract err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return nil, true
+		}
+		state, err := states.GetStateValue(ST_Contract, contract)
+		if err != nil {
+			log.Error("states GetStateValue err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return err, false
+		}
+		contractState := state.(*states.ContractState)
+		stateMachine := service.NewStateMachine(dbCache, NewDBCache(bd))
+		smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
+			Language:       contractState.Language,
+			Caller:         invokeCode.ProgramHash,
+			StateMachine:   stateMachine,
+			DBCache:        dbCache,
+			CodeHash:       invokeCode.CodeHash,
+			Input:          invokeCode.Code,
+			SignableData:   t,
+			CacheCodeTable: NewCacheCodeTable(dbCache),
+			Time:           big.NewInt(int64(b.Blockdata.Timestamp)),
+			BlockNumber:    big.NewInt(int64(b.Blockdata.Height)),
+			Gas:            Fixed64(0),
+			ReturnType:     contractState.Code.ReturnType,
+			ParameterTypes: contractState.Code.ParameterTypes,
+		})
+		if err != nil {
+			log.Error("smartcontract NewSmartContract err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return nil, true
+		}
+		ret, err := smartContract.InvokeContract()
+		if err != nil {
+			log.Error("smartContract InvokeContract err:", err)
+			httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
+			return nil, true
+		}
+		stateMachine.CloneCache.Commit()
+		httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
+	
+	case tx.BookKeeper:
+		bk := t.Payload.(*payload.BookKeeper)
+		if bk.Action == payload.BookKeeperAction_ADD {
+			findflag := false
+			for k := 0; k < len(nextBookKeeper); k++ {
+				if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
+					findflag = true
+					break
+				}
+			}
+
+			if !findflag {
+				*needUpdateBookKeeper = true
+				nextBookKeeper = append(nextBookKeeper, bk.PubKey)
+				sort.Sort(crypto.PubKeySlice(nextBookKeeper))
+			}
+		} else if bk.Action == payload.BookKeeperAction_SUB {
+			for k := 0; k < len(nextBookKeeper); k++ {
+				if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
+					*needUpdateBookKeeper = true
+					nextBookKeeper = append(nextBookKeeper[:k], nextBookKeeper[k+1:]...)
+					break
+				}
+			}		
+		}
+
+	}
+
+	return nil, false
+}
+
+func (bd *ChainStore) updateUTXOUnspentWithOutput (utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent, 
+												   accounts map[Uint160]*account.AccountState,
+												   b * Block,
+												   i int) error{
+
+	var err error
+	for index := 0; index < len(b.Transactions[i].Outputs); index++ {
+		output := b.Transactions[i].Outputs[index]
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		if value, ok := accounts[programHash]; ok {
+			value.Balances[assetId] += output.Value
+		} else {
+			accountState, err := bd.GetAccount(programHash)
+			if err != nil && err.Error() != ErrDBNotFound.Error() {
+				return err
+			}
+			if accountState != nil {
+				accountState.Balances[assetId] += output.Value
+			} else {
+				balances := make(map[Uint256]Fixed64, 0)
+				balances[assetId] = output.Value
+				accountState = account.NewAccountState(programHash, balances)
+			}
+			accounts[programHash] = accountState
+		}
+
+		// add utxoUnspent
+		if _, ok := utxoUnspents[programHash]; !ok {
+			utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+		}
+
+		if _, ok := utxoUnspents[programHash][assetId]; !ok {
+			utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
+			if err != nil {
+				utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
+			}
+		}
+
+		unspent := new(tx.UTXOUnspent)
+		unspent.Txid = b.Transactions[i].Hash()
+		unspent.Index = uint32(index)
+		unspent.Value = output.Value
+		utxoUnspents[programHash][assetId] = append(utxoUnspents[programHash][assetId], unspent)
+	}
+	return nil
+}
+
+func (bd *ChainStore) updateUTXOUnspentWithInput (utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent, 
+												   accounts map[Uint160]*account.AccountState,
+												   b * Block,
+												   i int) error {
+	for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
+		input := b.Transactions[i].UTXOInputs[index]
+		transaction, err := bd.GetTransaction(input.ReferTxID)
+		if err != nil {
+			return err
+		}
+		index := input.ReferTxOutputIndex
+		output := transaction.Outputs[index]
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		if value, ok := accounts[programHash]; ok {
+			value.Balances[assetId] -= output.Value
+		} else {
+			accountState, err := bd.GetAccount(programHash)
+			if err != nil {
+				return err
+			}
+			accountState.Balances[assetId] -= output.Value
+			accounts[programHash] = accountState
+		}
+		if accounts[programHash].Balances[assetId] < 0 {
+			return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
+		}
+
+		// delete utxoUnspent
+		if _, ok := utxoUnspents[programHash]; !ok {
+			utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+		}
+
+		if _, ok := utxoUnspents[programHash][assetId]; !ok {
+			utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
+			if err != nil {
+				return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
+			}
+		}
+
+		flag := false
+		listnum := len(utxoUnspents[programHash][assetId])
+		for i := 0; i < listnum; i++ {
+			if utxoUnspents[programHash][assetId][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][i].Index == uint32(index) {
+				utxoUnspents[programHash][assetId][i] = utxoUnspents[programHash][assetId][listnum-1]
+				utxoUnspents[programHash][assetId] = utxoUnspents[programHash][assetId][:listnum-1]
+
+				flag = true
+				break
+			}
+		}
+
+		if !flag {
+			return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
+		}
+
+	}
+	return nil
+}
+
+func (bd *ChainStore) deductUTXOInput (unspents map[Uint256][]uint16, t * tx.Transaction, unspentPrefix []byte) error {
+	// init unspent in tx
+	txhash := t.Hash()
+	for index := 0; index < len(t.Outputs); index++ {
+		unspents[txhash] = append(unspents[txhash], uint16(index))
+	}
+	// delete unspent when spent in input
+	for index := 0; index < len(t.UTXOInputs); index++ {
+		txhash := t.UTXOInputs[index].ReferTxID
+
+		// if get unspent by utxo
+		if _, ok := unspents[txhash]; !ok {
+			unspentValue, err_get := bd.st.Get(append(unspentPrefix, txhash.ToArray()...))
+
+			if err_get != nil {
+				return err_get
+			}
+
+			unspents[txhash], err_get = GetUint16Array(unspentValue)
+			if err_get != nil {
+				return err_get
+			}
+		}
+
+		// find Transactions[i].UTXOInputs[index].ReferTxOutputIndex and delete it
+		unspentLen := len(unspents[txhash])
+		for k, outputIndex := range unspents[txhash] {
+			if outputIndex == uint16(t.UTXOInputs[index].ReferTxOutputIndex) {
+				unspents[txhash][k] = unspents[txhash][unspentLen-1]
+				unspents[txhash] = unspents[txhash][:unspentLen-1]
+				break
+			}
+		}
+	}
+	return nil
+}
+
+func (bd *ChainStore) updateBookKeeper (currBookKeeper []*crypto.PubKey ,nextBookKeeper []*crypto.PubKey) {
+	bkListKey := bytes.NewBuffer(nil)
+	bkListKey.WriteByte(byte(SYS_CurrentBookKeeper))
+
+	//bookKeeper value
+	bkListValue := bytes.NewBuffer(nil)
+
+	serialization.WriteUint8(bkListValue, uint8(len(currBookKeeper)))
+	for k := 0; k < len(currBookKeeper); k++ {
+		currBookKeeper[k].Serialize(bkListValue)
+	}
+
+	serialization.WriteUint8(bkListValue, uint8(len(nextBookKeeper)))
+	for k := 0; k < len(nextBookKeeper); k++ {
+		nextBookKeeper[k].Serialize(bkListValue)
+	}
+
+	// BookKeeper put value
+	bd.st.BatchPut(bkListKey.Bytes(), bkListValue.Bytes())
+}
+
+func (bd *ChainStore) batchPutUTXO (utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent, 
+									unspents map[Uint256][]uint16,
+									quantities map[Uint256]Fixed64,
+									accounts map[Uint160]*account.AccountState,
+									lockedAssets map[Uint160]map[Uint256][]*LockAsset) error {
+
+	for programHash, programHash_value := range utxoUnspents {
+		for assetId, unspents := range programHash_value {
+			err := bd.saveUnspentWithProgramHash(programHash, assetId, unspents)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// batch put the unspents
+	for txhash, value := range unspents {
+		unspentKey := bytes.NewBuffer(nil)
+		unspentKey.WriteByte(byte(IX_Unspent))
+		txhash.Serialize(unspentKey)
+
+		if len(value) == 0 {
+			bd.st.BatchDelete(unspentKey.Bytes())
+		} else {
+			unspentArray := ToByteArray(value)
+			bd.st.BatchPut(unspentKey.Bytes(), unspentArray)
+		}
+	}
+
+	// batch put quantities
+	for assetId, value := range quantities {
+		quantityKey := bytes.NewBuffer(nil)
+		quantityKey.WriteByte(byte(ST_QuantityIssued))
+		assetId.Serialize(quantityKey)
+
+		qt, err := bd.GetQuantityIssued(assetId)
+		if err != nil {
+			return err
+		}
+
+		qt = qt + value
+
+		quantityArray := bytes.NewBuffer(nil)
+		qt.Serialize(quantityArray)
+
+		bd.st.BatchPut(quantityKey.Bytes(), quantityArray.Bytes())
+		log.Debug(fmt.Sprintf("quantityKey: %x\n", quantityKey.Bytes()))
+		log.Debug(fmt.Sprintf("quantityArray: %x\n", quantityArray.Bytes()))
+	}
+
+	for programHash, value := range accounts {
+		accountKey := new(bytes.Buffer)
+		accountKey.WriteByte(byte(ST_ACCOUNT))
+		programHash.Serialize(accountKey)
+
+		accountValue := new(bytes.Buffer)
+		value.Serialize(accountValue)
+
+		bd.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
+	}
+
+	for programHash, assets := range lockedAssets {
+		for assetID, locked := range assets {
+			if err := bd.SaveLockedAsset(programHash, assetID, locked); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (bd *ChainStore) batchPutForumData (articleInfo map[string][]*forum.ArticleInfo, 
+										 likeInfo map[Uint256][]*forum.LikeInfo) error {
+
+	for user, info := range articleInfo {
+		if err := bd.UpdateUserArticleInfo(user, info); err != nil {
+			return err
+		}
+	}
+
+	userTokenInfo := make(map[string]*forum.TokenInfo)
+	userReputationInfo := make(map[string]*forum.UserInfo)
+	for postTxnHash, liker := range likeInfo {
+		// update like info for each post/reply transaction
+		if err := bd.UpdateLikeInfo(postTxnHash, liker); err != nil {
+			return err
+		}
+
+		// get author of each post/reply transaction
+		txn, err := bd.GetTransaction(postTxnHash)
+		if err != nil {
+			return err
+		}
+		author := txn.Payload.(*payload.PostArticle).Author
+
+		if _, ok := userTokenInfo[author]; !ok {
+			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
+			if err != nil {
+				return err
+			}
+			userTokenInfo[author] = existedTokenInfo
+		}
+		if _, ok := userReputationInfo[author]; !ok {
+			existedReputationInfo, err := bd.GetUserInfo(author)
+			if err != nil {
+				return err
+			}
+			userReputationInfo[author] = existedReputationInfo
+		}
+
+		// calculate total token and reputation info for each author
+		for _, l := range liker {
+			userInfo, err := bd.GetUserInfo(l.Liker)
+			if err != nil {
+				return err
+			}
+			switch l.LikeType {
+			case forum.LikePost:
+				userTokenInfo[author].Number += userInfo.Reputation / 1000
+				userReputationInfo[author].Reputation += userInfo.Reputation / 1000
+			case forum.DislikePost:
+				userReputationInfo[author].Reputation -= userInfo.Reputation / 1000
+			}
+		}
+	}
+	for user, tokenInfo := range userTokenInfo {
+		if err := bd.SaveTokenInfo(user, forum.TotalToken, tokenInfo); err != nil {
+			return err
+		}
+	}
+	for user, reputationInfo := range userReputationInfo {
+		if reputationInfo.Reputation <= Fixed64(100000000) {
+			reputationInfo.Reputation = 100000000
+		}
+		if err := bd.SaveUserInfo(user, reputationInfo); err != nil {
+			return err
+		}
+	}
+	return nil;
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -799,502 +1318,61 @@ func (bd *ChainStore) persist(b *Block) error {
 	nLen := len(b.Transactions)
 
 	for i := 0; i < nLen; i++ {
+		
 		err = bd.SaveTransaction(b.Transactions[i], b.Blockdata.Height)
 		if err != nil {
 			return err
 		}
-		txHash := b.Transactions[i].Hash()
-		switch b.Transactions[i].TxType {
-		case tx.RegisterAsset:
-			ar := b.Transactions[i].Payload.(*payload.RegisterAsset)
-			err = bd.SaveAsset(b.Transactions[i].Hash(), ar.Asset)
-			if err != nil {
-				return err
-			}
-		case tx.RegisterUser:
-			payload := b.Transactions[i].Payload.(*payload.RegisterUser)
-			userInfo := &forum.UserInfo{
-				UserProgramHash: payload.UserProgramHash,
-				Reputation:      payload.Reputation,
-			}
-			err = bd.SaveUserInfo(payload.UserName, userInfo)
-			if err != nil {
-				return err
-			}
-		case tx.PostArticle:
-			author := b.Transactions[i].Payload.(*payload.PostArticle).Author
-			tmp := &forum.ArticleInfo{
-				ContentHash: b.Transactions[i].Payload.(*payload.PostArticle).ContentHash,
-				ContentType: forum.Post,
-			}
-			articleInfo[author] = append(articleInfo[author], tmp)
-		case tx.LikeArticle:
-			hash := b.Transactions[i].Payload.(*payload.LikeArticle).PostTxnHash
-			liker := b.Transactions[i].Payload.(*payload.LikeArticle).Liker
-			liketype := b.Transactions[i].Payload.(*payload.LikeArticle).LikeType
-			tmp := &forum.LikeInfo{
-				Liker:    liker,
-				LikeType: liketype,
-			}
-			likeInfo[hash] = append(likeInfo[hash], tmp)
-		case tx.ReplyArticle:
-			replier := b.Transactions[i].Payload.(*payload.ReplyArticle).Replier
-			tmp := &forum.ArticleInfo{
-				ParentTxnHash: b.Transactions[i].Payload.(*payload.ReplyArticle).PostHash,
-				ContentHash:   b.Transactions[i].Payload.(*payload.ReplyArticle).ContentHash,
-				ContentType:   forum.Reply,
-			}
-			articleInfo[replier] = append(articleInfo[replier], tmp)
-		case tx.Withdrawal:
-			payee := b.Transactions[i].Payload.(*payload.Withdrawal).Payee
-			info := &forum.TokenInfo{
-				Number: b.Transactions[i].Outputs[0].Value,
-			}
-			if err := bd.UpdateUserWithdrawnToken(payee, forum.WithdrawnToken, info); err != nil {
-				log.Error("Failed to update withdraw info")
-				continue
-			}
-		case tx.LockAsset:
-			lp := b.Transactions[i].Payload.(*payload.LockAsset)
-			if _, ok := lockedAssets[lp.ProgramHash]; !ok {
-				lockedAssets[lp.ProgramHash] = make(map[Uint256][]*LockAsset)
-			}
-			if _, ok := lockedAssets[lp.ProgramHash][lp.AssetID]; !ok {
-				lockedAssets[lp.ProgramHash][lp.AssetID], err = bd.GetLockedFromProgramHash(lp.ProgramHash, lp.AssetID)
-				if err != nil {
-					lockedAssets[lp.ProgramHash][lp.AssetID] = make([]*LockAsset, 0)
-				}
-			}
-			newAsset := &LockAsset{
-				Lock:   b.Blockdata.Height,
-				Unlock: lp.UnlockHeight,
-				Amount: lp.Amount,
-			}
-			lockedAssets[lp.ProgramHash][lp.AssetID] = append(lockedAssets[lp.ProgramHash][lp.AssetID], newAsset)
 
-		case tx.IssueAsset:
-			results := b.Transactions[i].GetMergedAssetIDValueFromOutputs()
-			for assetId, value := range results {
-				if _, ok := quantities[assetId]; !ok {
-					quantities[assetId] += value
-				} else {
-					quantities[assetId] = value
-				}
-			}
-		case tx.DeployCode:
-			deployCode := b.Transactions[i].Payload.(*payload.DeployCode)
-			codeHash := deployCode.Code.CodeHash()
-			dbCache.GetOrAdd(ST_Contract, string(codeHash.ToArray()), &states.ContractState{
-				Code:        deployCode.Code,
-				Name:        deployCode.Name,
-				Version:     deployCode.CodeVersion,
-				Author:      deployCode.Author,
-				Email:       deployCode.Email,
-				Description: deployCode.Description,
-				Language:    deployCode.Language,
-				ProgramHash: deployCode.ProgramHash,
-			})
-
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:     deployCode.Language,
-				Caller:       deployCode.ProgramHash,
-				StateMachine: service.NewStateMachine(dbCache, NewDBCache(bd)),
-				DBCache:      dbCache,
-				Code:         deployCode.Code.Code,
-				Time:         big.NewInt(int64(b.Blockdata.Timestamp)),
-				BlockNumber:  big.NewInt(int64(b.Blockdata.Height)),
-				Gas:          Fixed64(0),
-			})
-
-			if err != nil {
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			ret, err := smartContract.DeployContract()
-			if err != nil {
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				continue
-			}
-
-			hash, err := ToCodeHash(ret)
-			if err != nil {
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, BytesToHexString(hash.ToArrayReverse()))
-			err = dbCache.Commit()
-			if err != nil {
-				return err
-			}
-		case tx.InvokeCode:
-			invokeCode := b.Transactions[i].Payload.(*payload.InvokeCode)
-			contract, err := bd.GetContract(invokeCode.CodeHash)
-			if err != nil {
-				log.Error("db getcontract err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			state, err := states.GetStateValue(ST_Contract, contract)
-			if err != nil {
-				log.Error("states GetStateValue err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				return err
-			}
-			contractState := state.(*states.ContractState)
-			stateMachine := service.NewStateMachine(dbCache, NewDBCache(bd))
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:       contractState.Language,
-				Caller:         invokeCode.ProgramHash,
-				StateMachine:   stateMachine,
-				DBCache:        dbCache,
-				CodeHash:       invokeCode.CodeHash,
-				Input:          invokeCode.Code,
-				SignableData:   b.Transactions[i],
-				CacheCodeTable: NewCacheCodeTable(dbCache),
-				Time:           big.NewInt(int64(b.Blockdata.Timestamp)),
-				BlockNumber:    big.NewInt(int64(b.Blockdata.Height)),
-				Gas:            Fixed64(0),
-				ReturnType:     contractState.Code.ReturnType,
-				ParameterTypes: contractState.Code.ParameterTypes,
-			})
-			if err != nil {
-				log.Error("smartcontract NewSmartContract err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			ret, err := smartContract.InvokeContract()
-			if err != nil {
-				log.Error("smartContract InvokeContract err:", err)
-				httpwebsocket.PushResult(txHash, errors.SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			stateMachine.CloneCache.Commit()
-			httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
+		err, skip := bd.ProcessTransactionBaseOnTheType(b.Transactions[i], 
+														b, 
+														quantities, 
+														dbCache, 
+														lockedAssets, 
+														articleInfo, 
+														likeInfo, 
+														&needUpdateBookKeeper, 
+														nextBookKeeper)
+		if err != nil {
+			return err
 		}
-		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-			output := b.Transactions[i].Outputs[index]
-			programHash := output.ProgramHash
-			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] += output.Value
-			} else {
-				accountState, err := bd.GetAccount(programHash)
-				if err != nil && err.Error() != ErrDBNotFound.Error() {
-					return err
-				}
-				if accountState != nil {
-					accountState.Balances[assetId] += output.Value
-				} else {
-					balances := make(map[Uint256]Fixed64, 0)
-					balances[assetId] = output.Value
-					accountState = account.NewAccountState(programHash, balances)
-				}
-				accounts[programHash] = accountState
-			}
-
-			// add utxoUnspent
-			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
-			}
-
-			if _, ok := utxoUnspents[programHash][assetId]; !ok {
-				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
-				if err != nil {
-					utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
-				}
-			}
-
-			unspent := new(tx.UTXOUnspent)
-			unspent.Txid = b.Transactions[i].Hash()
-			unspent.Index = uint32(index)
-			unspent.Value = output.Value
-
-			utxoUnspents[programHash][assetId] = append(utxoUnspents[programHash][assetId], unspent)
+		if skip == true {
+			continue;
 		}
 
-		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
-			input := b.Transactions[i].UTXOInputs[index]
-			transaction, err := bd.GetTransaction(input.ReferTxID)
-			if err != nil {
-				return err
-			}
-			index := input.ReferTxOutputIndex
-			output := transaction.Outputs[index]
-			programHash := output.ProgramHash
-			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] -= output.Value
-			} else {
-				accountState, err := bd.GetAccount(programHash)
-				if err != nil {
-					return err
-				}
-				accountState.Balances[assetId] -= output.Value
-				accounts[programHash] = accountState
-			}
-			if accounts[programHash].Balances[assetId] < 0 {
-				return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
-			}
-
-			// delete utxoUnspent
-			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
-			}
-
-			if _, ok := utxoUnspents[programHash][assetId]; !ok {
-				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
-				if err != nil {
-					return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
-				}
-			}
-
-			flag := false
-			listnum := len(utxoUnspents[programHash][assetId])
-			for i := 0; i < listnum; i++ {
-				if utxoUnspents[programHash][assetId][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][i].Index == uint32(index) {
-					utxoUnspents[programHash][assetId][i] = utxoUnspents[programHash][assetId][listnum-1]
-					utxoUnspents[programHash][assetId] = utxoUnspents[programHash][assetId][:listnum-1]
-
-					flag = true
-					break
-				}
-			}
-
-			if !flag {
-				return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
-			}
-
+		err = bd.updateUTXOUnspentWithOutput(utxoUnspents, accounts, b, i)
+		if err != nil {
+			return err
+		}
+		
+		err = bd.updateUTXOUnspentWithInput(utxoUnspents, accounts, b, i)
+		if err != nil {
+			return err
 		}
 
-		// init unspent in tx
-		txhash := b.Transactions[i].Hash()
-		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-			unspents[txhash] = append(unspents[txhash], uint16(index))
+		err = bd.deductUTXOInput(unspents, b.Transactions[i], unspentPrefix)
+		if err != nil {
+			return err
 		}
-
-		// delete unspent when spent in input
-		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
-			txhash := b.Transactions[i].UTXOInputs[index].ReferTxID
-
-			// if get unspent by utxo
-			if _, ok := unspents[txhash]; !ok {
-				unspentValue, err_get := bd.st.Get(append(unspentPrefix, txhash.ToArray()...))
-
-				if err_get != nil {
-					return err_get
-				}
-
-				unspents[txhash], err_get = GetUint16Array(unspentValue)
-				if err_get != nil {
-					return err_get
-				}
-			}
-
-			// find Transactions[i].UTXOInputs[index].ReferTxOutputIndex and delete it
-			unspentLen := len(unspents[txhash])
-			for k, outputIndex := range unspents[txhash] {
-				if outputIndex == uint16(b.Transactions[i].UTXOInputs[index].ReferTxOutputIndex) {
-					unspents[txhash][k] = unspents[txhash][unspentLen-1]
-					unspents[txhash] = unspents[txhash][:unspentLen-1]
-					break
-				}
-			}
-		}
-
-		// bookkeeper
-		if b.Transactions[i].TxType == tx.BookKeeper {
-			bk := b.Transactions[i].Payload.(*payload.BookKeeper)
-
-			switch bk.Action {
-			case payload.BookKeeperAction_ADD:
-				findflag := false
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						findflag = true
-						break
-					}
-				}
-
-				if !findflag {
-					needUpdateBookKeeper = true
-					nextBookKeeper = append(nextBookKeeper, bk.PubKey)
-					sort.Sort(crypto.PubKeySlice(nextBookKeeper))
-				}
-			case payload.BookKeeperAction_SUB:
-				ind := -1
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						ind = k
-						break
-					}
-				}
-
-				if ind != -1 {
-					needUpdateBookKeeper = true
-					// already sorted
-					nextBookKeeper = append(nextBookKeeper[:ind], nextBookKeeper[ind+1:]...)
-				}
-			}
-
-		}
+		// Bookkeeper is updated in bd.ProcessTransactionBaseOnTheType
 
 	}
 
 	if needUpdateBookKeeper {
-		//bookKeeper key
-		bkListKey := bytes.NewBuffer(nil)
-		bkListKey.WriteByte(byte(SYS_CurrentBookKeeper))
-
-		//bookKeeper value
-		bkListValue := bytes.NewBuffer(nil)
-
-		serialization.WriteUint8(bkListValue, uint8(len(currBookKeeper)))
-		for k := 0; k < len(currBookKeeper); k++ {
-			currBookKeeper[k].Serialize(bkListValue)
-		}
-
-		serialization.WriteUint8(bkListValue, uint8(len(nextBookKeeper)))
-		for k := 0; k < len(nextBookKeeper); k++ {
-			nextBookKeeper[k].Serialize(bkListValue)
-		}
-
-		// BookKeeper put value
-		bd.st.BatchPut(bkListKey.Bytes(), bkListValue.Bytes())
-
-		///////////////////////////////////////////////////////
+		bd.updateBookKeeper(currBookKeeper, nextBookKeeper)
 	}
 	///////////////////////////////////////////////////////
 	//*/
 
-	// batch put the utxoUnspents
-	for programHash, programHash_value := range utxoUnspents {
-		for assetId, unspents := range programHash_value {
-			err := bd.saveUnspentWithProgramHash(programHash, assetId, unspents)
-			if err != nil {
-				return err
-			}
-		}
+	// batch put the UTXO related properties
+	err = bd.batchPutUTXO(utxoUnspents, unspents, quantities, accounts, lockedAssets)
+	if err != nil {
+		return err
 	}
 
-	// batch put the unspents
-	for txhash, value := range unspents {
-		unspentKey := bytes.NewBuffer(nil)
-		unspentKey.WriteByte(byte(IX_Unspent))
-		txhash.Serialize(unspentKey)
-
-		if len(value) == 0 {
-			bd.st.BatchDelete(unspentKey.Bytes())
-		} else {
-			unspentArray := ToByteArray(value)
-			bd.st.BatchPut(unspentKey.Bytes(), unspentArray)
-		}
-	}
-
-	// batch put quantities
-	for assetId, value := range quantities {
-		quantityKey := bytes.NewBuffer(nil)
-		quantityKey.WriteByte(byte(ST_QuantityIssued))
-		assetId.Serialize(quantityKey)
-
-		qt, err := bd.GetQuantityIssued(assetId)
-		if err != nil {
-			return err
-		}
-
-		qt = qt + value
-
-		quantityArray := bytes.NewBuffer(nil)
-		qt.Serialize(quantityArray)
-
-		bd.st.BatchPut(quantityKey.Bytes(), quantityArray.Bytes())
-		log.Debug(fmt.Sprintf("quantityKey: %x\n", quantityKey.Bytes()))
-		log.Debug(fmt.Sprintf("quantityArray: %x\n", quantityArray.Bytes()))
-	}
-
-	for programHash, value := range accounts {
-		accountKey := new(bytes.Buffer)
-		accountKey.WriteByte(byte(ST_ACCOUNT))
-		programHash.Serialize(accountKey)
-
-		accountValue := new(bytes.Buffer)
-		value.Serialize(accountValue)
-
-		bd.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
-	}
-
-	for programHash, assets := range lockedAssets {
-		for assetID, locked := range assets {
-			if err := bd.SaveLockedAsset(programHash, assetID, locked); err != nil {
-				return err
-			}
-		}
-	}
-
-	for user, info := range articleInfo {
-		if err := bd.UpdateUserArticleInfo(user, info); err != nil {
-			return err
-		}
-	}
-
-	userTokenInfo := make(map[string]*forum.TokenInfo)
-	userReputationInfo := make(map[string]*forum.UserInfo)
-	for postTxnHash, liker := range likeInfo {
-		// update like info for each post/reply transaction
-		if err := bd.UpdateLikeInfo(postTxnHash, liker); err != nil {
-			return err
-		}
-
-		// get author of each post/reply transaction
-		txn, err := bd.GetTransaction(postTxnHash)
-		if err != nil {
-			return err
-		}
-		author := txn.Payload.(*payload.PostArticle).Author
-
-		if _, ok := userTokenInfo[author]; !ok {
-			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
-			if err != nil {
-				return err
-			}
-			userTokenInfo[author] = existedTokenInfo
-		}
-		if _, ok := userReputationInfo[author]; !ok {
-			existedReputationInfo, err := bd.GetUserInfo(author)
-			if err != nil {
-				return err
-			}
-			userReputationInfo[author] = existedReputationInfo
-		}
-
-		// calculate total token and reputation info for each author
-		for _, l := range liker {
-			userInfo, err := bd.GetUserInfo(l.Liker)
-			if err != nil {
-				return err
-			}
-			switch l.LikeType {
-			case forum.LikePost:
-				userTokenInfo[author].Number += userInfo.Reputation / 1000
-				userReputationInfo[author].Reputation += userInfo.Reputation / 1000
-			case forum.DislikePost:
-				userReputationInfo[author].Reputation -= userInfo.Reputation / 1000
-			}
-		}
-	}
-	for user, tokenInfo := range userTokenInfo {
-		if err := bd.SaveTokenInfo(user, forum.TotalToken, tokenInfo); err != nil {
-			return err
-		}
-	}
-	for user, reputationInfo := range userReputationInfo {
-		if reputationInfo.Reputation <= Fixed64(100000000) {
-			reputationInfo.Reputation = 100000000
-		}
-		if err := bd.SaveUserInfo(user, reputationInfo); err != nil {
-			return err
-		}
+	err = bd.batchPutForumData(articleInfo, likeInfo)
+	if err != nil {
+		return err
 	}
 
 	currentBlockKey := bytes.NewBuffer(nil)
