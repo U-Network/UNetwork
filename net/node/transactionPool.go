@@ -149,7 +149,7 @@ func (this *TXNPool) checkTransactionCharacter(txn *transaction.Transaction) err
 		}
 		this.characterList[str] = struct{}{}
 	case transaction.PostArticle:
-		payload := txn.Payload.(*payload.PostArticle)
+		payload := txn.Payload.(*payload.ArticleInfo)
 		str := payload.ToString()
 		if _, ok := this.characterList[str]; ok {
 			return NewErr("duplicated post transaction detected")
@@ -242,7 +242,7 @@ func (this *TXNPool) cleanTransactionCharacterList(txs []*transaction.Transactio
 			payload := txn.Payload.(*payload.LikeArticle)
 			delete(this.characterList, payload.ToString())
 		case transaction.PostArticle:
-			payload := txn.Payload.(*payload.PostArticle)
+			payload := txn.Payload.(*payload.ArticleInfo)
 			delete(this.characterList, payload.ToString())
 		case transaction.ReplyArticle:
 			payload := txn.Payload.(*payload.ReplyArticle)

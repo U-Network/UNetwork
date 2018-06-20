@@ -718,8 +718,8 @@ func (bd *ChainStore) persist(b *Block) error {
 	quantities := make(map[Uint256]Fixed64)
 	dbCache := NewDBCache(bd)
 	lockedAssets := make(map[Uint160]map[Uint256][]*LockAsset)
-	articleInfo := make(map[string][]*forum.ArticleInfo)
-	likeInfo := make(map[Uint256][]*forum.LikeInfo)
+	articleInfo := make(map[string][]*payload.ArticleInfo)
+	likeInfo := make(map[Uint256][]*payload.LikeArticle)
 
 	///////////////////////////////////////////////////////////////
 	// Get Unspents for every tx
@@ -822,29 +822,21 @@ func (bd *ChainStore) persist(b *Block) error {
 				return err
 			}
 		case tx.PostArticle:
-			author := b.Transactions[i].Payload.(*payload.PostArticle).Author
-			tmp := &forum.ArticleInfo{
-				ContentHash: b.Transactions[i].Payload.(*payload.PostArticle).ContentHash,
-				ContentType: forum.Post,
-			}
+			author := b.Transactions[i].Payload.(*payload.ArticleInfo).Author
+			tmp := b.Transactions[i].Payload.(*payload.ArticleInfo)
 			articleInfo[author] = append(articleInfo[author], tmp)
 		case tx.LikeArticle:
-			hash := b.Transactions[i].Payload.(*payload.LikeArticle).PostTxnHash
-			liker := b.Transactions[i].Payload.(*payload.LikeArticle).Liker
-			liketype := b.Transactions[i].Payload.(*payload.LikeArticle).LikeType
-			tmp := &forum.LikeInfo{
-				Liker:    liker,
-				LikeType: liketype,
-			}
+			hash := b.Transactions[i].Payload.(*payload.LikeArticle).Articlehash
+			tmp := b.Transactions[i].Payload.(*payload.LikeArticle)
 			likeInfo[hash] = append(likeInfo[hash], tmp)
-		case tx.ReplyArticle:
+		/*case tx.ReplyArticle:
 			replier := b.Transactions[i].Payload.(*payload.ReplyArticle).Replier
 			tmp := &forum.ArticleInfo{
 				ParentTxnHash: b.Transactions[i].Payload.(*payload.ReplyArticle).PostHash,
 				ContentHash:   b.Transactions[i].Payload.(*payload.ReplyArticle).ContentHash,
 				ContentType:   forum.Reply,
 			}
-			articleInfo[replier] = append(articleInfo[replier], tmp)
+			articleInfo[replier] = append(articleInfo[replier], tmp)*/
 		case tx.Withdrawal:
 			payee := b.Transactions[i].Payload.(*payload.Withdrawal).Payee
 			info := &forum.TokenInfo{
@@ -1251,7 +1243,7 @@ func (bd *ChainStore) persist(b *Block) error {
 		if err != nil {
 			return err
 		}
-		author := txn.Payload.(*payload.PostArticle).Author
+		author := txn.Payload.(*payload.ArticleInfo).Author
 
 		if _, ok := userTokenInfo[author]; !ok {
 			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
@@ -1274,11 +1266,11 @@ func (bd *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
-			switch l.LikeType {
-			case forum.LikePost:
+			switch l.Liketype() {
+			case payload.LikePost:
 				userTokenInfo[author].Number += userInfo.Reputation / 1000
 				userReputationInfo[author].Reputation += userInfo.Reputation / 1000
-			case forum.DislikePost:
+			case payload.DislikePost:
 				userReputationInfo[author].Reputation -= userInfo.Reputation / 1000
 			}
 		}
@@ -1839,7 +1831,8 @@ func (bd *ChainStore) SaveUserInfo(name string, userInfo *forum.UserInfo) error 
 	return nil
 }
 
-func (db *ChainStore) GetUserArticleInfo(author string) ([]*forum.ArticleInfo, error) {
+//get user's article hash array
+func (db *ChainStore) GetUserArticleInfo(author string) ([]Uint256, error) {
 	key := bytes.NewBuffer(nil)
 	key.WriteByte(byte(ST_Post))
 	key.WriteString(author)
@@ -1853,58 +1846,71 @@ func (db *ChainStore) GetUserArticleInfo(author string) ([]*forum.ArticleInfo, e
 	if err != nil {
 		return nil, err
 	}
-	info := make([]*forum.ArticleInfo, num)
-	for i := range info {
-		info[i] = new(forum.ArticleInfo)
-		if err := info[i].Deserialization(buf); err != nil {
+	result := make([]Uint256, num)
+	for i := range result {
+		if err := result[i].Deserialize(buf); err != nil {
 			return nil, err
 		}
 	}
 
-	return info, nil
+	return result, nil
 }
 
-func (db *ChainStore) SaveUserArticleInfo(author string, postInfo []*forum.ArticleInfo) error {
+func (db *ChainStore) SaveArticleInfo(postInfo *payload.ArticleInfo) error {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Article))
+	postInfo.Articlehash.Serialize(key)
+
+	value := bytes.NewBuffer(nil)
+	if err := postInfo.Serialize(value, 0); err != nil {
+		return err
+	}
+	if err := db.st.BatchPut(key.Bytes(), value.Bytes()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *ChainStore) SaveUserArticleInfo(author string, postInfo []Uint256) error {
 	key := bytes.NewBuffer(nil)
 	key.WriteByte(byte(ST_Post))
 	key.WriteString(author)
 
 	value := bytes.NewBuffer(nil)
-	if err := serialization.WriteVarUint(value, uint64(len(postInfo))); err != nil {
-		return err
-	}
+	serialization.WriteUint32(value, uint32(len(postInfo)))
 	for _, info := range postInfo {
-		if err := info.Serialization(value); err != nil {
+		if _, err := info.Serialize(value); err != nil {
 			return err
 		}
-	}
 
+	}
 	if err := db.st.BatchPut(key.Bytes(), value.Bytes()); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (db *ChainStore) UpdateUserArticleInfo(author string, postInfo []*forum.ArticleInfo) error {
+func (db *ChainStore) UpdateUserArticleInfo(author string, postInfo []*payload.ArticleInfo) error {
 	existed, err := db.GetUserArticleInfo(author)
 	if err != nil {
 		return err
 	}
-	var updated []*forum.ArticleInfo
+	var updated []Uint256
+	for _, info := range postInfo {
+		db.SaveArticleInfo(info)
+		updated = append(updated, info.Articlehash)
+	}
 	updated = append(updated, existed...)
-	updated = append(updated, postInfo...)
 	if err := db.SaveUserArticleInfo(author, updated); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (db *ChainStore) GetLikeInfo(postTxnHash Uint256) ([]*forum.LikeInfo, error) {
+func (db *ChainStore) GetLikeInfo(articlehash Uint256) ([]*payload.LikeArticle, error) {
 	key := bytes.NewBuffer(nil)
 	key.WriteByte(byte(ST_Like))
-	postTxnHash.Serialize(key)
+	articlehash.Serialize(key)
 
 	existed, _ := db.st.Get(key.Bytes())
 	if len(existed) == 0 {
@@ -1915,10 +1921,10 @@ func (db *ChainStore) GetLikeInfo(postTxnHash Uint256) ([]*forum.LikeInfo, error
 	if err != nil {
 		return nil, err
 	}
-	info := make([]*forum.LikeInfo, num)
+	info := make([]*payload.LikeArticle, num)
 	for i := range info {
-		info[i] = new(forum.LikeInfo)
-		if err := info[i].Deserialization(buf); err != nil {
+		info[i] = new(payload.LikeArticle)
+		if err := info[i].Deserialize(buf, 0); err != nil {
 			return nil, err
 		}
 	}
@@ -1926,17 +1932,17 @@ func (db *ChainStore) GetLikeInfo(postTxnHash Uint256) ([]*forum.LikeInfo, error
 	return info, nil
 }
 
-func (db *ChainStore) SaveLikeInfo(postTxnHash Uint256, likeInfo []*forum.LikeInfo) error {
+func (db *ChainStore) SaveLikeInfo(articlehash Uint256, likeInfo []*payload.LikeArticle) error {
 	key := bytes.NewBuffer(nil)
 	key.WriteByte(byte(ST_Like))
-	postTxnHash.Serialize(key)
+	articlehash.Serialize(key)
 
 	value := bytes.NewBuffer(nil)
 	if err := serialization.WriteVarUint(value, uint64(len(likeInfo))); err != nil {
 		return err
 	}
 	for _, info := range likeInfo {
-		if err := info.Serialization(value); err != nil {
+		if err := info.Serialize(value, 0); err != nil {
 			return err
 		}
 	}
@@ -1948,15 +1954,15 @@ func (db *ChainStore) SaveLikeInfo(postTxnHash Uint256, likeInfo []*forum.LikeIn
 	return nil
 }
 
-func (db *ChainStore) UpdateLikeInfo(postTxnHash Uint256, likeInfo []*forum.LikeInfo) error {
-	existed, err := db.GetLikeInfo(postTxnHash)
+func (db *ChainStore) UpdateLikeInfo(articlehash Uint256, likeInfo []*payload.LikeArticle) error {
+	existed, err := db.GetLikeInfo(articlehash)
 	if err != nil {
 		return err
 	}
-	var updated []*forum.LikeInfo
+	var updated []*payload.LikeArticle
 	updated = append(updated, existed...)
 	updated = append(updated, likeInfo...)
-	if err := db.SaveLikeInfo(postTxnHash, updated); err != nil {
+	if err := db.SaveLikeInfo(articlehash, updated); err != nil {
 		return err
 	}
 

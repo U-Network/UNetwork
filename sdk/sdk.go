@@ -12,7 +12,6 @@ import (
 	"UNetwork/common/config"
 	. "UNetwork/core/asset"
 	"UNetwork/core/contract"
-	"UNetwork/core/forum"
 	"UNetwork/core/signature"
 	"UNetwork/core/transaction"
 )
@@ -363,7 +362,7 @@ func MakeRegisterUserTransaction(name string, phash Uint160) (*transaction.Trans
 	return txn, nil
 }
 
-func MakePostArticleTransaction(wallet account.Client, articleHash Uint256, author string) (*transaction.Transaction, error) {
+/*func MakePostArticleTransaction(wallet account.Client, articleHash Uint256, author string) (*transaction.Transaction, error) {
 	txn, err := transaction.NewPostArticleTrasaction(articleHash, author)
 	if err != nil {
 		return nil, err
@@ -376,9 +375,9 @@ func MakePostArticleTransaction(wallet account.Client, articleHash Uint256, auth
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, err
-}
+}*/
 
-func MakeLikeArticleTransaction(wallet account.Client, articleHash Uint256, me string, likeType forum.LikeType) (*transaction.Transaction, error) {
+/*func MakeLikeArticleTransaction(wallet account.Client, articleHash Uint256, me string, likeType forum.LikeType) (*transaction.Transaction, error) {
 	txn, err := transaction.NewLikeArticleTrasaction(articleHash, me, likeType)
 	if err != nil {
 		return nil, err
@@ -390,7 +389,7 @@ func MakeLikeArticleTransaction(wallet account.Client, articleHash Uint256, me s
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, err
-}
+}*/
 
 func MakeReplyArticleTransaction(wallet account.Client, postHash Uint256, contentHash Uint256, replier string) (*transaction.Transaction, error) {
 	txn, err := transaction.NewReplyArticleTrasaction(postHash, contentHash, replier)

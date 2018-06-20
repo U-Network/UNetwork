@@ -232,7 +232,7 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	case RegisterUser:
 		tx.Payload = new(payload.RegisterUser)
 	case PostArticle:
-		tx.Payload = new(payload.PostArticle)
+		tx.Payload = new(payload.ArticleInfo)
 	case LikeArticle:
 		tx.Payload = new(payload.LikeArticle)
 	case ReplyArticle:
@@ -400,7 +400,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		}
 		hashs = append(hashs, astHash)
 	case PostArticle:
-		info, err := TxStore.GetUserInfo(tx.Payload.(*payload.PostArticle).Author)
+		info, err := TxStore.GetUserInfo(tx.Payload.(*payload.ArticleInfo).Author)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetUserInfo failed.")
 		}
