@@ -5,13 +5,21 @@ import (
 
 	. "UNetwork/common"
 	"UNetwork/common/serialization"
-	"UNetwork/core/forum"
 )
 
+type LikeType byte
+
+const (
+	LikePost    LikeType = 0
+	DislikePost LikeType = 1
+)
+//from(voter),articlehash,weight,votingPrice
 type LikeArticle struct {
-	PostTxnHash Uint256
+	Articlehash Uint256
 	Liker       string
-	LikeType    forum.LikeType
+	Weight uint32
+	Gasconsume Fixed64
+	extension string
 }
 
 func (p *LikeArticle) Data(version byte) []byte {
@@ -19,43 +27,62 @@ func (p *LikeArticle) Data(version byte) []byte {
 }
 
 func (p *LikeArticle) Serialize(w io.Writer, version byte) error {
-	if _, err := p.PostTxnHash.Serialize(w); err != nil {
+	if _, err := p.Articlehash.Serialize(w); err != nil {
 		return err
 	}
 	if err := serialization.WriteVarString(w, p.Liker); err != nil {
 		return err
 	}
-	if err := serialization.WriteByte(w, byte(p.LikeType)); err != nil {
+	if err := serialization.WriteUint32(w, p.Weight); err != nil {
 		return err
 	}
-
+	if err := serialization.WriteUint64(w, uint64(p.Gasconsume)); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarString(w, p.extension); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (p *LikeArticle) Deserialize(r io.Reader, version byte) error {
 	var err error
-	err = p.PostTxnHash.Deserialize(r)
-	if err != nil {
+	if err = p.Articlehash.Deserialize(r); err != nil {
 		return err
 	}
-	p.Liker, err = serialization.ReadVarString(r)
-	if err != nil {
+	if p.Liker, err = serialization.ReadVarString(r); err != nil {
 		return err
 	}
-	t, err := serialization.ReadByte(r)
-	if err != nil {
+	if p.Weight, err = serialization.ReadUint32(r); err != nil {
 		return err
 	}
-	p.LikeType = forum.LikeType(t)
-
+	var gas uint64
+	if gas, err = serialization.ReadUint64(r); err != nil {
+		return err
+	} else {
+		p.Gasconsume = Fixed64(gas)
+	}
+	if p.extension, err = serialization.ReadVarString(r); err != nil {
+		return err
+	}
 	return nil
+}
+func (p *LikeArticle) Liketype() LikeType {
+	if p.Gasconsume > 0 {
+		return LikePost
+	} else {
+		return DislikePost
+	}
 }
 
 func (p *LikeArticle) ToString() string {
 	str := ""
-	str += BytesToHexString(p.PostTxnHash.ToArray())
+	str += BytesToHexString(p.Articlehash.ToArray())
 	str += p.Liker
-	str += string(p.LikeType)
-
+	if p.Gasconsume > 0 {
+		str += string(LikePost)
+	} else {
+		str += string(DislikePost)
+	}
 	return str
 }

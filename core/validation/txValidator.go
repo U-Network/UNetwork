@@ -8,7 +8,6 @@ import (
 	"UNetwork/common/config"
 	"UNetwork/common/log"
 	"UNetwork/core/asset"
-	"UNetwork/core/forum"
 	"UNetwork/core/ledger"
 	tx "UNetwork/core/transaction"
 	"UNetwork/core/transaction/payload"
@@ -356,14 +355,14 @@ func CheckForumPostTransaction(hash Uint256) error {
 	return nil
 }
 
-func CheckForumLikeInfo(hash Uint256, liker string, likeType forum.LikeType) error {
+func CheckForumLikeInfo(hash Uint256, liker string, likeType payload.LikeType) error {
 	likeInfo, err := ledger.DefaultLedger.Store.GetLikeInfo(hash)
 	if err != nil {
 		return NewErr("The like info of main post is invalid")
 	}
 	flag := false
 	for _, v := range likeInfo {
-		if v.LikeType != likeType {
+		if v.Liketype() != likeType {
 			continue
 		}
 		if liker == v.Liker {
@@ -440,14 +439,14 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 		if IsForumUserExist(pld.UserName) {
 			return NewErr("user already exists")
 		}
-	case *payload.PostArticle:
+	case *payload.ArticleInfo:
 		if !IsForumUserExist(pld.Author) {
 			return NewErr("invalid post user")
 		}
 	case *payload.LikeArticle:
 		liker := pld.Liker
-		txnHash := pld.PostTxnHash
-		liketype := pld.LikeType
+		txnHash := pld.Articlehash
+		liketype := pld.Liketype()
 		// check if the liker is a valid user registered on blockchain
 		if !IsForumUserExist(liker) {
 			return NewErr("invalid like user")

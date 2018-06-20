@@ -8,13 +8,10 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strconv"
-
 	"UNetwork/account"
 	. "UNetwork/common"
 	"UNetwork/common/config"
 	"UNetwork/common/log"
-	"UNetwork/core/forum"
 	"UNetwork/core/ledger"
 	"UNetwork/core/signature"
 	tx "UNetwork/core/transaction"
@@ -995,11 +992,8 @@ func registerUser(params []interface{}) map[string]interface{} {
 	default:
 		return UNetworkRPCInvalidParameter
 	}
-	tmp, err := HexStringToBytesReverse(userProgramHash)
-	if err != nil {
-		return UNetworkRPCInvalidParameter
-	}
-	programHash, err := Uint160ParseFromBytes(tmp)
+
+	programHash, err := ToScriptHash(userProgramHash)
 	if err != nil {
 		return UNetworkRPCInvalidParameter
 	}
@@ -1016,7 +1010,7 @@ func registerUser(params []interface{}) map[string]interface{} {
 	return UNetworkRPC(BytesToHexString(hash.ToArrayReverse()))
 }
 
-func postArticle(params []interface{}) map[string]interface{} {
+/*func postArticle(params []interface{}) map[string]interface{} {
 	if len(params) < 2 {
 		return UNetworkRPCNil
 	}
@@ -1053,7 +1047,7 @@ func postArticle(params []interface{}) map[string]interface{} {
 	}
 
 	return UNetworkRPC(BytesToHexString(hash.ToArrayReverse()))
-}
+}*/
 
 func replyArticle(params []interface{}) map[string]interface{} {
 	if len(params) < 3 {
@@ -1111,7 +1105,7 @@ func replyArticle(params []interface{}) map[string]interface{} {
 	return UNetworkRPC(BytesToHexString(hash.ToArrayReverse()))
 }
 
-func likeArticle(params []interface{}) map[string]interface{} {
+/*func likeArticle(params []interface{}) map[string]interface{} {
 	if len(params) < 3 {
 		return UNetworkRPCNil
 	}
@@ -1159,7 +1153,7 @@ func likeArticle(params []interface{}) map[string]interface{} {
 	}
 
 	return UNetworkRPC(BytesToHexString(hash.ToArrayReverse()))
-}
+}*/
 
 func withdrawal(params []interface{}) map[string]interface{} {
 	if len(params) < 3 {

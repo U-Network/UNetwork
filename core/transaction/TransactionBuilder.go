@@ -5,7 +5,6 @@ import (
 	"UNetwork/core/asset"
 	"UNetwork/core/code"
 	"UNetwork/core/contract/program"
-	"UNetwork/core/forum"
 	"UNetwork/core/transaction/payload"
 	"UNetwork/crypto"
 	"UNetwork/smartcontract/types"
@@ -268,7 +267,7 @@ func NewRegisterUserTrasaction(username string, userhash common.Uint160) (*Trans
 	}, nil
 }
 
-func NewPostArticleTrasaction(articleHash common.Uint256, author string) (*Transaction, error) {
+/*func NewPostArticleTrasaction(articleHash common.Uint256, author string) (*Transaction, error) {
 	postArticlePayload := &payload.PostArticle{
 		ContentHash: articleHash,
 		Author:      author,
@@ -287,7 +286,7 @@ func NewPostArticleTrasaction(articleHash common.Uint256, author string) (*Trans
 		Payload:  postArticlePayload,
 		Programs: []*program.Program{},
 	}, nil
-}
+}*/
 
 func NewReplyArticleTrasaction(postHash common.Uint256, contentHash common.Uint256, replier string) (*Transaction, error) {
 	replyArticlePayload := &payload.ReplyArticle{
@@ -311,7 +310,7 @@ func NewReplyArticleTrasaction(postHash common.Uint256, contentHash common.Uint2
 	}, nil
 }
 
-func NewLikeArticleTrasaction(articleHash common.Uint256, me string, likeType forum.LikeType) (*Transaction, error) {
+/*func NewLikeArticleTrasaction(articleHash common.Uint256, me string, likeType forum.LikeType) (*Transaction, error) {
 	LikeArticlePayload := &payload.LikeArticle{
 		PostTxnHash: articleHash,
 		Liker:       me,
@@ -331,7 +330,7 @@ func NewLikeArticleTrasaction(articleHash common.Uint256, me string, likeType fo
 		Payload:  LikeArticlePayload,
 		Programs: []*program.Program{},
 	}, nil
-}
+}*/
 
 func NewWithdrawalTrasaction(payee string, recipient common.Uint160, asset common.Uint256, amount common.Fixed64) (*Transaction, error) {
 	WithdrawalPayload := &payload.Withdrawal{

@@ -66,9 +66,9 @@ func StartRPCServer() {
 	// sendrawtrasaction interface of restfull interface.
 	// Put them here only for forum feature testing.
 	HandleFunc(RPCRegisterUser, registerUser)
-	HandleFunc(RPCPostarticle, postArticle)
+	//HandleFunc(RPCPostarticle, postArticle)
 	HandleFunc(RPCReplyArticle, replyArticle)
-	HandleFunc(RPCLikeArticle, likeArticle)
+	//HandleFunc(RPCLikeArticle, likeArticle)
 	HandleFunc(RPCWithdrawl, withdrawal)
 	HandleFunc(RPCGetUTXOByAddr, getUtxoByAddr)
 	HandleFunc(RPCGetUtxoCoins, getUtxoCoins)

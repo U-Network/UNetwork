@@ -31,6 +31,7 @@ const (
 	ST_Like           DataEntryPrefix = 0xca // key: post/reply txid	value: liker/disliker
 	ST_Withdraw       DataEntryPrefix = 0xcb // key: username   		value: withdrawn token
 	ST_Total          DataEntryPrefix = 0xcc // key: username   		value: total token
+	ST_Article        DataEntryPrefix = 0xcd
 
 	//SYSTEM
 	SYS_CurrentBlock DataEntryPrefix = 0x40
