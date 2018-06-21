@@ -35,7 +35,7 @@ type ILedgerStore interface {
 	GetAccount(programHash Uint160) (*account.AccountState, error)
 	GetAssetState(assetId Uint256) (*states.AssetState, error)
 
-	GetUserInfo(name string) (*forum.UserInfo, error)
+	GetUserInfo(name string) (*payload.RegisterUser, error)
 	GetLikeInfo(articlehash Uint256) ([]*payload.LikeArticle, error)
 	GetUserArticleInfo(name string) ([]Uint256, error)
 	GetTokenInfo(name string, tokenType forum.TokenType) (*forum.TokenInfo, error)
