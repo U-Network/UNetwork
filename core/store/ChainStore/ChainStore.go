@@ -924,46 +924,66 @@ func (bd *ChainStore) ProcessTransactionBaseOnTheType(t *tx.Transaction,
 	return nil, false
 }
 
+func (bd *ChainStore) updateAccount(output *tx.TxOutput, accounts map[Uint160]*account.AccountState) error{
+	programHash := output.ProgramHash
+	assetId := output.AssetID
+	if value, ok := accounts[programHash]; ok {
+		value.Balances[assetId] += output.Value
+	} else {
+		accountState, err := bd.GetAccount(programHash)
+		if err != nil && err.Error() != ErrDBNotFound.Error() {
+			return err
+		}
+		if accountState != nil {
+			accountState.Balances[assetId] += output.Value
+		} else {
+			balances := make(map[Uint256]Fixed64, 0)
+			balances[assetId] = output.Value
+			accountState = account.NewAccountState(programHash, balances)
+		}
+		accounts[programHash] = accountState
+	}
+	return nil
+}
+
+func (bd *ChainStore) updateUTXO (output *tx.TxOutput, utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent) *tx.UTXOUnspent {
+	// add utxoUnspent
+	programHash := output.ProgramHash
+	assetId := output.AssetID
+	var err error
+	if _, ok := utxoUnspents[programHash]; !ok {
+		utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+	}
+
+	if _, ok := utxoUnspents[programHash][assetId]; !ok {
+		utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
+		if err != nil {
+			utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
+		}
+	}
+
+	unspent := new(tx.UTXOUnspent)
+	return unspent
+}
+
 func (bd *ChainStore) updateUTXOUnspentWithOutput (utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent, 
 												   accounts map[Uint160]*account.AccountState,
 												   b * Block,
 												   i int) error{
 
 	var err error
-	for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-		output := b.Transactions[i].Outputs[index]
+	outputs := b.Transactions[i].Outputs
+	for index := 0; index < len(outputs); index++ {
+		output := outputs[index]
 		programHash := output.ProgramHash
 		assetId := output.AssetID
-		if value, ok := accounts[programHash]; ok {
-			value.Balances[assetId] += output.Value
-		} else {
-			accountState, err := bd.GetAccount(programHash)
-			if err != nil && err.Error() != ErrDBNotFound.Error() {
-				return err
-			}
-			if accountState != nil {
-				accountState.Balances[assetId] += output.Value
-			} else {
-				balances := make(map[Uint256]Fixed64, 0)
-				balances[assetId] = output.Value
-				accountState = account.NewAccountState(programHash, balances)
-			}
-			accounts[programHash] = accountState
+		
+		err = bd.updateAccount(output, accounts)
+		if err != nil {
+			return err
 		}
-
-		// add utxoUnspent
-		if _, ok := utxoUnspents[programHash]; !ok {
-			utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
-		}
-
-		if _, ok := utxoUnspents[programHash][assetId]; !ok {
-			utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
-			if err != nil {
-				utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
-			}
-		}
-
-		unspent := new(tx.UTXOUnspent)
+		
+		unspent := bd.updateUTXO(output, utxoUnspents)
 		unspent.Txid = b.Transactions[i].Hash()
 		unspent.Index = uint32(index)
 		unspent.Value = output.Value
