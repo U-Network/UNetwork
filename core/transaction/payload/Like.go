@@ -63,7 +63,11 @@ func (p *LikeArticle) Deserialize(r io.Reader, version byte) error {
 		p.Gasconsume = Fixed64(gas)
 	}
 	if p.Extension, err = serialization.ReadVarString(r); err != nil {
-		return err
+		if err.Error() == "EOF" {
+			return nil
+		} else {
+			return err
+		}
 	}
 	return nil
 }

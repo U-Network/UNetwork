@@ -1236,11 +1236,11 @@ func (bd *ChainStore) persist(b *Block) error {
 		}
 
 		// get author of each post/reply transaction
-		txn, err := bd.GetTransaction(postTxnHash)
+		artinfo,err := bd.GetArticleInfo(postTxnHash)
 		if err != nil {
 			return err
 		}
-		author := txn.Payload.(*payload.ArticleInfo).Author
+		author := artinfo.Author
 
 		if _, ok := userTokenInfo[author]; !ok {
 			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
@@ -1839,7 +1839,7 @@ func (db *ChainStore) GetUserArticleInfo(author string) ([]Uint256, error) {
 		return nil, nil
 	}
 	buf := bytes.NewBuffer(existed)
-	num, err := serialization.ReadVarUint(buf, 0)
+	num, err := serialization.ReadUint32(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -1851,6 +1851,18 @@ func (db *ChainStore) GetUserArticleInfo(author string) ([]Uint256, error) {
 	}
 
 	return result, nil
+}
+
+func (db *ChainStore) GetArticleInfo(articlehash Uint256) (payload.ArticleInfo, error) {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Article))
+    articlehash.Serialize(key)
+
+	valuebuffer, _ := db.st.Get(key.Bytes())
+	buf := bytes.NewBuffer(valuebuffer)
+	var artinfo payload.ArticleInfo
+	err := artinfo.Deserialize(buf, 0)
+	return artinfo, err
 }
 
 func (db *ChainStore) SaveArticleInfo(postInfo *payload.ArticleInfo) error {

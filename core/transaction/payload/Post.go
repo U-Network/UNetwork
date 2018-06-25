@@ -92,7 +92,7 @@ func (p *ArticleInfo) Deserialize(r io.Reader, version byte) error {
 	if parent_author, err := serialization.ReadVarString(r); err != nil {
 		return err
 	} else {
-		p.Author = parent_author
+		p.Parent_author = parent_author
 	}
 
 	if err = p.Parent_articlehash.Deserialize(r); err != nil {
@@ -112,7 +112,11 @@ func (p *ArticleInfo) Deserialize(r io.Reader, version byte) error {
 	}
 
 	if extension, err := serialization.ReadVarString(r); err != nil {
-		return err
+		if err.Error() == "EOF" {
+			return nil
+		} else {
+			return err
+		}
 	} else {
 		p.Extension = extension
 	}

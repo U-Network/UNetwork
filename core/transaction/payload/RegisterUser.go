@@ -56,7 +56,11 @@ func (p *RegisterUser) Deserialize(r io.Reader, version byte) error {
 
 	p.Extension, err = serialization.ReadVarString(r)
 	if err != nil {
-		return err
+		if err.Error() == "EOF" {
+			return nil
+		} else {
+			return err
+		}
 	}
 	return nil
 }
