@@ -924,26 +924,52 @@ func (bd *ChainStore) ProcessTransactionBaseOnTheType(t *tx.Transaction,
 	return nil, false
 }
 
-func (bd *ChainStore) updateAccount(output *tx.TxOutput, accounts map[Uint160]*account.AccountState) error{
-	programHash := output.ProgramHash
-	assetId := output.AssetID
-	if value, ok := accounts[programHash]; ok {
-		value.Balances[assetId] += output.Value
-	} else {
-		accountState, err := bd.GetAccount(programHash)
-		if err != nil && err.Error() != ErrDBNotFound.Error() {
+func (bd *ChainStore) updateAccount(input *tx.UTXOTxInput, output *tx.TxOutput, accounts map[Uint160]*account.AccountState) error{
+	if output != nil {
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		if value, ok := accounts[programHash]; ok {
+			value.Balances[assetId] += output.Value
+		} else {
+			accountState, err := bd.GetAccount(programHash)
+			if err != nil && err.Error() != ErrDBNotFound.Error() {
+				return err
+			}
+			if accountState != nil {
+				accountState.Balances[assetId] += output.Value
+			} else {
+				balances := make(map[Uint256]Fixed64, 0)
+				balances[assetId] = output.Value
+				accountState = account.NewAccountState(programHash, balances)
+			}
+			accounts[programHash] = accountState
+		}
+		return nil
+	} else if input != nil {
+		transaction, err := bd.GetTransaction(input.ReferTxID)
+		if err != nil {
 			return err
 		}
-		if accountState != nil {
-			accountState.Balances[assetId] += output.Value
+		index := input.ReferTxOutputIndex
+		output = transaction.Outputs[index]
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		if value, ok := accounts[programHash]; ok {
+			value.Balances[assetId] -= output.Value
 		} else {
-			balances := make(map[Uint256]Fixed64, 0)
-			balances[assetId] = output.Value
-			accountState = account.NewAccountState(programHash, balances)
+			accountState, err := bd.GetAccount(programHash)
+			if err != nil {
+				return err
+			}
+			accountState.Balances[assetId] -= output.Value
+			accounts[programHash] = accountState
 		}
-		accounts[programHash] = accountState
+		if accounts[programHash].Balances[assetId] < 0 {
+			return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
+		}
+		return nil
 	}
-	return nil
+	return nil;
 }
 
 func (bd *ChainStore) updateUTXO (output *tx.TxOutput, utxoUnspents map[Uint160]map[Uint256][]*tx.UTXOUnspent) *tx.UTXOUnspent {
@@ -978,7 +1004,7 @@ func (bd *ChainStore) updateUTXOUnspentWithOutput (utxoUnspents map[Uint160]map[
 		programHash := output.ProgramHash
 		assetId := output.AssetID
 		
-		err = bd.updateAccount(output, accounts)
+		err = bd.updateAccount(nil, output, accounts)
 		if err != nil {
 			return err
 		}
@@ -996,30 +1022,17 @@ func (bd *ChainStore) updateUTXOUnspentWithInput (utxoUnspents map[Uint160]map[U
 												   accounts map[Uint160]*account.AccountState,
 												   b * Block,
 												   i int) error {
+	var err error
 	for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
 		input := b.Transactions[i].UTXOInputs[index]
-		transaction, err := bd.GetTransaction(input.ReferTxID)
+		transaction, _ := bd.GetTransaction(input.ReferTxID)
+		output := transaction.Outputs[input.ReferTxOutputIndex]
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		err = bd.updateAccount(input, nil, accounts)
 		if err != nil {
 			return err
 		}
-		index := input.ReferTxOutputIndex
-		output := transaction.Outputs[index]
-		programHash := output.ProgramHash
-		assetId := output.AssetID
-		if value, ok := accounts[programHash]; ok {
-			value.Balances[assetId] -= output.Value
-		} else {
-			accountState, err := bd.GetAccount(programHash)
-			if err != nil {
-				return err
-			}
-			accountState.Balances[assetId] -= output.Value
-			accounts[programHash] = accountState
-		}
-		if accounts[programHash].Balances[assetId] < 0 {
-			return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
-		}
-
 		// delete utxoUnspent
 		if _, ok := utxoUnspents[programHash]; !ok {
 			utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
