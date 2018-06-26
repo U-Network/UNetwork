@@ -812,12 +812,9 @@ func (bd *ChainStore) persist(b *Block) error {
 				return err
 			}
 		case tx.RegisterUser:
-			payload := b.Transactions[i].Payload.(*payload.RegisterUser)
-			userInfo := &forum.UserInfo{
-				UserProgramHash: payload.UserProgramHash,
-				Reputation:      payload.Reputation,
-			}
-			err = bd.SaveUserInfo(payload.UserName, userInfo)
+			userInfo := b.Transactions[i].Payload.(*payload.RegisterUser)
+
+			err = bd.SaveUserInfo(userInfo)
 			if err != nil {
 				return err
 			}
@@ -1231,7 +1228,7 @@ func (bd *ChainStore) persist(b *Block) error {
 	}
 
 	userTokenInfo := make(map[string]*forum.TokenInfo)
-	userReputationInfo := make(map[string]*forum.UserInfo)
+	userReputationInfo := make(map[string]*payload.RegisterUser)
 	for postTxnHash, liker := range likeInfo {
 		// update like info for each post/reply transaction
 		if err := bd.UpdateLikeInfo(postTxnHash, liker); err != nil {
@@ -1239,11 +1236,11 @@ func (bd *ChainStore) persist(b *Block) error {
 		}
 
 		// get author of each post/reply transaction
-		txn, err := bd.GetTransaction(postTxnHash)
+		artinfo,err := bd.GetArticleInfo(postTxnHash)
 		if err != nil {
 			return err
 		}
-		author := txn.Payload.(*payload.ArticleInfo).Author
+		author := artinfo.Author
 
 		if _, ok := userTokenInfo[author]; !ok {
 			existedTokenInfo, err := bd.GetTokenInfo(author, forum.TotalToken)
@@ -1280,11 +1277,11 @@ func (bd *ChainStore) persist(b *Block) error {
 			return err
 		}
 	}
-	for user, reputationInfo := range userReputationInfo {
+	for _, reputationInfo := range userReputationInfo {
 		if reputationInfo.Reputation <= Fixed64(100000000) {
 			reputationInfo.Reputation = 100000000
 		}
-		if err := bd.SaveUserInfo(user, reputationInfo); err != nil {
+		if err := bd.SaveUserInfo(reputationInfo); err != nil {
 			return err
 		}
 	}
@@ -1795,7 +1792,7 @@ func (bd *ChainStore) GetStorage(key []byte) ([]byte, error) {
 	return bData, nil
 }
 
-func (db *ChainStore) GetUserInfo(name string) (*forum.UserInfo, error) {
+func (db *ChainStore) GetUserInfo(name string) (*payload.RegisterUser, error) {
 	key := bytes.NewBuffer(nil)
 	key.WriteByte(byte(ST_User))
 	key.WriteString(name)
@@ -1806,21 +1803,21 @@ func (db *ChainStore) GetUserInfo(name string) (*forum.UserInfo, error) {
 	}
 
 	r := bytes.NewReader(rawUserInfo)
-	var userInfo forum.UserInfo
-	if err := userInfo.Deserialization(r); err != nil {
+	var userInfo payload.RegisterUser
+	if err := userInfo.Deserialize(r, 0); err != nil {
 		return nil, err
 	}
 
 	return &userInfo, nil
 }
 
-func (bd *ChainStore) SaveUserInfo(name string, userInfo *forum.UserInfo) error {
+func (bd *ChainStore) SaveUserInfo(userInfo *payload.RegisterUser) error {
 	key := bytes.NewBuffer(nil)
 	key.WriteByte(byte(ST_User))
-	key.WriteString(name)
+	key.WriteString(userInfo.UserName)
 
 	value := bytes.NewBuffer(nil)
-	if err := userInfo.Serialization(value); err != nil {
+	if err := userInfo.Serialize(value, 0); err != nil {
 		return err
 	}
 
@@ -1842,7 +1839,7 @@ func (db *ChainStore) GetUserArticleInfo(author string) ([]Uint256, error) {
 		return nil, nil
 	}
 	buf := bytes.NewBuffer(existed)
-	num, err := serialization.ReadVarUint(buf, 0)
+	num, err := serialization.ReadUint32(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -1854,6 +1851,18 @@ func (db *ChainStore) GetUserArticleInfo(author string) ([]Uint256, error) {
 	}
 
 	return result, nil
+}
+
+func (db *ChainStore) GetArticleInfo(articlehash Uint256) (payload.ArticleInfo, error) {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(ST_Article))
+    articlehash.Serialize(key)
+
+	valuebuffer, _ := db.st.Get(key.Bytes())
+	buf := bytes.NewBuffer(valuebuffer)
+	var artinfo payload.ArticleInfo
+	err := artinfo.Deserialize(buf, 0)
+	return artinfo, err
 }
 
 func (db *ChainStore) SaveArticleInfo(postInfo *payload.ArticleInfo) error {

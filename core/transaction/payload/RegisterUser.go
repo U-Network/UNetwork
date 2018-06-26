@@ -13,6 +13,7 @@ type RegisterUser struct {
 	UserName        string
 	UserProgramHash Uint160
 	Reputation      Fixed64
+	Extension string
 }
 
 func (p *RegisterUser) Data(version byte) []byte {
@@ -28,6 +29,10 @@ func (p *RegisterUser) Serialize(w io.Writer, version byte) error {
 		return err
 	}
 	if err := p.Reputation.Serialize(w); err != nil {
+		return err
+	}
+
+	if err := serialization.WriteVarString(w, p.Extension); err != nil {
 		return err
 	}
 
@@ -49,6 +54,14 @@ func (p *RegisterUser) Deserialize(r io.Reader, version byte) error {
 		return err
 	}
 
+	p.Extension, err = serialization.ReadVarString(r)
+	if err != nil {
+		if err.Error() == "EOF" {
+			return nil
+		} else {
+			return err
+		}
+	}
 	return nil
 }
 

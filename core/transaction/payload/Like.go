@@ -19,7 +19,7 @@ type LikeArticle struct {
 	Liker       string
 	Weight uint32
 	Gasconsume Fixed64
-	extension string
+	Extension string
 }
 
 func (p *LikeArticle) Data(version byte) []byte {
@@ -39,7 +39,7 @@ func (p *LikeArticle) Serialize(w io.Writer, version byte) error {
 	if err := serialization.WriteUint64(w, uint64(p.Gasconsume)); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarString(w, p.extension); err != nil {
+	if err := serialization.WriteVarString(w, p.Extension); err != nil {
 		return err
 	}
 	return nil
@@ -62,8 +62,12 @@ func (p *LikeArticle) Deserialize(r io.Reader, version byte) error {
 	} else {
 		p.Gasconsume = Fixed64(gas)
 	}
-	if p.extension, err = serialization.ReadVarString(r); err != nil {
-		return err
+	if p.Extension, err = serialization.ReadVarString(r); err != nil {
+		if err.Error() == "EOF" {
+			return nil
+		} else {
+			return err
+		}
 	}
 	return nil
 }

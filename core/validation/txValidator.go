@@ -344,14 +344,10 @@ func IsForumUserExist(user string) bool {
 }
 
 func CheckForumPostTransaction(hash Uint256) error {
-	txn, err := tx.TxStore.GetTransaction(hash)
+	_, err := ledger.DefaultLedger.Store.GetArticleInfo(hash)
 	if err != nil {
-		return NewErr(fmt.Sprintf("The main post hash '%s' is invaild", BytesToHexString(hash.ToArrayReverse())))
+		return NewErr(fmt.Sprintf("The article hash '%s' is not exist", BytesToHexString(hash.ToArrayReverse())))
 	}
-	if txn.TxType != tx.PostArticle && txn.TxType != tx.ReplyArticle {
-		return NewErr("The transaction type is invalid in main post")
-	}
-
 	return nil
 }
 
