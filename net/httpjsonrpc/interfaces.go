@@ -24,6 +24,84 @@ import (
 const (
 	RANDBYTELEN = 4
 )
+func issueAsset(params []interface{}) map[string]interface{} {
+	if len(params) < 3 {
+		return UNetworkRPCNil
+	}
+	var asset, value, address string
+	switch params[0].(type) {
+	case string:
+		asset = params[0].(string)
+	default:
+		return UNetworkRPCInvalidParameter
+	}
+	switch params[1].(type) {
+	case string:
+		value = params[1].(string)
+	default:
+		return UNetworkRPCInvalidParameter
+	}
+	switch params[2].(type) {
+	case string:
+		address = params[2].(string)
+	default:
+		return UNetworkRPCInvalidParameter
+	}
+	if Wallet == nil {
+		return UNetworkRPC("open wallet first")
+	}
+	tmp, err := HexStringToBytesReverse(asset)
+	if err != nil {
+		return UNetworkRPC("invalid asset ID")
+	}
+	var assetID Uint256
+	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
+		return UNetworkRPC("invalid asset hash")
+	}
+	issueTxn, err := sdk.MakeIssueTransaction(Wallet, assetID, address, value)
+	if err != nil {
+		return UNetworkRPCInternalError
+	}
+
+	if errCode := VerifyAndSendTx(issueTxn); errCode != ErrNoError {
+		return UNetworkRPCInvalidTransaction
+	}
+	txHash := issueTxn.Hash()
+	return UNetworkRPC(BytesToHexString(txHash.ToArrayReverse()))
+}
+
+func regAsset(params []interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return UNetworkRPCNil
+	}
+	var name, value string
+	switch params[0].(type) {
+	case string:
+		name = params[0].(string)
+	default:
+		return UNetworkRPCInvalidParameter
+	}
+	switch params[1].(type) {
+	case string:
+		value = params[1].(string)
+	default:
+		return UNetworkRPCInvalidParameter
+	}
+	if Wallet == nil {
+		return UNetworkRPC("error : wallet is not opened")
+	}
+	txn, err := sdk.MakeRegTransaction(Wallet, name, value)
+
+	if err != nil {
+		return UNetworkRPC("error: " + err.Error())
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return UNetworkRPC("error: " + errCode.Error())
+	}
+	txHash := txn.Hash()
+	return UNetworkRPC(BytesToHexString(txHash.ToArrayReverse()))
+}
 func getUtxoCoins(params []interface{}) map[string]interface{} {
 	type CoinInfo struct {
 		ReferTxID string

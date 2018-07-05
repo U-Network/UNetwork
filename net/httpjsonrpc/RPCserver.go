@@ -37,6 +37,8 @@ const (
 	RPCGetUTXOByAddr    = "getutxobyaddr"
 	RPCGetUtxoCoins  = "getutxocoins"
 	RPCGetLikeArticleAdresslist ="getlikearticleadresslist"
+	RPCRegAsset  = "regasset"
+	RPCIssueAsset  = "issueasset"
 )
 
 func StartRPCServer() {
@@ -73,6 +75,8 @@ func StartRPCServer() {
 	HandleFunc(RPCGetUTXOByAddr, getUtxoByAddr)
 	HandleFunc(RPCGetUtxoCoins, getUtxoCoins)
 	HandleFunc(RPCGetLikeArticleAdresslist, getLikeArticleAdresslist)
+	HandleFunc(RPCRegAsset, regAsset)
+	HandleFunc(RPCIssueAsset, issueAsset)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {
