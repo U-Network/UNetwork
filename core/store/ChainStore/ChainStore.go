@@ -712,6 +712,59 @@ func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey,
 	return currBookKeeper, nextBookKeeper, nil
 }
 
+func (bd *ChainStore) updateAccount(input *tx.UTXOTxInput, output *tx.TxOutput, accounts map[Uint160]*account.AccountState) error{
+	if output != nil {
+
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		if value, ok := accounts[programHash]; ok {
+			value.Balances[assetId] += output.Value
+		} else {
+			accountState, err := bd.GetAccount(programHash)
+			if err != nil && err.Error() != ErrDBNotFound.Error() {
+				return err
+			}
+			if accountState != nil {
+				accountState.Balances[assetId] += output.Value
+			} else {
+				balances := make(map[Uint256]Fixed64, 0)
+				balances[assetId] = output.Value
+				accountState = account.NewAccountState(programHash, balances)
+			}
+			accounts[programHash] = accountState
+		}
+
+		return nil
+
+	} else if input != nil {
+
+		transaction, err := bd.GetTransaction(input.ReferTxID)
+		if err != nil {
+			return err
+		}
+		index := input.ReferTxOutputIndex
+		output = transaction.Outputs[index]
+		programHash := output.ProgramHash
+		assetId := output.AssetID
+		if value, ok := accounts[programHash]; ok {
+			value.Balances[assetId] -= output.Value
+		} else {
+			accountState, err := bd.GetAccount(programHash)
+			if err != nil {
+				return err
+			}
+			accountState.Balances[assetId] -= output.Value
+			accounts[programHash] = accountState
+		}
+		if accounts[programHash].Balances[assetId] < 0 {
+			return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
+		}
+		
+		return nil
+	}
+	return nil;
+}
+
 func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
@@ -966,21 +1019,10 @@ func (bd *ChainStore) persist(b *Block) error {
 			output := b.Transactions[i].Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] += output.Value
-			} else {
-				accountState, err := bd.GetAccount(programHash)
-				if err != nil && err.Error() != ErrDBNotFound.Error() {
-					return err
-				}
-				if accountState != nil {
-					accountState.Balances[assetId] += output.Value
-				} else {
-					balances := make(map[Uint256]Fixed64, 0)
-					balances[assetId] = output.Value
-					accountState = account.NewAccountState(programHash, balances)
-				}
-				accounts[programHash] = accountState
+			
+			err = bd.updateAccount(nil, output, accounts)
+			if err != nil {
+				return err
 			}
 
 			// add utxoUnspent
@@ -1013,18 +1055,9 @@ func (bd *ChainStore) persist(b *Block) error {
 			output := transaction.Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] -= output.Value
-			} else {
-				accountState, err := bd.GetAccount(programHash)
-				if err != nil {
-					return err
-				}
-				accountState.Balances[assetId] -= output.Value
-				accounts[programHash] = accountState
-			}
-			if accounts[programHash].Balances[assetId] < 0 {
-				return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
+			err = bd.updateAccount(input, nil, accounts)
+			if err != nil {
+				return err
 			}
 
 			// delete utxoUnspent
