@@ -1,7 +1,7 @@
 ### Description of the issue
 Briefly describe the issue you are experiencing.
 
-### Type (put a 'x' sign in the square brackets)
+### Type (put a `x` sign in the square brackets)
 - [ ] bug report
 - [ ] feature request
 - [ ] Documentation improvement
