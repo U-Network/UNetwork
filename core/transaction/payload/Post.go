@@ -45,6 +45,7 @@ func (p *ArticleInfo) Serialize(w io.Writer, version byte) error {
 	if err := serialization.WriteVarString(w, p.Author); err != nil {
 		return err
 	}
+
 	if err := serialization.WriteVarBytes(w, p.Body); err != nil {
 		return err
 	}
@@ -83,6 +84,7 @@ func (p *ArticleInfo) Deserialize(r io.Reader, version byte) error {
 		p.Author = author
 	}
 
+
 	if body, err := serialization.ReadVarBytes(r); err != nil {
 		return err
 	} else {
@@ -96,7 +98,7 @@ func (p *ArticleInfo) Deserialize(r io.Reader, version byte) error {
 	}
 
 	if err = p.Parent_articlehash.Deserialize(r); err != nil {
-		return nil
+		return err
 	}
 
 	if title, err := serialization.ReadVarString(r); err != nil {

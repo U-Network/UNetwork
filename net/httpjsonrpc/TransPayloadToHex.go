@@ -52,7 +52,31 @@ type LockAssetInfo struct {
 	Amount     string
 	LockHeight uint32
 }
+type UserInfo struct {
+	Name string
+	Address string
+	Reputation Fixed64
+	Extension string
+}
 
+type ArtInfo struct {
+	Articlehash string
+	Author string
+	Body []byte
+	Parent_author string
+	Parent_articlehash string
+	Title string
+	Json_metadata string
+	Extension string
+}
+
+type LikeInfo struct {
+	Articlehash string
+	Liker       string
+	Weight uint32
+	Gasconsume Fixed64
+	Extension string
+}
 type RecordInfo struct {
 	RecordType string
 	RecordData string
@@ -160,6 +184,33 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 		obj.Issuer.X = object.Issuer.X.String()
 		obj.Issuer.Y = object.Issuer.Y.String()
 		return obj
+	case *payload.RegisterUser:
+		obj := new(UserInfo)
+		obj.Name = object.UserName
+		obj.Address, _ = object.UserProgramHash.ToAddress()
+		obj.Reputation = object.Reputation
+		obj.Extension = object.Extension
+		return obj
+	case *payload.ArticleInfo:
+		obj := new(ArtInfo)
+		obj.Articlehash = BytesToHexString(object.Articlehash.ToArray())
+		obj.Author = object.Author
+		obj.Title = object.Title
+		obj.Body = object.Body
+		obj.Parent_author = object.Parent_author
+		obj.Parent_articlehash = BytesToHexString(object.Parent_articlehash.ToArray())
+		obj.Json_metadata = object.Json_metadata
+		obj.Extension = obj.Extension
+		return obj
+	case *payload.LikeArticle:
+		obj := new(LikeInfo)
+		obj.Articlehash = BytesToHexString(object.Articlehash.ToArray())
+		obj.Liker = object.Liker
+		obj.Weight = object.Weight
+		obj.Gasconsume = object.Gasconsume
+		obj.Extension = object.Extension
+		return obj
+
 	}
 	return nil
 }

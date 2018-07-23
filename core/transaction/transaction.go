@@ -169,6 +169,9 @@ func (tx *Transaction) Deserialize(r io.Reader) error {
 	// tx program
 	lens, err := serialization.ReadVarUint(r, 0)
 	if err != nil {
+		if err.Error() == "EOF" {
+			return nil
+		}
 		return NewDetailErr(err, ErrNoCode, "transaction tx program Deserialize error")
 	}
 
@@ -250,6 +253,9 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	//attributes
 	Len, err := serialization.ReadVarUint(r, 0)
 	if err != nil {
+		if err.Error() == "EOF" {
+			return nil
+		}
 		log.Error("tx attributes Deserialize:", err)
 		return err
 	}
