@@ -831,6 +831,48 @@ func makeIssueTxn(params []interface{}) map[string]interface{} {
 	return UNetworkRPC(true)
 }
 
+func sendToAddresses(params []interface{}) map[string]interface{} {
+	type Outputinfo struct {
+		Assetid  string
+		Outputs map[string]string
+	}
+	if len(params) < 1 {
+		return UNetworkRPCNil
+	}
+	var outs Outputinfo
+	outs.Outputs = make(map[string]string)
+	mapobj := params[0].(map[string]interface{})
+	outs.Assetid = mapobj["Assetid"].(string)
+	mapouts := mapobj["Outputs"].(map[string]interface{})
+	for key, vobj := range mapouts {
+		outs.Outputs[key] = vobj.(string)
+	}
+
+	tmp, err := HexStringToBytesReverse(outs.Assetid)
+	if err != nil {
+		return UNetworkRPC("invalid asset ID")
+	}
+	var assetID Uint256
+	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
+		return UNetworkRPC("invalid asset hash")
+	}
+	var batchouts []sdk.BatchOut
+	for ast, v := range outs.Outputs {
+		batchouts = append(batchouts, sdk.BatchOut{ast, v})
+	}
+
+	txn, err := sdk.MakeTransferTransaction(Wallet, assetID, batchouts...)
+	if err != nil {
+		return UNetworkRPC("error: " + err.Error())
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return UNetworkRPC("error: " + errCode.Error())
+	}
+	txHash := txn.Hash()
+	return UNetworkRPC(BytesToHexString(txHash.ToArrayReverse()))
+}
+
 func sendToAddress(params []interface{}) map[string]interface{} {
 	if len(params) < 3 {
 		return UNetworkRPCNil

@@ -12,7 +12,7 @@ const (
 	DefaultConfigFilename = "./config.json"
 )
 
-var Version string
+var Version string="1.0.aa1603a"
 
 type Configuration struct {
 	Magic           int64              `json:"Magic"`

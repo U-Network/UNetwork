@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	MaxPrecision = 8
+	MaxPrecision = 12
 	MinPrecision = 0
 )
 

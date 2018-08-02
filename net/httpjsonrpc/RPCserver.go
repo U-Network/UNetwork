@@ -39,6 +39,7 @@ const (
 	RPCGetLikeArticleAdresslist ="getlikearticleadresslist"
 	RPCRegAsset  = "regasset"
 	RPCIssueAsset  = "issueasset"
+	RPCSendToAddresses            = "sendtoaddresses"
 )
 
 func StartRPCServer() {
@@ -77,6 +78,7 @@ func StartRPCServer() {
 	HandleFunc(RPCGetLikeArticleAdresslist, getLikeArticleAdresslist)
 	HandleFunc(RPCRegAsset, regAsset)
 	HandleFunc(RPCIssueAsset, issueAsset)
+	HandleFunc(RPCSendToAddresses, sendToAddresses)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {
