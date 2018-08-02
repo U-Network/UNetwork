@@ -114,7 +114,11 @@ func (p *ArticleInfo) Deserialize(r io.Reader, version byte) error {
 	}
 
 	if extension, err := serialization.ReadVarString(r); err != nil {
-		return err
+		if err.Error() == "EOF" {
+			return nil
+		} else {
+			return err
+		}
 	} else {
 		p.Extension = extension
 	}
