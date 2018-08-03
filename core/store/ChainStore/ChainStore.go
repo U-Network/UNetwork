@@ -764,9 +764,89 @@ func (bd *ChainStore) updateAccount(input *tx.UTXOTxInput, output *tx.TxOutput, 
 	}
 	return nil;
 }
-
-func (bd *ChainStore) persist(b *Block) error {
+func (bd *ChainStore) updateutxoUnspents(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
+    var err error
+	nLen := len(b.Transactions)
+	for i := 0; i < nLen; i++ {
+		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
+			output := b.Transactions[i].Outputs[index]
+			programHash := output.ProgramHash
+			assetId := output.AssetID
+
+			// add utxoUnspent
+			if _, ok := utxoUnspents[programHash]; !ok {
+				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+			}
+
+			if _, ok := utxoUnspents[programHash][assetId]; !ok {
+				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
+				if err != nil {
+					utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
+				}
+			}
+
+			unspent := new(tx.UTXOUnspent)
+			unspent.Txid = b.Transactions[i].Hash()
+			unspent.Index = uint32(index)
+			unspent.Value = output.Value
+
+			utxoUnspents[programHash][assetId] = append(utxoUnspents[programHash][assetId], unspent)
+		}
+
+		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
+			input := b.Transactions[i].UTXOInputs[index]
+			transaction, err := bd.GetTransaction(input.ReferTxID)
+			if err != nil {
+				return err
+			}
+			index := input.ReferTxOutputIndex
+			output := transaction.Outputs[index]
+			programHash := output.ProgramHash
+			assetId := output.AssetID
+
+			// delete utxoUnspent
+			if _, ok := utxoUnspents[programHash]; !ok {
+				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+			}
+
+			if _, ok := utxoUnspents[programHash][assetId]; !ok {
+				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
+				if err != nil {
+					return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
+				}
+			}
+
+			flag := false
+			listnum := len(utxoUnspents[programHash][assetId])
+			for i := 0; i < listnum; i++ {
+				if utxoUnspents[programHash][assetId][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][i].Index == uint32(index) {
+					utxoUnspents[programHash][assetId][i] = utxoUnspents[programHash][assetId][listnum-1]
+					utxoUnspents[programHash][assetId] = utxoUnspents[programHash][assetId][:listnum-1]
+
+					flag = true
+					break
+				}
+			}
+
+			if !flag {
+				return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
+			}
+
+		}
+	}
+	// batch put the utxoUnspents
+	for programHash, programHash_value := range utxoUnspents {
+		for assetId, unspents := range programHash_value {
+			err := bd.saveUnspentWithProgramHash(programHash, assetId, unspents)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+func (bd *ChainStore) persist(b *Block) error {
 	unspents := make(map[Uint256][]uint16)
 	quantities := make(map[Uint256]Fixed64)
 	dbCache := NewDBCache(bd)
@@ -1017,75 +1097,21 @@ func (bd *ChainStore) persist(b *Block) error {
 		}
 		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
 			output := b.Transactions[i].Outputs[index]
-			programHash := output.ProgramHash
-			assetId := output.AssetID
 			
 			err = bd.updateAccount(nil, output, accounts)
 			if err != nil {
 				return err
 			}
-
-			// add utxoUnspent
-			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
-			}
-
-			if _, ok := utxoUnspents[programHash][assetId]; !ok {
-				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
-				if err != nil {
-					utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
-				}
-			}
-
-			unspent := new(tx.UTXOUnspent)
-			unspent.Txid = b.Transactions[i].Hash()
-			unspent.Index = uint32(index)
-			unspent.Value = output.Value
-
-			utxoUnspents[programHash][assetId] = append(utxoUnspents[programHash][assetId], unspent)
 		}
 
 		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
 			input := b.Transactions[i].UTXOInputs[index]
-			transaction, err := bd.GetTransaction(input.ReferTxID)
 			if err != nil {
 				return err
 			}
-			index := input.ReferTxOutputIndex
-			output := transaction.Outputs[index]
-			programHash := output.ProgramHash
-			assetId := output.AssetID
 			err = bd.updateAccount(input, nil, accounts)
 			if err != nil {
 				return err
-			}
-
-			// delete utxoUnspent
-			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
-			}
-
-			if _, ok := utxoUnspents[programHash][assetId]; !ok {
-				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
-				if err != nil {
-					return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
-				}
-			}
-
-			flag := false
-			listnum := len(utxoUnspents[programHash][assetId])
-			for i := 0; i < listnum; i++ {
-				if utxoUnspents[programHash][assetId][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][i].Index == uint32(index) {
-					utxoUnspents[programHash][assetId][i] = utxoUnspents[programHash][assetId][listnum-1]
-					utxoUnspents[programHash][assetId] = utxoUnspents[programHash][assetId][:listnum-1]
-
-					flag = true
-					break
-				}
-			}
-
-			if !flag {
-				return errors.NewErr(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.", transaction.Hash(), index))
 			}
 
 		}
@@ -1163,6 +1189,10 @@ func (bd *ChainStore) persist(b *Block) error {
 		}
 
 	}
+	err = bd.updateutxoUnspents(b)
+	if err != nil {
+		return err
+	}
 
 	if needUpdateBookKeeper {
 		//bookKeeper key
@@ -1190,15 +1220,6 @@ func (bd *ChainStore) persist(b *Block) error {
 	///////////////////////////////////////////////////////
 	//*/
 
-	// batch put the utxoUnspents
-	for programHash, programHash_value := range utxoUnspents {
-		for assetId, unspents := range programHash_value {
-			err := bd.saveUnspentWithProgramHash(programHash, assetId, unspents)
-			if err != nil {
-				return err
-			}
-		}
-	}
 
 	// batch put the unspents
 	for txhash, value := range unspents {
