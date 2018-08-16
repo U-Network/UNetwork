@@ -712,58 +712,69 @@ func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey,
 	return currBookKeeper, nextBookKeeper, nil
 }
 
-func (bd *ChainStore) updateAccount(input *tx.UTXOTxInput, output *tx.TxOutput, accounts map[Uint160]*account.AccountState) error{
-	if output != nil {
-
-		programHash := output.ProgramHash
-		assetId := output.AssetID
-		if value, ok := accounts[programHash]; ok {
-			value.Balances[assetId] += output.Value
-		} else {
-			accountState, err := bd.GetAccount(programHash)
-			if err != nil && err.Error() != ErrDBNotFound.Error() {
-				return err
-			}
-			if accountState != nil {
-				accountState.Balances[assetId] += output.Value
+func (bd *ChainStore) updateAccountState(b *Block) error {
+	accounts := make(map[Uint160]*account.AccountState, 0)
+	nLen := len(b.Transactions)
+	for i := 0; i < nLen; i++ {
+		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
+			output := b.Transactions[i].Outputs[index]
+			programHash := output.ProgramHash
+			assetId := output.AssetID
+			if value, ok := accounts[programHash]; ok {
+				value.Balances[assetId] += output.Value
 			} else {
-				balances := make(map[Uint256]Fixed64, 0)
-				balances[assetId] = output.Value
-				accountState = account.NewAccountState(programHash, balances)
+				accountState, err := bd.GetAccount(programHash)
+				if err != nil && err.Error() != ErrDBNotFound.Error() {
+					return err
+				}
+				if accountState != nil {
+					accountState.Balances[assetId] += output.Value
+				} else {
+					balances := make(map[Uint256]Fixed64, 0)
+					balances[assetId] = output.Value
+					accountState = account.NewAccountState(programHash, balances)
+				}
+				accounts[programHash] = accountState
 			}
-			accounts[programHash] = accountState
 		}
 
-		return nil
-
-	} else if input != nil {
-
-		transaction, err := bd.GetTransaction(input.ReferTxID)
-		if err != nil {
-			return err
-		}
-		index := input.ReferTxOutputIndex
-		output = transaction.Outputs[index]
-		programHash := output.ProgramHash
-		assetId := output.AssetID
-		if value, ok := accounts[programHash]; ok {
-			value.Balances[assetId] -= output.Value
-		} else {
-			accountState, err := bd.GetAccount(programHash)
+		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
+			input := b.Transactions[i].UTXOInputs[index]
+			transaction, err := bd.GetTransaction(input.ReferTxID)
 			if err != nil {
 				return err
 			}
-			accountState.Balances[assetId] -= output.Value
-			accounts[programHash] = accountState
+			index := input.ReferTxOutputIndex
+			output := transaction.Outputs[index]
+			programHash := output.ProgramHash
+			assetId := output.AssetID
+			if value, ok := accounts[programHash]; ok {
+				value.Balances[assetId] -= output.Value
+			} else {
+				accountState, err := bd.GetAccount(programHash)
+				if err != nil {
+					return err
+				}
+				accountState.Balances[assetId] -= output.Value
+				accounts[programHash] = accountState
+			}
+			if accounts[programHash].Balances[assetId] < 0 {
+				return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
+			}
 		}
-		if accounts[programHash].Balances[assetId] < 0 {
-			return errors.NewErr(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
-		}
-		
-		return nil
 	}
-	return nil;
+	for programHash, value := range accounts {
+		accountKey := new(bytes.Buffer)
+		accountKey.WriteByte(byte(ST_ACCOUNT))
+		programHash.Serialize(accountKey)
+
+		accountValue := new(bytes.Buffer)
+		value.Serialize(accountValue)
+		bd.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
+	}
+	return nil
 }
+
 func (bd *ChainStore) updateutxoUnspents(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
     var err error
@@ -857,7 +868,6 @@ func (bd *ChainStore) persist(b *Block) error {
 	///////////////////////////////////////////////////////////////
 	// Get Unspents for every tx
 	unspentPrefix := []byte{byte(IX_Unspent)}
-	accounts := make(map[Uint160]*account.AccountState, 0)
 
 	///////////////////////////////////////////////////////////////
 	// batch write begin
@@ -1095,26 +1105,6 @@ func (bd *ChainStore) persist(b *Block) error {
 			stateMachine.CloneCache.Commit()
 			httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
 		}
-		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-			output := b.Transactions[i].Outputs[index]
-			
-			err = bd.updateAccount(nil, output, accounts)
-			if err != nil {
-				return err
-			}
-		}
-
-		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
-			input := b.Transactions[i].UTXOInputs[index]
-			if err != nil {
-				return err
-			}
-			err = bd.updateAccount(input, nil, accounts)
-			if err != nil {
-				return err
-			}
-
-		}
 
 		// init unspent in tx
 		txhash := b.Transactions[i].Hash()
@@ -1189,11 +1179,12 @@ func (bd *ChainStore) persist(b *Block) error {
 		}
 
 	}
-	err = bd.updateutxoUnspents(b)
-	if err != nil {
+	if err = bd.updateutxoUnspents(b); err != nil {
 		return err
 	}
-
+	if err = bd.updateAccountState(b); err != nil {
+		return err
+	}
 	if needUpdateBookKeeper {
 		//bookKeeper key
 		bkListKey := bytes.NewBuffer(nil)
@@ -1256,16 +1247,6 @@ func (bd *ChainStore) persist(b *Block) error {
 		log.Debug(fmt.Sprintf("quantityArray: %x\n", quantityArray.Bytes()))
 	}
 
-	for programHash, value := range accounts {
-		accountKey := new(bytes.Buffer)
-		accountKey.WriteByte(byte(ST_ACCOUNT))
-		programHash.Serialize(accountKey)
-
-		accountValue := new(bytes.Buffer)
-		value.Serialize(accountValue)
-
-		bd.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
-	}
 
 	for programHash, assets := range lockedAssets {
 		for assetID, locked := range assets {
