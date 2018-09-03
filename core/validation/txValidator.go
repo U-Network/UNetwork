@@ -374,7 +374,7 @@ func CheckForumLikeInfo(hash Uint256, liker string, likeType payload.LikeType) e
 }
 
 func checkAmountPrecise(amount Fixed64, precision byte) bool {
-	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
+	return amount.GetData()%int64(math.Pow(10, asset.MaxPrecision-float64(precision))) != 0
 }
 
 func checkIssuerInBookkeeperList(issuer *crypto.PubKey, bookKeepers []*crypto.PubKey) bool {

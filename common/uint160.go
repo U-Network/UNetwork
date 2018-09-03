@@ -74,7 +74,7 @@ func (f *Uint160) Deserialize(r io.Reader) error {
 }
 
 func (f *Uint160) ToAddress() (string, error) {
-	data := append([]byte{23}, f.ToArray()...)
+	data := append([]byte{68}, f.ToArray()...)
 	temp := sha256.Sum256(data)
 	temps := sha256.Sum256(temp[:])
 	data = append(data, temps[0:4]...)
