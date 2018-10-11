@@ -857,19 +857,70 @@ func (bd *ChainStore) updateutxoUnspents(b *Block) error {
 	}
 	return nil
 }
-func (bd *ChainStore) persist(b *Block) error {
+
+func (bd *ChainStore)updateunspents(b *Block) error {
 	unspents := make(map[Uint256][]uint16)
+	// Get Unspents for every tx
+	unspentPrefix := []byte{byte(IX_Unspent)}
+	nLen := len(b.Transactions)
+	for i := 0; i < nLen; i++ {
+		// init unspent in tx
+		txhash := b.Transactions[i].Hash()
+		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
+			unspents[txhash] = append(unspents[txhash], uint16(index))
+		}
+
+		// delete unspent when spent in input
+		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
+			txhash := b.Transactions[i].UTXOInputs[index].ReferTxID
+
+			// if get unspent by utxo
+			if _, ok := unspents[txhash]; !ok {
+				unspentValue, err_get := bd.st.Get(append(unspentPrefix, txhash.ToArray()...))
+
+				if err_get != nil {
+					return err_get
+				}
+
+				unspents[txhash], err_get = GetUint16Array(unspentValue)
+				if err_get != nil {
+					return err_get
+				}
+			}
+
+			// find Transactions[i].UTXOInputs[index].ReferTxOutputIndex and delete it
+			unspentLen := len(unspents[txhash])
+			for k, outputIndex := range unspents[txhash] {
+				if outputIndex == uint16(b.Transactions[i].UTXOInputs[index].ReferTxOutputIndex) {
+					unspents[txhash][k] = unspents[txhash][unspentLen-1]
+					unspents[txhash] = unspents[txhash][:unspentLen-1]
+					break
+				}
+			}
+		}
+	}
+	// batch put the unspents
+	for txhash, value := range unspents {
+		unspentKey := bytes.NewBuffer(nil)
+		unspentKey.WriteByte(byte(IX_Unspent))
+		txhash.Serialize(unspentKey)
+
+		if len(value) == 0 {
+			bd.st.BatchDelete(unspentKey.Bytes())
+		} else {
+			unspentArray := ToByteArray(value)
+			bd.st.BatchPut(unspentKey.Bytes(), unspentArray)
+		}
+	}
+	return nil
+}
+func (bd *ChainStore) persist(b *Block) error {
 	quantities := make(map[Uint256]Fixed64)
 	dbCache := NewDBCache(bd)
 	lockedAssets := make(map[Uint160]map[Uint256][]*LockAsset)
 	articleInfo := make(map[string][]*payload.ArticleInfo)
 	likeInfo := make(map[Uint256][]*payload.LikeArticle)
 
-	///////////////////////////////////////////////////////////////
-	// Get Unspents for every tx
-	unspentPrefix := []byte{byte(IX_Unspent)}
-
-	///////////////////////////////////////////////////////////////
 	// batch write begin
 	bd.st.NewBatch()
 
@@ -1106,41 +1157,6 @@ func (bd *ChainStore) persist(b *Block) error {
 			httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
 		}
 
-		// init unspent in tx
-		txhash := b.Transactions[i].Hash()
-		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-			unspents[txhash] = append(unspents[txhash], uint16(index))
-		}
-
-		// delete unspent when spent in input
-		for index := 0; index < len(b.Transactions[i].UTXOInputs); index++ {
-			txhash := b.Transactions[i].UTXOInputs[index].ReferTxID
-
-			// if get unspent by utxo
-			if _, ok := unspents[txhash]; !ok {
-				unspentValue, err_get := bd.st.Get(append(unspentPrefix, txhash.ToArray()...))
-
-				if err_get != nil {
-					return err_get
-				}
-
-				unspents[txhash], err_get = GetUint16Array(unspentValue)
-				if err_get != nil {
-					return err_get
-				}
-			}
-
-			// find Transactions[i].UTXOInputs[index].ReferTxOutputIndex and delete it
-			unspentLen := len(unspents[txhash])
-			for k, outputIndex := range unspents[txhash] {
-				if outputIndex == uint16(b.Transactions[i].UTXOInputs[index].ReferTxOutputIndex) {
-					unspents[txhash][k] = unspents[txhash][unspentLen-1]
-					unspents[txhash] = unspents[txhash][:unspentLen-1]
-					break
-				}
-			}
-		}
-
 		// bookkeeper
 		if b.Transactions[i].TxType == tx.BookKeeper {
 			bk := b.Transactions[i].Payload.(*payload.BookKeeper)
@@ -1185,6 +1201,9 @@ func (bd *ChainStore) persist(b *Block) error {
 	if err = bd.updateAccountState(b); err != nil {
 		return err
 	}
+	if err = bd.updateunspents(b); err != nil {
+		return err
+	}
 	if needUpdateBookKeeper {
 		//bookKeeper key
 		bkListKey := bytes.NewBuffer(nil)
@@ -1210,21 +1229,6 @@ func (bd *ChainStore) persist(b *Block) error {
 	}
 	///////////////////////////////////////////////////////
 	//*/
-
-
-	// batch put the unspents
-	for txhash, value := range unspents {
-		unspentKey := bytes.NewBuffer(nil)
-		unspentKey.WriteByte(byte(IX_Unspent))
-		txhash.Serialize(unspentKey)
-
-		if len(value) == 0 {
-			bd.st.BatchDelete(unspentKey.Bytes())
-		} else {
-			unspentArray := ToByteArray(value)
-			bd.st.BatchPut(unspentKey.Bytes(), unspentArray)
-		}
-	}
 
 	// batch put quantities
 	for assetId, value := range quantities {
