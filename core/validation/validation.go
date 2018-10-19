@@ -2,7 +2,6 @@ package validation
 
 import (
 	"UNetwork/common"
-	. "UNetwork/common"
 	sig "UNetwork/core/signature"
 	"UNetwork/crypto"
 	. "UNetwork/errors"
@@ -23,9 +22,9 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 		return false, NewErr("The number of data hashes is different with number of programs.")
 	}
 
-	programs = signableData.GetPrograms()
+	//programs = signableData.GetPrograms()
 	for i := 0; i < len(programs); i++ {
-		temp, _ := ToCodeHash(programs[i].Code)
+		temp, _ := common.ToCodeHash(programs[i].Code)
 		if hashes[i] != temp {
 			return false, NewErr("The data hashes is different with corresponding program code.")
 		}
