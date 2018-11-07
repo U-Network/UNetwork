@@ -1,9 +1,0 @@
-language: go
-
-install:
-  - grep 'import' -rl ./| grep ".go"| xargs sed -i 's#"UNetwork/#"github.com/U-Network/UNetwork/#g'
-  - go get github.com/Masterminds/glide
-  - glide install
-
-go:
-  - 1.8.x

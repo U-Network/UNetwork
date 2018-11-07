@@ -1,16 +1,22 @@
-GOFMT=gofmt
-GC=go build
-VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
-Minversion := $(shell date)
-BUILD_NODE_PAR = -ldflags "-X UNetwork/common/config.Version=$(VERSION)" #-race
-BUILD_NODECTL_PAR = -ldflags "-X main.Version=$(VERSION)"
+CGO_LDFLAGS_ALLOW = "-I.*"
+UNAME = $(shell uname)
 
-all:
-	$(GC)  $(BUILD_NODE_PAR) -o node main.go
-	$(GC)  $(BUILD_NODECTL_PAR) nodectl.go
 
-format:
-	$(GOFMT) -w main.go
+install:
+	@echo "\n--> Installing the UNetwork TestNet\n"
+ifeq ($(UNAME), Linux)
+	CGO_LDFLAGS="$(CGO_LDFLAGS)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" go install ./cmd/uuu
+endif
+ifeq ($(UNAME), Darwin)
+	CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" go install ./cmd/uuu
+endif
+	@echo "\n\nUNetwork, the TestNet for UNetWork (UUU) has successfully installed!"
 
-clean:
-	rm -rf *.8 *.o *.out *.6
+
+build:
+ifeq ($(UNAME), Linux)
+    CGO_LDFLAGS="$(CGO_LDFLAGS)" CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" go build -o build/uuu ./cmd/uuu
+endif
+ifeq ($(UNAME), Darwin)
+    CGO_LDFLAGS_ALLOW="$(CGO_LDFLAGS_ALLOW)" go build -o build/uuu ./cmd/uuu
+endif
