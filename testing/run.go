@@ -117,15 +117,15 @@ func ExecuteTransaction(data *ToJson, flag uint32) {
 
 	log.Println("nonce :", gNonce)
 
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		log.Printf("Failed to obtain suggested gas price from grid: %+v, Serial number: %d\n", err, flag)
-	}
+	//gasPrice, err := client.SuggestGasPrice(context.Background())
+	//if err != nil {
+	//	log.Printf("Failed to obtain suggested gas price from grid: %+v, Serial number: %d\n", err, flag)
+	//}
 
 	auth := bind.NewKeyedTransactor(priv)
 	auth.GasLimit = uint64(3000000)
-	auth.GasPrice = gasPrice.Mul(gasPrice, big.NewInt(2))
-	//auth.GasPrice = gasPrice
+	//auth.GasPrice = gasPrice.Mul(gasPrice, big.NewInt(2))
+	auth.GasPrice = big.NewInt(0)
 	auth.Value = big.NewInt(10)
 	auth.Nonce = big.NewInt(int64(gNonce))
 
@@ -180,7 +180,6 @@ func Run(cmd *cobra.Command, args []string) {
 	r := bufio.NewReader(f)
 	var line string
 	var flag uint32
-	//var wg sync.WaitGroup
 	for {
 		flag++
 		line, err = r.ReadString('}')
@@ -195,7 +194,6 @@ func Run(cmd *cobra.Command, args []string) {
 			log.Println("Unmarshal json err: ", err.Error())
 			continue
 		}
-
 		ExecuteTransaction(data, flag)
 	}
 }

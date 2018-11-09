@@ -26,7 +26,7 @@ func GetCreatenodeCmd() *cobra.Command {
 }
 
 func initAllFiles(cmd *cobra.Command, args []string) error {
-	sdir := os.ExpandEnv(filepath.Join("$HOME", global.ProjectDir))
+	sdir := global.Homedir()
 
 	if len(args) >= 2 {
 		num, err := strconv.Atoi(args[0])

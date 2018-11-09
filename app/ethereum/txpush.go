@@ -2,8 +2,6 @@ package ethereum
 
 import (
 	"bytes"
-	"encoding/base64"
-	"fmt"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/event"
@@ -49,19 +47,9 @@ func (e *TxListenPush) loop(ev event.Subscription) {
 		select {
 		case tx := <-e.newTxEv:
 			for i := 0; i < len(tx.Txs); i++ {
-				by, _ := tx.Txs[i].MarshalJSON()
-				fmt.Println("loop json: ", string(by))
 				buf := new(bytes.Buffer)
 				if err := tx.Txs[i].EncodeRLP(buf); err == nil {
-					fmt.Println("loop ===================this is shi=========================")
 					e.hook.BroadcastTransaction(buf.Bytes())
-
-					// UNetwork test start
-					// target: to debug the trouble of txdata.
-					var des []byte = make([]byte, 4096)
-					base64.StdEncoding.Encode(des, buf.Bytes())
-					log.Println("this is loop tx: ", string(des))
-					// UNetwork test stop
 				} else {
 					log.Printf("Marshal Transaction error: %s", err.Error())
 					continue

@@ -1,9 +1,7 @@
 package tendermint
 
 import (
-	"encoding/base64"
 	"encoding/binary"
-	"fmt"
 	ethbaseapp "github.com/U-Network/UNetwork/app/ethereum"
 	"github.com/tendermint/tendermint/abci/example/code"
 	"github.com/tendermint/tendermint/abci/types"
@@ -37,14 +35,6 @@ func (app *TendermintApplication) CheckTx(tx []byte) types.ResponseCheckTx {
 }
 
 func (app *TendermintApplication) DeliverTx(tx []byte) types.ResponseDeliverTx {
-	//Unetwork test start
-	//target: to debug the trouble
-	fmt.Println("DeliverTx ===================this is shi=========================")
-	var des []byte = make([]byte, 4096)
-	base64.StdEncoding.Encode(des, tx)
-	fmt.Println("this is tendermint callback function DeliverTxAsync txdata:", string(des))
-	//end test stop
-
 	err := app.ethState.DeliverTx(tx)
 	if err != nil {
 		return types.ResponseDeliverTx{Code: code.CodeTypeEncodingError, Log: err.Error()}

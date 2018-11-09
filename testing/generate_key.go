@@ -14,15 +14,15 @@ import (
 )
 
 var DefaultFile = "./config.json"
-var GenerateKey = &cobra.Command{
+var Generate = &cobra.Command{
 	Use:     "generate",
 	Short:   "generate private key and address",
 	Long:    "This is the UNetwork used to generate the private key and address command to generate the private key to write to ./config.json",
 	Example: `./cmd generate 10 or ./cmd generate n`,
-	Run:     Generate,
+	Run:     GenerateKey,
 }
 
-func Generate(cmd *cobra.Command, args []string) {
+func GenerateKey(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		log.Println("use: ", cmd.Example)
 		return
@@ -50,7 +50,7 @@ type ToJson struct {
 func writefile(w *bufio.Writer, n int) {
 	for i := 0; i < n; i++ {
 		s := CreateKey()
-		w.WriteString(s + "\n ")
+		w.WriteString(s)
 	}
 }
 
@@ -69,5 +69,5 @@ func CreateKey() string {
 	if err != nil {
 		log.Printf("CreateKey error : %s", err.Error())
 	}
-	return string(by)
+	return string(by) + "\n "
 }

@@ -32,7 +32,7 @@ func main() {
 	Unetcmd.AddCommand(
 		nodeCmd,
 		//clientCmd,
-		//attachCmd,
+		basecmd.AttachCmd,
 		//versionCmd,
 
 		lineBreak,

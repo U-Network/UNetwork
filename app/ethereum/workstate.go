@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
-	"os"
 	"path/filepath"
 	"sync"
 )
@@ -45,7 +44,7 @@ type EthereumWorkState struct {
 func NewEthereumWorkState(ethereum *eth.Ethereum) *EthereumWorkState {
 
 	// TODO: load eth receiver from config file
-	sdir := os.ExpandEnv(filepath.Join("$HOME", global.ProjectDir))
+	sdir := global.Homedir()
 	sdir = filepath.Join(sdir, "config")
 	sdir = filepath.Join(sdir, "eth_preivatekey.json")
 	addr, _ := global.GetEthAddressfromfile(sdir)
@@ -85,7 +84,6 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("DeliverTx ===================this is shi=========================")
 	blockchain := es.ethereum.BlockChain()
 	chainConfig := es.ethereum.APIBackend.ChainConfig()
 
@@ -105,6 +103,7 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 		vm.Config{EnablePreimageRecording: config.EnablePreimageRecording},
 	)
 	if err != nil {
+		fmt.Println("DeliverTx err: ", err.Error())
 		return err
 	}
 
@@ -130,7 +129,7 @@ func (es *EthereumWorkState) Commit(blockheight uint64) (common.Hash, error) {
 	if es.GetblockNumber() >= blockheight {
 		return common.Hash{}, nil
 	}
-	log.Info("EthereumWorkState +++ +++ +++ Commit") // nolint: errcheck
+	//log.Info("EthereumWorkState +++ +++ +++ Commit") // nolint: errcheck
 
 	es.Mtx.Lock()
 	defer es.Mtx.Unlock()
