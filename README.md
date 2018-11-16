@@ -27,7 +27,7 @@ The requirements to build UNetwork are:
  *	Go version 1.8 or later
  *	Glide (a third-party package management tool)
  *	Properly configured Go environment
-
+        
 # Deployment
  
 To run UNetwork successfully, at least 4 nodes are required. The four nodes can be deployed in the following two way:
