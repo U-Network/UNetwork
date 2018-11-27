@@ -4,19 +4,17 @@ This is the UNetwork Alpha network
 
 # UNetwork 
 
- UNetwork is a decentralized distributed network protocol based on blockchain technology and is implemented in Golang. Through peer-to-peer network, UNetwork can be used to digitize assets and provide financial service, including asset registration, issuance, transfer, etc.
+ UNetwork is a revolutionary protocol for publishing and valuing online content that helps online content platforms better align with the interests of their users. Through peer-to-peer network, UNetwork serves as a decentralized distributed network protocol based on blockchain technology and is implemented in Golang.  
 
 ## Highlight Features
 
- *	Scalable Lightweight Universal Smart Contract
- *	Crosschain Interactive Protocol
- *	Quantum-Resistant Cryptography (optional module)
- *	China National Crypto Standard (optional module)
+ *	Scalable Universal Smart Contract (EVM-compatible)
  *	High Optimization of TPS
+ *	Crosschain Interactive Protocol
+ *	China National Crypto Standard (optional module)
  *	Distributed Storage and File Sharding Solutions Based on IPFS
  *	P2P Link Layer Encryption
  *	Node Access Control
- *	Multiple Consensus Algorithm Support (DBFT/RBFT/SBFT)
  *	Configurable Block Generation Time
  *	Configurable Digital Currency Incentive
  *	Configable Sharding Consensus (in progress)
