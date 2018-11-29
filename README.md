@@ -4,7 +4,7 @@ This is the UNetwork Mainnet "Ustart"
 
 # UNetwork 
 
- UNetwork is a revolutionary protocol for publishing and valuing online content that helps online content platforms better align with the interests of their users. Through peer-to-peer network, UNetwork serves as a decentralized distributed network protocol based on blockchain technology and is implemented in Golang.  
+ UNetwork is a revolutionary protocol for publishing and valuing online content that helps online content platforms better align with the interests of their users. Through peer-to-peer network, UNetwork serves as a decentralized distributed network protocol based on blockchain technology. UNetwork Mainnet "Ustart" is implemented in Golang.  
 
 ## Highlight Features
 
