@@ -1,4 +1,4 @@
-This is the UNetwork Alpha network
+This is the UNetwork Mainnet "Ustart" 
 
 [![Build Status](https://travis-ci.org/U-Network/UNetwork.svg?branch=master)](https://travis-ci.org/U-Network/UNetwork)
 
