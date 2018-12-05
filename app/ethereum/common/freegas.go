@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//FreeGas is a free gas data structure for each account.
 type FreeGas struct {
 	User      common.Address `json:"user"`
 	Amount    *big.Int       `json:"amount"`
@@ -24,6 +25,7 @@ func (g *FreeGas) UnMarshal(data []byte) (err error) {
 	return json.Unmarshal(data, g)
 }
 
+// FreeGasManager
 type FreeGasManager struct {
 	DiskDb db.DB
 	State  *StateDB
@@ -36,6 +38,7 @@ func NewFreeGasManager() *FreeGasManager {
 	}
 }
 
+//IsExist Check if the account exists, if it exists, return true
 func (f *FreeGasManager) IsExist(key []byte) bool {
 	return f.DiskDb.Has(key)
 }
@@ -50,13 +53,15 @@ func (f *FreeGasManager) AddAccount(addr []byte) (err error) {
 		if err = account.UnMarshal(by); err != nil {
 			return err
 		}
-		f.State.Append(account)
+		//f.State.Append(account)
 
 	} else {
 
 	}
+	return nil
 }
 
+// Save function Will first copy the data in the StateDB and then write the data to disk.
 func (f *FreeGasManager) Save() {
 	batch := f.DiskDb.NewBatch()
 	var duplication map[common.Address]*FreeGas

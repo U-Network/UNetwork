@@ -1,16 +1,16 @@
 package commands
 
 import (
-	"github.com/spf13/cobra"
-	"path/filepath"
 	"fmt"
+	. "github.com/U-Network/UNetwork/global"
 	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/console"
-	"gopkg.in/urfave/cli.v1"
-	"strings"
+	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
-	."github.com/U-Network/UNetwork/global"
+	"github.com/spf13/cobra"
+	"gopkg.in/urfave/cli.v1"
+	"path/filepath"
+	"strings"
 )
 
 var AttachCmd = GetAttachCmd()

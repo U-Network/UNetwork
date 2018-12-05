@@ -64,7 +64,7 @@ func NewBackend(ctx *node.ServiceContext, ethConfig *eth.Config) (*Backend, erro
 	if err != nil {
 		return nil, err
 	}
-
+	//uCommon.G_GasManager = uCommon.NewFreeGasManager(ethereum)
 	ls, _ := les.NewLesServer(ethereum, ethConfig)
 	ethereum.AddLesServer(ls)
 

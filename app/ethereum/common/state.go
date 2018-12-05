@@ -3,8 +3,11 @@ package common
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"sync"
+
+	_ "runtime/race"
 )
 
 type StateDB struct {
@@ -20,10 +23,13 @@ func NewStateDB() *StateDB {
 }
 
 func (s *StateDB) Append(addr common.Address, account *FreeGas) {
-
 	s.Mux.Lock()
 	defer s.Mux.Unlock()
-	
+	if v, ok := s.CurFreeGas[addr]; ok {
+		//待定
+	} else {
+		fmt.Println(v)
+	}
 }
 
 func (s *StateDB) ReSet() {

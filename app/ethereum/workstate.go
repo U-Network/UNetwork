@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"math/big"
 	"path/filepath"
 	"sync"
@@ -37,7 +38,8 @@ type EthereumWorkState struct {
 	gp              *core.GasPool
 	Mtx             *sync.Mutex
 
-	receiver common.Address
+	receiver   common.Address
+	gasManager *core.FreeGasManager
 }
 
 // NewEthereumWorkState Create and return an EthereumWorkState object pointer
@@ -46,14 +48,15 @@ func NewEthereumWorkState(ethereum *eth.Ethereum) *EthereumWorkState {
 	// TODO: load eth receiver from config file
 	sdir := global.Homedir()
 	sdir = filepath.Join(sdir, "config")
-	sdir = filepath.Join(sdir, "eth_preivatekey.json")
+	sdir = filepath.Join(sdir, "eth_privatekey.json")
 	addr, _ := global.GetEthAddressfromfile(sdir)
 	ethReceiverAddress := common.HexToAddress(addr)
 
 	state := &EthereumWorkState{
-		ethereum: ethereum,
-		Mtx:      new(sync.Mutex),
-		receiver: ethReceiverAddress,
+		ethereum:   ethereum,
+		Mtx:        new(sync.Mutex),
+		receiver:   ethReceiverAddress,
+		gasManager: ethereum.GetFreeGasManager(),
 	}
 	err := state.reset()
 	if err != nil {
@@ -110,10 +113,31 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	usedGasFee := big.NewInt(0).Mul(new(big.Int).SetUint64(usedGas), tx.GasPrice())
 	es.totalUsedGasFee.Add(es.totalUsedGasFee, usedGasFee)
 
+	// unetwork check gas
+	from, err := ethTypes.Sender(es.ethereum.TxPool().GetSigner(), tx)
+	if err != nil {
+		return core.ErrInvalidSender
+	}
+	account, _ := es.gasManager.StateDB().GetAccount(from)
+	freeGas, _ := es.gasManager.CalculateFreeGas(account, es.ethereum.TxPool().State().GetBalance(from))
+
+	curUsedGas := new(big.Int).SetUint64(usedGas)
+	var difference *big.Int
+	if freeGas.Cmp(curUsedGas) < 0 {
+		difference = new(big.Int).Sub(curUsedGas, freeGas)
+		fromAccount, _ := es.gasManager.StateDB().GetAccount(*(tx.To()))
+		fromAccount.UseAmount.Add(fromAccount.UseAmount, difference)
+		account.UseAmount.Add(account.UseAmount, curUsedGas)
+		es.gasManager.StateDB().SetAccountUsedGas(fromAccount)
+		es.gasManager.StateDB().SetAccountUsedGas(account)
+	} else {
+		account.UseAmount.Add(account.UseAmount, new(big.Int).SetUint64(usedGas))
+		es.gasManager.StateDB().SetAccountUsedGas(account)
+	}
+
 	logs := es.State.GetLogs(tx.Hash())
 
 	es.txIndex++
-
 	// The slices are allocated in updateHeaderWithTimeInfo
 	es.Transactions = append(es.Transactions, tx)
 	es.Receipts = append(es.Receipts, receipt)
@@ -161,7 +185,8 @@ func (es *EthereumWorkState) Commit(blockheight uint64) (common.Hash, error) {
 		return es.insertEmptyBlockToChain()
 	}
 
-	log.Info("Committing block", "stateHash", hashArray, "blockHash", blockHash)
+	es.gasManager.Save()
+	//log.Info("Committing block", "stateHash", hashArray, "blockHash", blockHash)
 	// reset all state
 	es.reset()
 	return blockHash, err

@@ -30,7 +30,8 @@ var GenerateTx = &cobra.Command{
 }
 
 var (
-	quitFl int32
+	quitFl  int32
+	g_count uint64
 )
 
 type Queue struct {
@@ -47,6 +48,7 @@ func GenerateTransaction(cmd *cobra.Command, args []string) {
 		log.Println("args[1] is not number error: ", err.Error())
 		return
 	}
+
 	priv, err = crypto.HexToECDSA(args[0])
 	if err != nil {
 		log.Println("from private key error: ", err.Error())
@@ -76,6 +78,11 @@ func taskLoop(toPriv *ecdsa.PrivateKey, count uint64, URL string) {
 
 	var flag uint64
 	for {
+		if atomic.LoadUint64(&g_count) == count {
+			os.Exit(0)
+		} else {
+			atomic.AddUint64(&g_count, 1)
+		}
 		fromPriv, _ := ethcrypto.GenerateKey()
 		auth := bind.NewKeyedTransactor(fromPriv)
 		auth.GasLimit = uint64(3000000)
@@ -94,9 +101,8 @@ func taskLoop(toPriv *ecdsa.PrivateKey, count uint64, URL string) {
 		if err != nil {
 			fmt.Println("SendTransaction err: ", err, ", Serial number: ", flag)
 		} else {
-			log.Println("SendTransaction success Serial number:", flag)
+			log.Println("SendTransaction success Serial number:", flag, "Transaction count:", atomic.LoadUint64(&g_count))
 		}
-
 		flag++
 		if atomic.LoadInt32(&quitFl) != 0 {
 			return

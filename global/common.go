@@ -16,7 +16,7 @@ import (
 func SaveEthPrivateKey(peernum int, dir string) error {
 	for i := 1; i <= peernum; i++ {
 		pathdir := filepath.Join(dir, fmt.Sprintf("config%d", i))
-		filename := filepath.Join(pathdir, "eth_preivatekey.json")
+		filename := filepath.Join(pathdir, "eth_privatekey.json")
 		content, err := GenEthPrivatekey()
 		if err != nil {
 			return err

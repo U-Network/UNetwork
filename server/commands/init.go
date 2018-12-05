@@ -115,7 +115,7 @@ func InitConfigFiles(path string) error {
 	}
 
 	pathdir := filepath.Join(config.RootDir, "config")
-	ethprvfilename := filepath.Join(pathdir, "eth_preivatekey.json")
+	ethprvfilename := filepath.Join(pathdir, "eth_privatekey.json")
 	global.SaveContent(content, ethprvfilename)
 	return nil
 }
