@@ -61,6 +61,7 @@ type SimulatedBackend struct {
 	events *filters.EventSystem // Event system for filtering log events live
 
 	config *params.ChainConfig
+	gasManager *core.FreeGasManager
 }
 
 // NewSimulatedBackend creates a new binding backend using a simulated blockchain
@@ -80,7 +81,9 @@ func NewSimulatedBackend(alloc core.GenesisAlloc, gasLimit uint64) *SimulatedBac
 	backend.rollback()
 	return backend
 }
-
+func (b *SimulatedBackend) SetFreeGasManager(manager *core.FreeGasManager) {
+	b.gasManager = manager
+}
 // Commit imports all the pending transactions as a single block and starts a
 // fresh new state.
 func (b *SimulatedBackend) Commit() {

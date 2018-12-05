@@ -132,6 +132,7 @@ type BlockChain struct {
 
 	badBlocks      *lru.Cache              // Bad block cache
 	shouldPreserve func(*types.Block) bool // Function used to determine whether should preserve the given block.
+	gasManager *FreeGasManager
 }
 
 // NewBlockChain returns a fully initialised block chain using information
@@ -199,6 +200,10 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	// Take ownership of this particular state
 	go bc.update()
 	return bc, nil
+}
+
+func (bc *BlockChain) SetFreeGasManager(manager *FreeGasManager){
+	bc.gasManager = manager
 }
 
 func (bc *BlockChain) getProcInterrupt() bool {

@@ -92,6 +92,7 @@ type Ethereum struct {
 	netRPCService *ethapi.PublicNetAPI
 
 	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
+	gasManager *core.FreeGasManager
 }
 
 func (s *Ethereum) AddLesServer(ls LesServer) {
@@ -609,5 +610,12 @@ func UnetNewEthereum(ctx *node.ServiceContext, config *Config, eng consensus.Eng
 		gpoParams.Default = config.MinerGasPrice
 	}
 	eth.APIBackend.gpo = gasprice.NewOracle(eth.APIBackend, gpoParams)
+	eth.gasManager = core.NewFreeGasManager(eth.blockchain)
+	eth.txPool.SetFreeManager(eth.gasManager)
+	core.SetGlobalGasManager(eth.gasManager)
 	return eth, nil
+}
+
+func (s *Ethereum) GetFreeGasManager() *core.FreeGasManager {
+	return s.gasManager
 }

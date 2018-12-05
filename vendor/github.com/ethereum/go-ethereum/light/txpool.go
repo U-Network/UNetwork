@@ -68,6 +68,8 @@ type TxPool struct {
 	clearIdx     uint64                               // earliest block nr that can contain mined tx info
 
 	homestead bool
+
+	gasManager *core.FreeGasManager
 }
 
 // TxRelayBackend provides an interface to the mechanism that forwards transacions
@@ -107,6 +109,10 @@ func NewTxPool(config *params.ChainConfig, chain *LightChain, relay TxRelayBacke
 	go pool.eventLoop()
 
 	return pool
+}
+
+func (pool *TxPool) SetFreeGasManager(manager *core.FreeGasManager) {
+	pool.gasManager = manager
 }
 
 // currentState returns the light state of the current head header
@@ -370,6 +376,15 @@ func (pool *TxPool) validateTx(ctx context.Context, tx *types.Transaction) error
 	if tx.Value().Sign() < 0 {
 		return core.ErrNegativeValue
 	}
+
+	// unetwork check gas (Les node will be added later)
+	//if tx.GasPrice().Int64() == 0 {
+	//	account := pool.gasManager.StateDB().getAccount(from)
+	//	freegas, _ := pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
+	//	if freegas.Cmp(new(big.Int).Add(account.UseAmount,new(big.Int).SetInt64(tx.Gas()))) < 0 {
+	//		return ErrUnderpriced
+	//	}
+	//}
 
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL

@@ -35,6 +35,11 @@ type StateProcessor struct {
 	config *params.ChainConfig // Chain configuration options
 	bc     *BlockChain         // Canonical block chain
 	engine consensus.Engine    // Consensus engine used for block rewards
+	gasManager *FreeGasManager
+}
+
+func (s *StateProcessor) SetFreeGasManager(manager *FreeGasManager){
+	s.gasManager = manager
 }
 
 // NewStateProcessor initialises a new StateProcessor.

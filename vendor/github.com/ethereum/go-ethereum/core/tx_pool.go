@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
+	//UGas "github.com/ethereum/go-ethereum/core/gas"
 )
 
 const (
@@ -210,6 +211,7 @@ type TxPool struct {
 	wg sync.WaitGroup // for shutdown sync
 
 	homestead bool
+	gasManager *FreeGasManager
 }
 
 // NewTxPool creates a new transaction pool to gather, sort and filter inbound
@@ -258,6 +260,14 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 	go pool.loop()
 
 	return pool
+}
+
+func (pool *TxPool) GetSigner() types.Signer{
+	return pool.signer
+}
+
+func (pool *TxPool) SetFreeManager(manager *FreeGasManager){
+	pool.gasManager = manager
 }
 
 // loop is the transaction pool's main event loop, waiting for and reacting to
@@ -341,6 +351,8 @@ func (pool *TxPool) loop() {
 		}
 	}
 }
+
+
 
 // lockedReset is a wrapper around reset to allow calling it in a thread safe
 // manner. This method is only ever used in the tester!
@@ -536,7 +548,6 @@ func (pool *TxPool) Pending() (map[common.Address]types.Transactions, error) {
 	for addr, list := range pool.pending {
 		pending[addr] = list.Flatten()
 	}
-	fmt.Println("Pending() Num: ", len(pending))
 	return pending, nil
 }
 
@@ -561,7 +572,6 @@ func (pool *TxPool) local() map[common.Address]types.Transactions {
 			txs[addr] = append(txs[addr], queued.Flatten()...)
 		}
 	}
-	fmt.Println("local() Num: ", txs)
 	return txs
 }
 
@@ -586,16 +596,26 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if err != nil {
 		return ErrInvalidSender
 	}
-	fmt.Println("The eth address is ",common.Bytes2Hex(from[:]))
 	// Drop non-local transactions under our own minimal accepted gas price
 	local = local || pool.locals.contains(from) // account may be local even if the transaction arrived from the network
 	if !local && pool.gasPrice.Cmp(tx.GasPrice()) > 0 {
 		return ErrUnderpriced
 	}
+
 	// Ensure the transaction adheres to nonce ordering
 	if pool.currentState.GetNonce(from) > tx.Nonce() {
 		return ErrNonceTooLow
 	}
+
+	// unetwork check gas
+	if tx.GasPrice().Int64() == 0 {
+		account,_ := pool.gasManager.StateDB().getAccount(from)
+		freegas, _ := pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
+		if freegas.Cmp(new(big.Int).Add(account.UseAmount,new(big.Int).SetUint64(tx.Gas()))) < 0 {
+			return ErrUnderpriced
+		}
+	}
+
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL
 	if pool.currentState.GetBalance(from).Cmp(tx.Cost()) < 0 {
@@ -651,9 +671,6 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 	}
 	// If the transaction is replacing an already pending one, do directly
 	from, _ := types.Sender(pool.signer, tx) // already validated
-
-	pNum := len(pool.pending)
-	fmt.Println("pNum : ", pNum)
 
 	if list := pool.pending[from]; list != nil && list.Overlaps(tx) {
 		// Nonce already pending, check if required price bump is met

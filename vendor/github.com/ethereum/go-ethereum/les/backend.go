@@ -75,6 +75,7 @@ type LightEthereum struct {
 	netRPCService *ethapi.PublicNetAPI
 
 	wg sync.WaitGroup
+	gasManager *core.FreeGasManager
 }
 
 func New(ctx *node.ServiceContext, config *eth.Config) (*LightEthereum, error) {

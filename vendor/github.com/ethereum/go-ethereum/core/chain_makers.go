@@ -47,6 +47,7 @@ type BlockGen struct {
 
 	config *params.ChainConfig
 	engine consensus.Engine
+	//gasManager *FreeGasManager
 }
 
 // SetCoinbase sets the coinbase of the generated block.
