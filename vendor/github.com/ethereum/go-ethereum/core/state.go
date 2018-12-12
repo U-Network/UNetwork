@@ -37,11 +37,20 @@ func (s *StateDB) SetAccountUsedGas(account *Account) (err error) {
 	}
 	s.Mux.Lock()
 	defer s.Mux.Unlock()
-	cur, _ := s.GetAccount(account.User)
-	cur.Timestamp.Set(account.Timestamp)
-	cur.UseAmount.Set(account.UseAmount)
-	s.CurFreeGas[cur.User] = cur
-	return nil
+	cur, ok := s.CurFreeGas[account.User]
+	if ok {
+		cur.Timestamp.Set(account.Timestamp)
+		cur.UseAmount.Set(account.UseAmount)
+		s.CurFreeGas[cur.User] = cur
+		return nil
+	}else {
+		curacc , _ := s.getAccount(account.User)
+		curacc.Timestamp.Set(account.Timestamp)
+		curacc.UseAmount.Set(account.UseAmount)
+		s.CurFreeGas[curacc.User] = curacc
+		return nil
+	}
+	return errors.New("SetAccountUsedGas Unknown error")
 }
 
 // GetAccount Check if the user needs to update the used gas interval, if it is updating the used gas,

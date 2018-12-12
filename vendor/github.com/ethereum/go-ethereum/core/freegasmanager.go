@@ -41,7 +41,7 @@ func (f *FreeGasManager) CalculateFreeGas(account *Account, balance *big.Int) (f
 		return nil, errors.New("CalculateFreeGas Invalid account or balance")
 	}
 	//return new(big.Int).SetUint64(((balance.Uint64() / 1e18) * proportion) - account.UseAmount.Uint64()), nil
-	return new(big.Int).SetUint64(((balance.Uint64() / 1e18) * proportion)), nil
+	return new(big.Int).Mul(new(big.Int).Div(balance,new(big.Int).SetUint64(1e18)),new(big.Int).SetUint64(proportion)), nil
 }
 
 //IsExist Check if the account exists, if it exists, return true
