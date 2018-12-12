@@ -80,6 +80,7 @@ func (s *StateDB) getAccount(addr common.Address) (account *Account, err error) 
 	curAccount.UseAmount = new(big.Int)
 	curAccount.Timestamp = new(big.Int).SetInt64(time.Now().Unix())
 	s.CurFreeGas[addr] = curAccount
+	account = new(Account)
 	err = curAccount.DeepCopy(account)
 	return account, err
 }

@@ -43,5 +43,4 @@ func main() {
 	basecmd.SetUpRoot(Unetcmd)
 	executor := cli.PrepareMainCmd(Unetcmd, "CM", os.ExpandEnv("$HOME/.unetwork"))
 	executor.Execute()
-
 }

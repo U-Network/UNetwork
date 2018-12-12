@@ -1238,8 +1238,8 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Sen
 	tx := args.toTransaction()
 
 	//UNetwork test begin
-	by,_ := tx.MarshalJSON()
-	fmt.Println("this is SendTransaction tx: ", string(by))
+	//by,_ := tx.MarshalJSON()
+	//fmt.Println("this is SendTransaction tx: ", string(by))
 
 	//UNetwork test begin
 

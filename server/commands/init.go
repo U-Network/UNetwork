@@ -143,7 +143,6 @@ func initEth(filepath string) error {
 			return err
 		}
 		logger.Info("Successfully wrote genesis state", "database", name, "hash", hash)
-
 	}
 	return nil
 }

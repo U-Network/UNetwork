@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
+	slog "log"
 	//UGas "github.com/ethereum/go-ethereum/core/gas"
 )
 
@@ -609,9 +610,22 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 
 	// unetwork check gas
 	if tx.GasPrice().Int64() == 0 {
-		account,_ := pool.gasManager.StateDB().getAccount(from)
-		freegas, _ := pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
-		if freegas.Cmp(new(big.Int).Add(account.UseAmount,new(big.Int).SetUint64(tx.Gas()))) < 0 {
+		account, e := pool.gasManager.StateDB().getAccount(from)
+		if e != nil{
+			//slog.Println("error :", account)
+			return e
+		}
+
+		freegas, e1 := pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
+		if e1 != nil{
+			//slog.Println("error :", account)
+			return e1
+		}
+		//slog.Println("freegas :", freegas.Uint64())
+		//slog.Println("account.UseAmount: ",account.UseAmount.Uint64())
+		//slog.Println("tx.Cost : ",tx.Cost().Uint64())
+
+		if freegas.Cmp(new(big.Int).Add(account.UseAmount,tx.Cost())) < 0 {
 			return ErrUnderpriced
 		}
 	}
