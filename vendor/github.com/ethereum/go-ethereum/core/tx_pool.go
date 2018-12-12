@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
-	slog "log"
 	//UGas "github.com/ethereum/go-ethereum/core/gas"
 )
 
