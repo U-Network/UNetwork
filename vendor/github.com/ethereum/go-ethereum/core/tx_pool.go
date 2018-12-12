@@ -611,18 +611,13 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if tx.GasPrice().Int64() == 0 {
 		account, e := pool.gasManager.StateDB().getAccount(from)
 		if e != nil{
-			//slog.Println("error :", account)
 			return e
 		}
 
 		freegas, e1 := pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
 		if e1 != nil{
-			//slog.Println("error :", account)
 			return e1
 		}
-		//slog.Println("freegas :", freegas.Uint64())
-		//slog.Println("account.UseAmount: ",account.UseAmount.Uint64())
-		//slog.Println("tx.Cost : ",tx.Cost().Uint64())
 
 		if freegas.Cmp(new(big.Int).Add(account.UseAmount,tx.Cost())) < 0 {
 			return ErrUnderpriced
@@ -743,8 +738,8 @@ func (pool *TxPool) enqueueTx(hash common.Hash, tx *types.Transaction) (bool, er
 		return false, ErrReplaceUnderpriced
 	}
 
-	qNum := len(pool.queue)
-	fmt.Println("qNUm : ", qNum)
+	//qNum := len(pool.queue)
+	//fmt.Println("qNUm : ", qNum)
 
 	// Discard any previous transaction and mark this
 	if old != nil {

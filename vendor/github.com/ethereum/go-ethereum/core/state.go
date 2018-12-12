@@ -51,6 +51,7 @@ func (s *StateDB) GetAccount(addr common.Address) (account *Account, err error) 
 	defer s.Mux.Unlock()
 	CurAccount, ok := s.CurFreeGas[addr]
 	if ok {
+		account = new(Account)
 		err = CurAccount.DeepCopy(account)
 		return account, err
 	}
