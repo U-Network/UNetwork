@@ -88,6 +88,7 @@ func NewServer(api *api.API, corsString string) *Server {
 		AllowedMethods: []string{http.MethodPost, http.MethodGet, http.MethodDelete, http.MethodPatch, http.MethodPut},
 		MaxAge:         600,
 		AllowedHeaders: []string{"*"},
+		// AllowCredentials: true,
 	})
 
 	server := &Server{api: api}

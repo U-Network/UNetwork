@@ -83,7 +83,7 @@ func (es *EthereumWorkState) BeginBlock(blockHash []byte, parentTime uint64, num
 func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	es.Mtx.Lock()
 	defer es.Mtx.Unlock()
-	tx, err := decodeTx(txBytes)
+	tx, err := es.DecodeTx(txBytes)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,6 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 		fmt.Println("DeliverTx err: ", err.Error())
 		return err
 	}
-
 	usedGasFee := big.NewInt(0).Mul(new(big.Int).SetUint64(usedGas), tx.GasPrice())
 	es.totalUsedGasFee.Add(es.totalUsedGasFee, usedGasFee)
 
@@ -118,25 +117,40 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	if err != nil {
 		return core.ErrInvalidSender
 	}
-	account, _ := es.gasManager.StateDB().GetAccount(from)
-	freeGas, _ := es.gasManager.CalculateFreeGas(account, es.ethereum.TxPool().State().GetBalance(from))
+	fromAccount, _ := es.gasManager.StateDB().GetAccount(from)
+	if tx.GasPrice().Cmp(big.NewInt(0)) == 0 {
+		// Account contains the used gas
 
-	curUsedGas := new(big.Int).SetUint64(usedGas)
-	var difference *big.Int
-	if freeGas.Cmp(curUsedGas) < 0 {
-		difference = new(big.Int).Sub(curUsedGas, freeGas)
-		fromAccount, _ := es.gasManager.StateDB().GetAccount(*(tx.To()))
-		fromAccount.UseAmount.Add(fromAccount.UseAmount, difference)
-		account.UseAmount.Add(account.UseAmount, curUsedGas)
-		es.gasManager.StateDB().SetAccountUsedGas(fromAccount)
-		es.gasManager.StateDB().SetAccountUsedGas(account)
+		//fmt.Println("account.UseAmount : ", account.UseAmount)
+		fromAccount.UseAmount.Sub(fromAccount.UseAmount, new(big.Int).SetUint64(tx.Gas()))
+		// Free gas calculated after deducting the current token
+		freeGas, _ := es.gasManager.CalculateFreeGas(fromAccount, es.State.GetBalance(from))
+		//current used freegas
+		curUsedGas := new(big.Int).SetUint64(usedGas)
+
+		//fmt.Println("curUsedGas :", curUsedGas.String())
+
+		var freeGasDiff *big.Int
+		if freeGas.Cmp(curUsedGas) < 0 {
+			freeGasDiff = new(big.Int).Sub(curUsedGas, freeGas)
+			toAccount, _ := es.gasManager.StateDB().GetAccount(*(tx.To()))
+
+			toAccount.UseAmount.Add(toAccount.UseAmount, freeGasDiff)
+			fromAccount.UseAmount.Add(fromAccount.UseAmount, new(big.Int).Sub(curUsedGas, freeGasDiff))
+			es.gasManager.StateDB().SetAccountUsedGas(fromAccount)
+			es.gasManager.StateDB().SetAccountUsedGas(toAccount)
+
+		} else {
+
+			fromAccount.UseAmount.Add(fromAccount.UseAmount, curUsedGas)
+			//fmt.Println("fromAccount.UseAmount: ", fromAccount.UseAmount.String())
+			es.gasManager.StateDB().SetAccountUsedGas(fromAccount)
+		}
 	} else {
-		account.UseAmount.Add(account.UseAmount, new(big.Int).SetUint64(usedGas))
-		es.gasManager.StateDB().SetAccountUsedGas(account)
+		fromAccount.UseAmount.Sub(fromAccount.UseAmount, new(big.Int).SetUint64(tx.Gas()))
 	}
 
 	logs := es.State.GetLogs(tx.Hash())
-
 	es.txIndex++
 	// The slices are allocated in updateHeaderWithTimeInfo
 	es.Transactions = append(es.Transactions, tx)
@@ -177,15 +191,20 @@ func (es *EthereumWorkState) Commit(blockheight uint64) (common.Hash, error) {
 
 	blockchain := es.ethereum.BlockChain()
 	_, err = blockchain.InsertChain([]*ethTypes.Block{block})
+
 	if err != nil {
 		log.Error("Error inserting ethereum block in chain", "err", err)
 		// reset all state
 		es.reset()
 		// error deal by insert empty block
+		es.gasManager.State.ReSetState()
 		return es.insertEmptyBlockToChain()
 	}
 
-	es.gasManager.Save()
+	if !es.gasManager.StateDB().IsRefresh() {
+		es.gasManager.Save()
+		es.gasManager.State.ReSetState()
+	}
 	//log.Info("Committing block", "stateHash", hashArray, "blockHash", blockHash)
 	// reset all state
 	es.reset()
@@ -290,11 +309,19 @@ func calcGasLimit(parent *ethTypes.Block) uint64 {
 /////////////////////////////////////////////////////
 
 // rlp decode an etherum transaction
-func decodeTx(txBytes []byte) (*ethTypes.Transaction, error) {
+func (es *EthereumWorkState) DecodeTx(txBytes []byte) (*ethTypes.Transaction, error) {
 	tx := new(ethTypes.Transaction)
 	rlpStream := rlp.NewStream(bytes.NewBuffer(txBytes), 0)
 	if err := tx.DecodeRLP(rlpStream); err != nil {
 		return nil, err
 	}
 	return tx, nil
+}
+
+func (es *EthereumWorkState) GetEthBackend() *eth.Ethereum {
+	return es.ethereum
+}
+
+func (es *EthereumWorkState) GetFreeGasManager() *core.FreeGasManager {
+	return es.gasManager
 }

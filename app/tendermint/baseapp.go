@@ -3,8 +3,11 @@ package tendermint
 import (
 	"encoding/binary"
 	ethbaseapp "github.com/U-Network/UNetwork/app/ethereum"
+
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/tendermint/tendermint/abci/example/code"
 	"github.com/tendermint/tendermint/abci/types"
+	"math/big"
 )
 
 var blockheight int64
@@ -31,7 +34,38 @@ func (app *TendermintApplication) SetOption(req types.RequestSetOption) types.Re
 }
 
 func (app *TendermintApplication) CheckTx(tx []byte) types.ResponseCheckTx {
-	return types.ResponseCheckTx{Code: code.CodeTypeOK}
+	checkTx, err := app.ethState.DecodeTx(tx)
+	if err != nil {
+		return types.ResponseCheckTx{Code: code.CodeTypeEncodingError}
+	}
+	// unetwork check gas
+	if checkTx.GasPrice().Cmp(big.NewInt(0)) == 0 {
+		// Restore sender
+		from, err := ethTypes.Sender(app.ethState.GetEthBackend().TxPool().GetSigner(), checkTx)
+		if err != nil {
+			return types.ResponseCheckTx{Code: code.CodeTypeUnauthorized}
+		}
+		// Account contains the used gas
+		account, _ := app.ethState.GetFreeGasManager().StateDB().GetAccount(from)
+		// Free gas calculated after deducting the current token
+		freeGas, _ := app.ethState.GetFreeGasManager().CalculateFreeGas(account, app.ethState.State.GetBalance(from))
+
+		//fmt.Println("CheckTx freeGas: ", freeGas.String())
+
+		if freeGas.Cmp(new(big.Int).SetUint64(checkTx.Gas())) < 0 { //Free free gas is available
+			return types.ResponseCheckTx{Code: code.CodeTypeUnauthorized}
+		} else {
+			account.UseAmount.Add(account.UseAmount, new(big.Int).SetUint64(checkTx.Gas()))
+			app.ethState.GetFreeGasManager().StateDB().SetAccountUsedGas(account)
+
+			//fmt.Println("CheckTx account.UseAmount : ", account.UseAmount.String())
+
+			return types.ResponseCheckTx{Code: code.CodeTypeOK}
+		}
+	} else {
+		return types.ResponseCheckTx{Code: code.CodeTypeOK}
+	}
+	return types.ResponseCheckTx{Code: code.CodeTypeUnauthorized}
 }
 
 func (app *TendermintApplication) DeliverTx(tx []byte) types.ResponseDeliverTx {

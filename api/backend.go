@@ -126,6 +126,16 @@ func (b *Backend) GetLocalClient() *rpcClient.Local {
 func (b *Backend) APIs() []rpc.API {
 	//retApis := []rpc.API{}
 	retApis := b.ethereum.APIs()
+
+	retApis = append(retApis, []rpc.API{
+		{
+			Namespace: "freegas",
+			Version:   "1.0",
+			Service:   NewFreeGasAPI(*b),
+			Public:    true,
+		},
+	}...)
+
 	return retApis
 }
 

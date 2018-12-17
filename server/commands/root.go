@@ -116,7 +116,7 @@ var (
 	}
 )
 
-func setDefualtFlagValue(flagset *flag.FlagSet) error{
+func setDefualtFlagValue(flagset *flag.FlagSet) error {
 	var split []string
 	split = append(split, "--rpcport")
 	split = append(split, "9147")
@@ -164,7 +164,7 @@ func setupUUUContext(ethparam string) error {
 	context.GlobalSet(ABCIProtocolFlag.Name, config.EMConfig.ABCIProtocol)
 
 	context.GlobalSet(ethUtils.RPCEnabledFlag.Name, strconv.FormatBool(config.EMConfig.RPCEnabledFlag))
-	context.GlobalSet(ethUtils.RPCApiFlag.Name, config.EMConfig.RPCApiFlag)
+	//context.GlobalSet(ethUtils.RPCApiFlag.Name, config.EMConfig.RPCApiFlag)
 	context.GlobalSet(ethUtils.RPCVirtualHostsFlag.Name, config.EMConfig.RPCVirtualHostsFlag)
 
 	context.GlobalSet(ethUtils.RPCListenAddrFlag.Name, config.EMConfig.RPCListenAddrFlag)

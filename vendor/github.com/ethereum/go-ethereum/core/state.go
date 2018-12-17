@@ -16,14 +16,16 @@ type StateDB struct {
 	DiskDb      db.DB
 	eth_backend *BlockChain
 	Mux         *sync.RWMutex
+	MaxCap		int
 }
 
 func NewStateDB(diskb db.DB, chain *BlockChain) *StateDB {
-	return &StateDB{
+	return &StateDB {
 		CurFreeGas:  make(map[common.Address]*Account),
 		DiskDb:      diskb,
 		eth_backend: chain,
 		Mux:         new(sync.RWMutex),
+		MaxCap: 	 10000,
 	}
 }
 
@@ -35,6 +37,7 @@ func (s *StateDB) SetAccountUsedGas(account *Account) (err error) {
 	if account.UseAmount.Int64() <= 0 || account.Timestamp.Int64() <= 0 {
 		return errors.New("Invalid time or invalid gas quota")
 	}
+	
 	s.Mux.Lock()
 	defer s.Mux.Unlock()
 	cur, ok := s.CurFreeGas[account.User]
@@ -81,6 +84,7 @@ func (s *StateDB) getAccount(addr common.Address) (account *Account, err error) 
 		//s.eth_backend.TxPool().State().GetBalance(addr)
 
 		CurFreeGas.CalculateUsedGas(s.eth_backend.CurrentBlock().Header().Time)
+		account = new(Account)
 		err = CurFreeGas.DeepCopy(account)
 		return account, err
 	}
@@ -117,7 +121,7 @@ func (s *StateDB) DeepCopy(dst interface{}) error {
 	var buf bytes.Buffer
 	s.Mux.RLock()
 	defer s.Mux.RUnlock()
-	if err := gob.NewEncoder(&buf).Encode(s); err != nil {
+	if err := gob.NewEncoder(&buf).Encode(&s.CurFreeGas); err != nil {
 		return err
 	}
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
@@ -128,4 +132,10 @@ func (s *StateDB) IsEmpty() bool {
 	s.Mux.RLock()
 	defer s.Mux.RUnlock()
 	return len(s.CurFreeGas) == 0
+}
+
+func (s *StateDB) IsRefresh() bool{
+	s.Mux.RLock()
+	defer s.Mux.RUnlock()
+	return len(s.CurFreeGas) >= s.MaxCap
 }

@@ -217,8 +217,8 @@ func DefaultNodeConfig() node.Config {
 	cfg := node.DefaultConfig
 	cfg.Name = "unetwork_vm"
 	cfg.Version = params.Version
-	cfg.HTTPModules = append(cfg.HTTPModules, "eth", "net", "web3", "personal")
-	cfg.WSModules = append(cfg.WSModules, "eth", "net", "web3", "personal")
+	cfg.HTTPModules = append(cfg.HTTPModules, "eth", "net", "web3", "personal", "freegas")
+	cfg.WSModules = append(cfg.WSModules, "eth", "net", "web3", "personal", "freegas")
 	cfg.IPCPath = "unetwork.ipc"
 
 	emHome := os.Getenv("EMHOME")

@@ -210,7 +210,7 @@ type TxPool struct {
 
 	wg sync.WaitGroup // for shutdown sync
 
-	homestead bool
+	homestead  bool
 	gasManager *FreeGasManager
 }
 
@@ -262,11 +262,11 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 	return pool
 }
 
-func (pool *TxPool) GetSigner() types.Signer{
+func (pool *TxPool) GetSigner() types.Signer {
 	return pool.signer
 }
 
-func (pool *TxPool) SetFreeManager(manager *FreeGasManager){
+func (pool *TxPool) SetFreeManager(manager *FreeGasManager) {
 	pool.gasManager = manager
 }
 
@@ -351,8 +351,6 @@ func (pool *TxPool) loop() {
 		}
 	}
 }
-
-
 
 // lockedReset is a wrapper around reset to allow calling it in a thread safe
 // manner. This method is only ever used in the tester!
@@ -608,18 +606,20 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	}
 
 	// unetwork check gas
-	if tx.GasPrice().Int64() == 0 {
-		account, e := pool.gasManager.StateDB().getAccount(from)
-		if e != nil{
-			return e
+	if tx.GasPrice().Uint64() == 0 {
+		var account *Account
+		account, err = pool.gasManager.StateDB().GetAccount(from)
+		if err != nil {
+			return err
 		}
-
-		freegas, e1 := pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
-		if e1 != nil{
-			return e1
+		var freegas *big.Int
+		freegas, err = pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
+		if err != nil {
+			return err
 		}
-
-		if freegas.Cmp(new(big.Int).Add(account.UseAmount,tx.Cost())) < 0 {
+		//fmt.Println("validateTx freegas: ", freegas.String())
+		//fmt.Println("validateTx account.UseAmount: ", account.UseAmount.String())
+		if freegas.Cmp(new(big.Int).Add(account.UseAmount, new(big.Int).SetUint64(tx.Gas()))) < 0 {
 			return ErrUnderpriced
 		}
 	}

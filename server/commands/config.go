@@ -73,7 +73,7 @@ func DefaultTendermintConfig() TenderminConfig {
 		RPCListenAddrFlag:   "0.0.0.0",
 		RPCPortFlag:         9147, // node.DefaultHTTPPort,
 		RPCCORSDomainFlag:   "*",
-		RPCApiFlag:          "cmt,eth,net,web3,personal",
+		RPCApiFlag:          "cmt,eth,net,web3,personal,freegas",
 		RPCVirtualHostsFlag: "localhost",
 		WSEnabledFlag:       false,
 		WSListenAddrFlag:    node.DefaultWSHost,
