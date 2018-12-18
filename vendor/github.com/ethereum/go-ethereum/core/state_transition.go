@@ -155,15 +155,14 @@ func (st *StateTransition) useGas(amount uint64) error {
 }
 
 func (st *StateTransition) buyGas() error {
-	// unetwork check gas
-	if st.gasPrice.Int64() == 0 {
-		account, _:= g_GasManager.StateDB().GetAccount(st.msg.From())
-		freeGas,_ := g_GasManager.CalculateFreeGas(account, st.state.GetBalance(st.msg.From()))
-		if freeGas.Cmp(new(big.Int).Add(account.UseAmount, new(big.Int).SetUint64(st.msg.Gas()))) < 0 {
-			return ErrUnderpriced
-		}
-	}
-
+	////unetwork check gas
+	//if st.gasPrice.Int64() == 0 {
+	//	account, _:= g_GasManager.StateDB().GetAccount(st.msg.From())
+	//	freeGas,_ := g_GasManager.CalculateFreeGas(account, st.state.GetBalance(st.msg.From()))
+	//	if freeGas.Cmp(new(big.Int).Add(account.UseAmount, new(big.Int).SetUint64(st.msg.Gas()))) < 0 {
+	//		return ErrUnderpriced
+	//	}
+	//}
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.msg.Gas()), st.gasPrice)
 	if st.state.GetBalance(st.msg.From()).Cmp(mgval) < 0 {
 		return errInsufficientBalanceForGas

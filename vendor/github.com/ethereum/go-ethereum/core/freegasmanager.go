@@ -5,7 +5,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
-	"fmt"
 	"time"
 )
 
