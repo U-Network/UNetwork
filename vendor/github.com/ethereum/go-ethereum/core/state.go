@@ -62,15 +62,15 @@ func (s *StateDB) GetAccount(addr common.Address) (account *Account, err error) 
 	s.Mux.Lock()
 	defer s.Mux.Unlock()
 	CurAccount, ok := s.CurFreeGas[addr]
-	if ok {
+	if ok {	//Exist in memory
 		account = new(Account)
 		err = CurAccount.DeepCopy(account)
 		return account, err
 	}
+	// Does not exist in memory, retrieved on disk
 	return s.getAccount(addr)
 }
 
-//
 func (s *StateDB) getAccount(addr common.Address) (account *Account, err error) {
 	//Check if the account exists on the disk
 	b := s.DiskDb.Has(addr[:])
@@ -82,17 +82,17 @@ func (s *StateDB) getAccount(addr common.Address) (account *Account, err error) 
 			return nil, errors.New("An error occurred while using the byte array UnMarshal account errcode:" + err.Error())
 		}
 		//s.eth_backend.TxPool().State().GetBalance(addr)
-
-		CurFreeGas.CalculateUsedGas(s.eth_backend.CurrentBlock().Header().Time)
+		//CurFreeGas.CalculateUsedGas(s.eth_backend.CurrentBlock().Header().Time)
 		account = new(Account)
 		err = CurFreeGas.DeepCopy(account)
 		return account, err
 	}
+
 	//The account appears for the first time
 	var curAccount *Account = new(Account)
 	curAccount.User = addr
 	curAccount.UseAmount = new(big.Int)
-	curAccount.Timestamp = new(big.Int).SetInt64(time.Now().Unix())
+	curAccount.Timestamp = new(big.Int).SetInt64(time.Now().UTC().Unix())
 	s.CurFreeGas[addr] = curAccount
 	account = new(Account)
 	err = curAccount.DeepCopy(account)

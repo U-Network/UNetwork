@@ -6,6 +6,7 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"fmt"
+	"time"
 )
 
 var g_GasManager *FreeGasManager
@@ -33,6 +34,7 @@ func GetGlobalGasManager()*FreeGasManager{
 func SetGlobalGasManager(manager *FreeGasManager){
 	g_GasManager = manager
 }
+
 func (f *FreeGasManager) StateDB() *StateDB{
 	return f.State
 }
@@ -48,17 +50,14 @@ func (f *FreeGasManager) CalculateFreeGas(account *Account, balance *big.Int) (f
 		return big.NewInt(0),nil
 	}
 
-
+	account.CalculateUsedGas(new(big.Int).SetInt64(time.Now().UTC().Unix()))
 
 	token := new(big.Int).Div(balance, new(big.Int).SetUint64(1e18))
 	gas := new(big.Int).Mul(token, new(big.Int).SetUint64(proportion))
-
-
 	available := new(big.Int).Sub(gas,account.UseAmount)
 	if new(big.Int).Set(available).Cmp(big.NewInt(0)) <= 0{
 		return big.NewInt(0), nil
 	}
-
 	return  available,nil
 }
 
@@ -86,7 +85,7 @@ func (f *FreeGasManager) Save()  {
 // GetAccountUseQuota Get the amount the user has used based on the address
 func (f *FreeGasManager) GetAccountUseQuota(addr common.Address) *big.Int {
 	cur,_:= f.State.GetAccount(addr)
-	fmt.Println("cur.UseAmount", cur.UseAmount.String())
+	//fmt.Println("cur.UseAmount", cur.UseAmount.String())
 	return cur.UseAmount
 }
 

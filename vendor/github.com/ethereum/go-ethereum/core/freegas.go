@@ -32,8 +32,8 @@ func (g *Account) DeepCopy(dst interface{}) error {
 }
 
 func (g *Account) CalculateUsedGas(bTime *big.Int) {
-	if g.Timestamp.Uint64()/ResetTime != bTime.Uint64()/ResetTime {
-		g.Timestamp = new(big.Int).SetInt64(time.Now().Unix())
+	if g.Timestamp.Uint64() / ResetTime != bTime.Uint64() / ResetTime {
+		g.Timestamp = bTime
 		g.UseAmount = new(big.Int).SetInt64(0)
 		//g.Amount = new(big.Int).SetUint64((balance.Uint64() / 1e18) * proportion)
 	}
