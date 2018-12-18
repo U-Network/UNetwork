@@ -30,6 +30,7 @@ import (
 )
 
 var maxPrice = big.NewInt(500 * params.GWei)
+var minPrice = big.NewInt(10 * params.GWei)
 
 type Config struct {
 	Blocks     int
@@ -83,6 +84,10 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	head, _ := gpo.backend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
 	headHash := head.Hash()
 	if headHash == lastHead {
+		//unetwork min gasprice
+		if lastPrice.Cmp(minPrice) <=0{
+			return minPrice, nil
+		}
 		return lastPrice, nil
 	}
 
@@ -95,6 +100,10 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	lastPrice = gpo.lastPrice
 	gpo.cacheLock.RUnlock()
 	if headHash == lastHead {
+		//unetwork min gasprice
+		if lastPrice.Cmp(minPrice) <=0 {
+			return minPrice, nil
+		}
 		return lastPrice, nil
 	}
 
@@ -113,6 +122,10 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	for exp > 0 {
 		res := <-ch
 		if res.err != nil {
+			//unetwork min gasprice
+			if lastPrice.Cmp(minPrice) <=0 {
+				return minPrice, res.err
+			}
 			return lastPrice, res.err
 		}
 		exp--
@@ -140,10 +153,15 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 		price = new(big.Int).Set(maxPrice)
 	}
 
+
 	gpo.cacheLock.Lock()
 	gpo.lastHead = headHash
 	gpo.lastPrice = price
 	gpo.cacheLock.Unlock()
+	//unetwork min gasprice
+	if price.Cmp(minPrice) <=0 {
+		return minPrice, nil
+	}
 	return price, nil
 }
 
