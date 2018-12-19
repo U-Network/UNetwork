@@ -46,7 +46,7 @@ func (app *TendermintApplication) CheckTx(tx []byte) types.ResponseCheckTx {
 			return types.ResponseCheckTx{Code: code.CodeTypeUnauthorized}
 		}
 		// Account contains the used gas
-		account, _ := app.ethState.GetFreeGasManager().StateDB().GetAccount(from)
+		account, _ := app.ethState.GetFreeGasManager().State.GetAccount(from)
 		// Free gas calculated after deducting the current token
 		freeGas, _ := app.ethState.GetFreeGasManager().CalculateFreeGas(account, app.ethState.State.GetBalance(from))
 
@@ -56,7 +56,7 @@ func (app *TendermintApplication) CheckTx(tx []byte) types.ResponseCheckTx {
 			return types.ResponseCheckTx{Code: code.CodeTypeUnauthorized}
 		} else {
 			account.UseAmount.Add(account.UseAmount, new(big.Int).SetUint64(checkTx.Gas()))
-			app.ethState.GetFreeGasManager().StateDB().SetAccountUsedGas(account)
+			app.ethState.GetFreeGasManager().State.SetAccountUsedGas(account)
 
 			//fmt.Println("CheckTx account.UseAmount : ", account.UseAmount.String())
 

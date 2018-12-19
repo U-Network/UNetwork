@@ -608,7 +608,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	// unetwork check gas
 	if tx.GasPrice().Uint64() == 0 {
 		var account *Account
-		account, err = pool.gasManager.StateDB().GetAccount(from)
+		account, err = pool.gasManager.State.GetAccount(from)
 		if err != nil {
 			return err
 		}

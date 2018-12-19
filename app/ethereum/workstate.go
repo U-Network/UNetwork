@@ -117,7 +117,7 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	if err != nil {
 		return core.ErrInvalidSender
 	}
-	fromAccount, _ := es.gasManager.StateDB().GetAccount(from)
+	fromAccount, _ := es.gasManager.State.GetAccount(from)
 	if tx.GasPrice().Cmp(big.NewInt(0)) == 0 {
 		// Account contains the used gas
 
@@ -133,18 +133,18 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 		var freeGasDiff *big.Int
 		if freeGas.Cmp(curUsedGas) < 0 {
 			freeGasDiff = new(big.Int).Sub(curUsedGas, freeGas)
-			toAccount, _ := es.gasManager.StateDB().GetAccount(*(tx.To()))
+			toAccount, _ := es.gasManager.State.GetAccount(*(tx.To()))
 
 			toAccount.UseAmount.Add(toAccount.UseAmount, freeGasDiff)
 			fromAccount.UseAmount.Add(fromAccount.UseAmount, new(big.Int).Sub(curUsedGas, freeGasDiff))
-			es.gasManager.StateDB().SetAccountUsedGas(fromAccount)
-			es.gasManager.StateDB().SetAccountUsedGas(toAccount)
+			es.gasManager.State.SetAccountUsedGas(fromAccount)
+			es.gasManager.State.SetAccountUsedGas(toAccount)
 
 		} else {
 
 			fromAccount.UseAmount.Add(fromAccount.UseAmount, curUsedGas)
 			//fmt.Println("fromAccount.UseAmount: ", fromAccount.UseAmount.String())
-			es.gasManager.StateDB().SetAccountUsedGas(fromAccount)
+			es.gasManager.State.SetAccountUsedGas(fromAccount)
 		}
 	} else {
 		fromAccount.UseAmount.Sub(fromAccount.UseAmount, new(big.Int).SetUint64(tx.Gas()))
@@ -201,7 +201,7 @@ func (es *EthereumWorkState) Commit(blockheight uint64) (common.Hash, error) {
 		return es.insertEmptyBlockToChain()
 	}
 
-	if !es.gasManager.StateDB().IsRefresh() {
+	if !es.gasManager.State.IsRefresh() {
 		es.gasManager.Save()
 		es.gasManager.State.ReSetState()
 	}

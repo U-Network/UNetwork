@@ -91,7 +91,7 @@ func (f *FreeGasManager) GetAccountUseQuota(addr common.Address) *big.Int {
 //GetAccountAvailableCredit Get the quota available for the user's current time interval based on the address
 func (f *FreeGasManager)GetAccountAvailableCredit(addr common.Address,  balance *big.Int)  (freeGas *big.Int, err error){
 	//fmt.Println("addr: ", common.Bytes2Hex(addr[:]))
-	cur, _ := f.StateDB().GetAccount(addr)
+	cur, _ := f.State.GetAccount(addr)
 
 	//fmt.Println("cur.UseAmount: ", cur.UseAmount.String())
 	return f.CalculateFreeGas(cur,balance)
@@ -99,6 +99,6 @@ func (f *FreeGasManager)GetAccountAvailableCredit(addr common.Address,  balance 
 
 func (f *FreeGasManager)Close() {
 	f.Save()
-	f.StateDB().ReSetState()
+	f.State.ReSetState()
 	f.DiskDb.Close()
 }
