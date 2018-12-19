@@ -15,6 +15,7 @@ var blockheight int64
 type TendermintApplication struct {
 	types.BaseApplication
 	ethState *ethbaseapp.EthereumWorkState
+	onReplaying bool
 }
 
 func NewTendermintApplication() *TendermintApplication {
@@ -68,17 +69,14 @@ func (app *TendermintApplication) CheckTx(tx []byte) types.ResponseCheckTx {
 	return types.ResponseCheckTx{Code: code.CodeTypeUnauthorized}
 }
 
-func (app *TendermintApplication) DeliverTx(tx []byte) types.ResponseDeliverTx {
-	err := app.ethState.DeliverTx(tx)
-	if err != nil {
-		return types.ResponseDeliverTx{Code: code.CodeTypeEncodingError, Log: err.Error()}
-	}
-	return types.ResponseDeliverTx{Code: code.CodeTypeOK}
-}
-
 func (app *TendermintApplication) BeginBlock(params types.RequestBeginBlock) types.ResponseBeginBlock {
 	// update latest block info
 	blockheight = params.Header.Height
+	app.onReplaying = app.ethState.GetblockNumber() >= uint64(blockheight)
+	if app.onReplaying {
+		return types.ResponseBeginBlock{}
+	}
+	// start new block
 	tmHeader := params.GetHeader()
 	err := app.ethState.BeginBlock(tmHeader.LastCommitHash, uint64(tmHeader.Time.Unix()), uint64(tmHeader.GetNumTxs()))
 	if err != nil {
@@ -87,14 +85,27 @@ func (app *TendermintApplication) BeginBlock(params types.RequestBeginBlock) typ
 	return types.ResponseBeginBlock{}
 }
 
+func (app *TendermintApplication) DeliverTx(tx []byte) types.ResponseDeliverTx {
+	if app.onReplaying {
+		return types.ResponseDeliverTx{Code: code.CodeTypeOK}
+	}
+	err := app.ethState.DeliverTx(tx)
+	if err != nil {
+		return types.ResponseDeliverTx{Code: code.CodeTypeEncodingError, Log: err.Error()}
+	}
+	return types.ResponseDeliverTx{Code: code.CodeTypeOK}
+}
+
 func (app *TendermintApplication) EndBlock(req types.RequestEndBlock) types.ResponseEndBlock {
 	return types.ResponseEndBlock{}
 }
 
 func (app *TendermintApplication) Commit() (resp types.ResponseCommit) {
-
 	apphash := make([]byte, 32)
 	binary.PutVarint(apphash, blockheight)
+	if app.onReplaying {
+		return types.ResponseCommit{Data: apphash[:]}
+	}
 	//apphash[0] = blockHash[0]
 	_, err := app.ethState.Commit(uint64(blockheight))
 	if err != nil {

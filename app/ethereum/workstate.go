@@ -3,7 +3,7 @@ package ethereum
 import (
 	"bytes"
 	"fmt"
-	global "github.com/U-Network/UNetwork/global"
+	"github.com/U-Network/UNetwork/global"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/core"
@@ -90,6 +90,11 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	blockchain := es.ethereum.BlockChain()
 	chainConfig := es.ethereum.APIBackend.ChainConfig()
 
+	if es.gasManager == nil{
+		es.gasManager = blockchain.GetFreeGasManager()
+	}
+
+
 	config := eth.DefaultConfig
 	blockHash := common.Hash{}
 
@@ -133,13 +138,13 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 		var freeGasDiff *big.Int
 		if freeGas.Cmp(curUsedGas) < 0 {
 			freeGasDiff = new(big.Int).Sub(curUsedGas, freeGas)
-			toAccount, _ := es.gasManager.State.GetAccount(*(tx.To()))
-
-			toAccount.UseAmount.Add(toAccount.UseAmount, freeGasDiff)
-			fromAccount.UseAmount.Add(fromAccount.UseAmount, new(big.Int).Sub(curUsedGas, freeGasDiff))
-			es.gasManager.State.SetAccountUsedGas(fromAccount)
-			es.gasManager.State.SetAccountUsedGas(toAccount)
-
+			if tx.To() != nil{
+				toAccount, _ := es.gasManager.State.GetAccount(*tx.To())
+				toAccount.UseAmount.Add(toAccount.UseAmount, freeGasDiff)
+				fromAccount.UseAmount.Add(fromAccount.UseAmount, new(big.Int).Sub(curUsedGas, freeGasDiff))
+				es.gasManager.State.SetAccountUsedGas(fromAccount)
+				es.gasManager.State.SetAccountUsedGas(toAccount)
+			}
 		} else {
 
 			fromAccount.UseAmount.Add(fromAccount.UseAmount, curUsedGas)
@@ -164,9 +169,6 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 // mainly used to create blocks and insert blocks into the blockchain
 func (es *EthereumWorkState) Commit(blockheight uint64) (common.Hash, error) {
 
-	if es.GetblockNumber() >= blockheight {
-		return common.Hash{}, nil
-	}
 	//log.Info("EthereumWorkState +++ +++ +++ Commit") // nolint: errcheck
 
 	es.Mtx.Lock()

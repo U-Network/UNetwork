@@ -6,6 +6,7 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"time"
+	"log"
 )
 
 var g_GasManager *FreeGasManager
@@ -27,14 +28,23 @@ func NewFreeGasManager(ethBackend *BlockChain) *FreeGasManager {
 }
 
 func GetGlobalGasManager()*FreeGasManager{
+	if g_GasManager == nil{
+		log.Println("GetGlobalGasManager g_GasManager nil")
+	}
 	return g_GasManager
 }
 
 func SetGlobalGasManager(manager *FreeGasManager){
+	if manager == nil{
+		log.Println("SetGlobalGasManager manager nil")
+	}
 	g_GasManager = manager
 }
 
 func (f *FreeGasManager) StateDB() *StateDB{
+	if f.State == nil{
+		log.Println("StateDB f.State nil")
+	}
 	return f.State
 }
 

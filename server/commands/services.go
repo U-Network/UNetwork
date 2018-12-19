@@ -59,11 +59,11 @@ func StartServices(rootDir string) (*Services, error) {
 	// Create Services
 	var tmApp tmtypes.Application = tdmtApp
 	services := &Services{
-		tmNode,
-		&tmApp,
-		tmLocal,
-		ethEthereum,
-		ethState,
+		tmNode:tmNode,
+		tmApp:&tmApp,
+		tmLocal:tmLocal,
+		ethNode: ethEthereum,
+		ethState: ethState,
 	}
 
 	// start tx add pool event listen

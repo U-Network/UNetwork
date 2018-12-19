@@ -206,6 +206,10 @@ func (bc *BlockChain) SetFreeGasManager(manager *FreeGasManager){
 	bc.gasManager = manager
 }
 
+func (bc *BlockChain) GetFreeGasManager( ) *FreeGasManager{
+	return bc.gasManager
+}
+
 func (bc *BlockChain) getProcInterrupt() bool {
 	return atomic.LoadInt32(&bc.procInterrupt) == 1
 }

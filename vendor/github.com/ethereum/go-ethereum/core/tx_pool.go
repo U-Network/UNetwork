@@ -216,10 +216,17 @@ type TxPool struct {
 
 // NewTxPool creates a new transaction pool to gather, sort and filter inbound
 // transactions from the network.
-func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain blockChain) *TxPool {
+func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain blockChain, args ... interface{}) *TxPool {
 	// Sanitize the input to ensure no vulnerable gas prices are set
 	config = (&config).sanitize()
-
+	var manager *FreeGasManager
+	var b bool
+	if len(args) != 0 {
+		manager ,b = args[0].(*FreeGasManager)
+		if !b {
+			manager = nil
+		}
+	}
 	// Create the transaction pool with its initial settings
 	pool := &TxPool{
 		config:      config,
@@ -233,6 +240,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 		chainHeadCh: make(chan ChainHeadEvent, chainHeadChanSize),
 		gasPrice:    new(big.Int).SetUint64(config.PriceLimit),
 	}
+	pool.gasManager = manager
 	pool.locals = newAccountSet(pool.signer)
 	for _, addr := range config.Locals {
 		log.Info("Setting new local account", "address", addr)
@@ -612,13 +620,13 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		if err != nil {
 			return err
 		}
+
 		var freegas *big.Int
 		freegas, err = pool.gasManager.CalculateFreeGas(account, pool.currentState.GetBalance(from))
 		if err != nil {
 			return err
 		}
-		//fmt.Println("validateTx freegas: ", freegas.String())
-		//fmt.Println("validateTx account.UseAmount: ", account.UseAmount.String())
+
 		if freegas.Cmp(new(big.Int).Add(account.UseAmount, new(big.Int).SetUint64(tx.Gas()))) < 0 {
 			return ErrUnderpriced
 		}
