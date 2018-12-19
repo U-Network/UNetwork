@@ -584,6 +584,8 @@ func UnetNewEthereum(ctx *node.ServiceContext, config *Config, eng consensus.Eng
 	if err != nil {
 		return nil, err
 	}
+	eth.gasManager = core.NewFreeGasManager(eth.blockchain)
+	core.SetGlobalGasManager(eth.gasManager)
 	// Rewind the chain in case of an incompatible config upgrade.
 	if compat, ok := genesisErr.(*params.ConfigCompatError); ok {
 		log.Warn("Rewinding chain to upgrade configuration", "err", compat)
@@ -596,7 +598,7 @@ func UnetNewEthereum(ctx *node.ServiceContext, config *Config, eng consensus.Eng
 		config.TxPool.Journal = ctx.ResolvePath(config.TxPool.Journal)
 	}
 	eth.txPool = core.NewTxPool(config.TxPool, eth.chainConfig, eth.blockchain)
-
+	eth.txPool.SetFreeManager(eth.gasManager)
 	if eth.protocolManager, err = NewProtocolManager(eth.chainConfig, config.SyncMode, config.NetworkId, eth.eventMux, eth.txPool, eth.engine, eth.blockchain, chainDb); err != nil {
 		return nil, err
 	}
@@ -610,9 +612,9 @@ func UnetNewEthereum(ctx *node.ServiceContext, config *Config, eng consensus.Eng
 		gpoParams.Default = config.MinerGasPrice
 	}
 	eth.APIBackend.gpo = gasprice.NewOracle(eth.APIBackend, gpoParams)
-	eth.gasManager = core.NewFreeGasManager(eth.blockchain)
-	eth.txPool.SetFreeManager(eth.gasManager)
-	core.SetGlobalGasManager(eth.gasManager)
+
+
+
 	return eth, nil
 }
 
