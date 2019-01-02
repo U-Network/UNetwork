@@ -14,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"strconv"
+	"strings"
 
 	"math/big"
 	"path/filepath"
@@ -40,6 +42,8 @@ type EthereumWorkState struct {
 
 	receiver   common.Address
 	gasManager *core.FreeGasManager
+
+	blockExtraProvision map[uint64]string
 }
 
 // NewEthereumWorkState Create and return an EthereumWorkState object pointer
@@ -58,6 +62,7 @@ func NewEthereumWorkState(ethereum *eth.Ethereum) *EthereumWorkState {
 		receiver:   ethReceiverAddress,
 		gasManager: ethereum.GetFreeGasManager(),
 	}
+	state.readBlockExtendDataFromConfigDir() // read block extra data
 	err := state.reset()
 	if err != nil {
 		panic("NewEthereumWorkState state.reset() error: " + err.Error())
@@ -76,6 +81,18 @@ func (es *EthereumWorkState) BeginBlock(blockHash []byte, parentTime uint64, num
 
 	// update the eth header with the tendermint header
 	es.updateHeaderWithTimeInfo(es.ethereum.APIBackend.ChainConfig(), parentTime, numTx)
+	return nil
+}
+
+
+// EndBlock starts a new Ethereum block
+func (es *EthereumWorkState) EndBlock(blockheight uint64) error {
+
+	// 199 height = 15 min to update
+	if blockheight % 199 == 0 {
+		es.readBlockExtendDataFromConfigDir()
+	}
+
 	return nil
 }
 
@@ -180,6 +197,7 @@ func (es *EthereumWorkState) Commit(blockheight uint64) (common.Hash, error) {
 		return common.Hash{}, err
 	}
 	es.Header.Root = hashArray
+	es.setBlockExtendData(es.Header)
 
 	for _, log := range es.allLogs {
 		log.BlockHash = hashArray
@@ -227,6 +245,7 @@ func (es *EthereumWorkState) insertEmptyBlockToChain() (common.Hash, error) {
 		return common.Hash{}, er
 	}
 	es.Header.Root = hashArray
+	es.setBlockExtendData(es.Header)
 
 	for _, log := range es.allLogs {
 		log.BlockHash = hashArray
@@ -327,3 +346,47 @@ func (es *EthereumWorkState) GetEthBackend() *eth.Ethereum {
 func (es *EthereumWorkState) GetFreeGasManager() *core.FreeGasManager {
 	return es.gasManager
 }
+
+func (es *EthereumWorkState) setBlockExtendData(header *ethTypes.Header) {
+
+	h := header.Number.Uint64()
+	val, ok := es.blockExtraProvision[h]
+	// fmt.Printf(val)
+	if ok {
+		header.Extra = []byte(val)
+	}
+
+}
+
+func (es *EthereumWorkState) readBlockExtendDataFromConfigDir()  {
+	refresh := make(map[uint64]string)
+
+	// TODO: load eth receiver from config file
+	sdir := global.Homedir()
+	sdir = filepath.Join(sdir, "config")
+	extraFile := filepath.Join(sdir, "eth_block_extra.line")
+	lineData, err := global.ReadFile(extraFile)
+	if err != nil {
+		return
+	}
+	// #234325=Yang jie:rlp decode an etherum transaction.
+	number := 0
+	lines := strings.Split(lineData, "\n")
+	for i := 0; i<len(lines); i++ {
+		one := lines[i]
+		ss1 := strings.SplitAfter(one, "#")
+		if len(ss1) != 2 { continue }
+		ss2 := strings.Split(ss1[1], "=")
+		if len(ss2) != 2 { continue }
+		ss3 := strings.Split(ss2[1], ":")
+		if len(ss3) != 2 { continue }
+		bint, err  := strconv.ParseUint(ss2[0], 10, 64)
+		if err != nil { continue }
+		refresh[bint] = "["+ss3[0]+"] "+ss3[1]
+		number++
+	}
+	if number > 0 {
+		es.blockExtraProvision = refresh
+	}
+}
+

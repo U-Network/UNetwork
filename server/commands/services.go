@@ -36,22 +36,26 @@ func StartServices(rootDir string) (*Services, error) {
 	}
 
 	ethEthereum := backend.Ethereum()
+	tdCfg, err := tendermint.GetTendermintConfig()
+	if err != nil {
+		ethlog.Warn(err.Error())
+		os.Exit(1)
+	}
 
 	// eth state api
 	ethState := ethbaseapp.NewEthereumWorkState(ethEthereum)
 
 	// tendermint application
-	tdmtApp := tmbaseapp.NewTendermintApplication()
-
-	// set eth state
-	tdmtApp.SetEthState(ethState)
+	tdmtApp := tmbaseapp.NewTendermintApplication(tdCfg, ethState)
 
 	// Create & start tendermint node
-	tmNode, err := tendermint.StartTendermint(rootDir, tdmtApp)
+	tmNode, err := tendermint.StartTendermint(tdCfg, rootDir, tdmtApp)
 	if err != nil {
 		ethlog.Warn(err.Error())
 		os.Exit(1)
 	}
+
+	//tdmtApp.SetConfig()
 
 	// abci local client
 	tmLocal := tmclient.NewLocal(tmNode)

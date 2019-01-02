@@ -594,6 +594,10 @@ func (n *Node) RunForever() {
 	})
 }
 
+func (n *Node)Config() *cfg.Config {
+	return n.config
+}
+
 // ConfigureRPC sets all variables in rpccore so they will serve
 // rpc calls from this node
 func (n *Node) ConfigureRPC() {
