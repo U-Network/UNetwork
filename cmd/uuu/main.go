@@ -2,9 +2,7 @@ package main
 
 import (
 	"os"
-
 	"github.com/spf13/cobra"
-
 	basecmd "github.com/U-Network/UNetwork/server/commands"
 	"github.com/tendermint/tendermint/libs/cli"
 )
@@ -18,7 +16,6 @@ var (
 			cmd.Help()
 		},
 	}
-
 	lineBreak = &cobra.Command{Run: func(*cobra.Command, []string) {}}
 )
 
@@ -34,11 +31,9 @@ func main() {
 		//clientCmd,
 		basecmd.AttachCmd,
 		//versionCmd,
-
 		lineBreak,
 		//auto.AutoCompleteCmd,
 	)
-
 	// prepare and add flags
 	basecmd.SetUpRoot(Unetcmd)
 	executor := cli.PrepareMainCmd(Unetcmd, "CM", os.ExpandEnv("$HOME/.unetwork"))

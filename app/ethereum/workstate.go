@@ -84,7 +84,6 @@ func (es *EthereumWorkState) BeginBlock(blockHash []byte, parentTime uint64, num
 	return nil
 }
 
-
 // EndBlock starts a new Ethereum block
 func (es *EthereumWorkState) EndBlock(blockheight uint64) error {
 
