@@ -18,6 +18,7 @@ type FreeGasManager struct {
 	eth_backend *BlockChain
 }
 
+// Create a new free-gas-manager and initial it.
 func NewFreeGasManager(ethBackend *BlockChain) *FreeGasManager {
 	disk := db.NewDB("db_backend", db.GoLevelDBBackend, Homedir())
 	return &FreeGasManager{
@@ -27,6 +28,7 @@ func NewFreeGasManager(ethBackend *BlockChain) *FreeGasManager {
 	}
 }
 
+// Get the instance of the free-gas-manager.
 func GetGlobalGasManager()*FreeGasManager{
 	if g_GasManager == nil{
 		log.Println("GetGlobalGasManager g_GasManager nil")
@@ -61,6 +63,7 @@ func (f *FreeGasManager) CalculateFreeGas(account *Account, balance *big.Int) (f
 
 	account.CalculateUsedGas(new(big.Int).SetInt64(time.Now().UTC().Unix()))
 
+	// Methods to calculate the freeGas and update.
 	token := new(big.Int).Div(balance, new(big.Int).SetUint64(1e18))
 	gas := new(big.Int).Mul(token, new(big.Int).SetUint64(proportion))
 	available := new(big.Int).Sub(gas,account.UseAmount)
