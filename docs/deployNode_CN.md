@@ -50,7 +50,7 @@ $ make
 我们可以通过命令行的方式部署，先对环境进行初始化
 
 ```shell
-$ uuu node --log_level="debug" init "~/genesis.json"
+$ ./uuu node --log_level="debug" init "~/genesis.json"
 ```
 
 genesis.json配置文件参考
@@ -84,7 +84,7 @@ $ cat ./genesis.json
 初始化之后，通过下面的命令来运行节点
 
 ```shell
-$ uuu node start --log_level="debug"  --ethparam="--rpcapi db,eth,net,web3,personal"
+$ ./uuu node start --log_level="debug"  --ethparam="--rpcapi db,eth,net,web3,personal"
 ```
 
 ## 多节点运行
