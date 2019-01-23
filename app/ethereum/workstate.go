@@ -88,7 +88,7 @@ func (es *EthereumWorkState) BeginBlock(blockHash []byte, parentTime uint64, num
 func (es *EthereumWorkState) EndBlock(blockheight uint64) error {
 
 	// 199 height = 15 min to update
-	if blockheight % 199 == 0 {
+	if blockheight%199 == 0 {
 		es.readBlockExtendDataFromConfigDir()
 	}
 
@@ -106,10 +106,9 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	blockchain := es.ethereum.BlockChain()
 	chainConfig := es.ethereum.APIBackend.ChainConfig()
 
-	if es.gasManager == nil{
+	if es.gasManager == nil {
 		es.gasManager = blockchain.GetFreeGasManager()
 	}
-
 
 	config := eth.DefaultConfig
 	blockHash := common.Hash{}
@@ -154,7 +153,7 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 		var freeGasDiff *big.Int
 		if freeGas.Cmp(curUsedGas) < 0 {
 			freeGasDiff = new(big.Int).Sub(curUsedGas, freeGas)
-			if tx.To() != nil{
+			if tx.To() != nil {
 				toAccount, _ := es.gasManager.State.GetAccount(*tx.To())
 				toAccount.UseAmount.Add(toAccount.UseAmount, freeGasDiff)
 				fromAccount.UseAmount.Add(fromAccount.UseAmount, new(big.Int).Sub(curUsedGas, freeGasDiff))
@@ -357,35 +356,34 @@ func (es *EthereumWorkState) setBlockExtendData(header *ethTypes.Header) {
 
 }
 
-func (es *EthereumWorkState) readBlockExtendDataFromConfigDir()  {
+func (es *EthereumWorkState) readBlockExtendDataFromConfigDir() {
 	refresh := make(map[uint64]string)
-
-	// TODO: load eth receiver from config file
-	sdir := global.Homedir()
-	sdir = filepath.Join(sdir, "config")
-	extraFile := filepath.Join(sdir, "eth_block_extra.line")
-	lineData, err := global.ReadFile(extraFile)
-	if err != nil {
-		return
-	}
+	lineData := ReadBlockConfigDir()
 	// #234325=Yang jie:rlp decode an etherum transaction.
 	number := 0
 	lines := strings.Split(lineData, "\n")
-	for i := 0; i<len(lines); i++ {
+	for i := 0; i < len(lines); i++ {
 		one := lines[i]
 		ss1 := strings.SplitAfter(one, "#")
-		if len(ss1) != 2 { continue }
+		if len(ss1) != 2 {
+			continue
+		}
 		ss2 := strings.Split(ss1[1], "=")
-		if len(ss2) != 2 { continue }
+		if len(ss2) != 2 {
+			continue
+		}
 		ss3 := strings.Split(ss2[1], ":")
-		if len(ss3) != 2 { continue }
-		bint, err  := strconv.ParseUint(ss2[0], 10, 64)
-		if err != nil { continue }
-		refresh[bint] = "["+ss3[0]+"] "+ss3[1]
+		if len(ss3) != 2 {
+			continue
+		}
+		bint, err := strconv.ParseUint(ss2[0], 10, 64)
+		if err != nil {
+			continue
+		}
+		refresh[bint] = "[" + ss3[0] + "] " + ss3[1]
 		number++
 	}
 	if number > 0 {
 		es.blockExtraProvision = refresh
 	}
 }
-
