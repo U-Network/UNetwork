@@ -34,9 +34,6 @@ var (
 	g_count uint64
 )
 
-type Queue struct {
-}
-
 func GenerateTransaction(cmd *cobra.Command, args []string) {
 	if len(args) < 3 {
 		log.Println("see Example: ", cmd.Example)

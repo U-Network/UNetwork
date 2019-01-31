@@ -14,7 +14,7 @@ import (
 )
 
 var DefaultFile = "./config.json"
-var Generate = &cobra.Command{
+var Generate = &cobra.Command {
 	Use:     "generate",
 	Short:   "generate private key and address",
 	Long:    "This is the UNetwork used to generate the private key and address command to generate the private key to write to ./config.json",
