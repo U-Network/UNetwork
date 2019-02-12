@@ -37,7 +37,6 @@ func NewTendermintApplication(cfg *cfg.Config, state *ethbaseapp.EthereumWorkSta
 	}
 }
 
-
 func (app *TendermintApplication) InitChain(req types.RequestInitChain) types.ResponseInitChain {
 	return types.ResponseInitChain{}
 }
@@ -67,15 +66,11 @@ func (app *TendermintApplication) CheckTx(tx []byte) types.ResponseCheckTx {
 		// Free gas calculated after deducting the current token
 		freeGas, _ := app.ethState.GetFreeGasManager().CalculateFreeGas(account, app.ethState.State.GetBalance(from))
 
-		//fmt.Println("CheckTx freeGas: ", freeGas.String())
-
 		if freeGas.Cmp(new(big.Int).SetUint64(checkTx.Gas())) < 0 { //Free free gas is available
 			return types.ResponseCheckTx{Code: code.CodeTypeUnauthorized}
 		} else {
 			account.UseAmount.Add(account.UseAmount, new(big.Int).SetUint64(checkTx.Gas()))
 			app.ethState.GetFreeGasManager().State.SetAccountUsedGas(account)
-
-			//fmt.Println("CheckTx account.UseAmount : ", account.UseAmount.String())
 
 			return types.ResponseCheckTx{Code: code.CodeTypeOK}
 		}
@@ -183,7 +178,6 @@ func (app *TendermintApplication) Commit() (resp types.ResponseCommit) {
 	if app.onReplaying {
 		return types.ResponseCommit{Data: apphash[:]}
 	}
-	//apphash[0] = blockHash[0]
 	_, err := app.ethState.Commit(uint64(blockheight))
 	if err != nil {
 		return types.ResponseCommit{
@@ -193,12 +187,3 @@ func (app *TendermintApplication) Commit() (resp types.ResponseCommit) {
 	return types.ResponseCommit{Data: apphash[:]}
 }
 
-/*
-func (app *TendermintApplication) SetEthState(state *ethbaseapp.EthereumWorkState) {
-	app.ethState = state
-}
-
-func(app *TendermintApplication) SetConfig(cfg *cfg.Config){
-	app.config = cfg
-}
-*/

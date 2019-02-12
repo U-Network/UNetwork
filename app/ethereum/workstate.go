@@ -140,15 +140,11 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 	fromAccount, _ := es.gasManager.State.GetAccount(from)
 	if tx.GasPrice().Cmp(big.NewInt(0)) == 0 {
 		// Account contains the used gas
-
-		//fmt.Println("account.UseAmount : ", account.UseAmount)
 		fromAccount.UseAmount.Sub(fromAccount.UseAmount, new(big.Int).SetUint64(tx.Gas()))
 		// Free gas calculated after deducting the current token
 		freeGas, _ := es.gasManager.CalculateFreeGas(fromAccount, es.State.GetBalance(from))
 		//current used freegas
 		curUsedGas := new(big.Int).SetUint64(usedGas)
-
-		//fmt.Println("curUsedGas :", curUsedGas.String())
 
 		var freeGasDiff *big.Int
 		if freeGas.Cmp(curUsedGas) < 0 {
@@ -163,7 +159,6 @@ func (es *EthereumWorkState) DeliverTx(txBytes []byte) error {
 		} else {
 
 			fromAccount.UseAmount.Add(fromAccount.UseAmount, curUsedGas)
-			//fmt.Println("fromAccount.UseAmount: ", fromAccount.UseAmount.String())
 			es.gasManager.State.SetAccountUsedGas(fromAccount)
 		}
 	} else {
@@ -223,7 +218,6 @@ func (es *EthereumWorkState) Commit(blockheight uint64) (common.Hash, error) {
 		es.gasManager.Save()
 		es.gasManager.State.ReSetState()
 	}
-	//log.Info("Committing block", "stateHash", hashArray, "blockHash", blockHash)
 	// reset all state
 	es.reset()
 	return blockHash, err
