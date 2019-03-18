@@ -357,6 +357,10 @@ contract Proposal is Escrow {
     }
  */   
  
+    function ifVoted(bytes memory _hash) view public returns(bool){
+        return hasVoted[uint256(keccak256(_hash))][msg.sender];
+    }
+
     function vote(bytes memory _hash, uint8 _vote) public canVote(_hash) {
         uint256 _hashId = uint256(keccak256(_hash));
         votes[_hashId][_vote] = votes[_hashId][_vote].add(depositsOf(msg.sender).div(_digit) * _voteProportion); 
@@ -383,12 +387,6 @@ contract Proposal is Escrow {
     
     function changeVoteCost(uint256 _cost) public onlyOwner {
         _voteCost = _cost;
-    }
-
-    function proposalInfo(bytes memory _hash) public view returns(address, uint256, uint256, uint256, uint256){
-        uint256 _hashId = uint256(keccak256(_hash));
-        return ( proposals[_hashId].user, proposals[_hashId].startTime, proposals[_hashId].duration,
-         votes[_hashId][0], votes[_hashId][1]);
     }
     
     function () external payable{
