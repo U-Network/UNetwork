@@ -25,3 +25,7 @@ func (s *FreeGasAPI) GetSurplus(ctx context.Context, address common.Address) (*h
 	availableQuotas, err := s.b.Ethereum().GetFreeGasManager().GetAccountAvailableCredit(address, s.b.Ethereum().TxPool().State().GetBalance(address))
 	return (*hexutil.Big)(unsafe.Pointer(availableQuotas)), err
 }
+
+func (s *FreeGasAPI) GetStatus() int {
+	return 1
+}
