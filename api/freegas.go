@@ -10,10 +10,13 @@ import (
 
 type FreeGasAPI struct {
 	b Backend
+
+	// status open or close
+	status int
 }
 
 func NewFreeGasAPI(b Backend) *FreeGasAPI {
-	return &FreeGasAPI{b}
+	return &FreeGasAPI{b, 1}
 }
 
 func (s *FreeGasAPI) GetUsed(ctx context.Context, address common.Address) (*hexutil.Big, error) {
@@ -26,6 +29,12 @@ func (s *FreeGasAPI) GetSurplus(ctx context.Context, address common.Address) (*h
 	return (*hexutil.Big)(unsafe.Pointer(availableQuotas)), err
 }
 
+////////////////// get and set
+
 func (s *FreeGasAPI) GetStatus() int {
-	return 1
+	return s.status
+}
+
+func (s *FreeGasAPI) SetStatus(stat int) {
+	s.status = stat
 }
