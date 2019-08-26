@@ -4,3 +4,8 @@
  *
  *
  */
+
+
+type IntrHandler struct {
+    // contains filtered or unexported fields
+}
