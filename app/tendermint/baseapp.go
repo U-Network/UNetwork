@@ -14,26 +14,26 @@ import (
 )
 
 var (
-		blockheight int64
-		fileSize int64
-	)
-const updateConfigInterval = 100
+	blockheight int64
+	fileSize    int64
+)
 
+const updateConfigInterval = 100
 
 type TendermintApplication struct {
 	types.BaseApplication
-	ethState *ethbaseapp.EthereumWorkState
-	onReplaying bool
-	validator map[*tendTypes.GenesisValidator]struct{}
-	config *cfg.Config
+	ethState         *ethbaseapp.EthereumWorkState
+	onReplaying      bool
+	validator        map[*tendTypes.GenesisValidator]struct{}
+	config           *cfg.Config
 	updateConfigFlag int64
 }
 
 func NewTendermintApplication(cfg *cfg.Config, state *ethbaseapp.EthereumWorkState) *TendermintApplication {
 	return &TendermintApplication{
-		config: cfg,
-		ethState: state,
-		updateConfigFlag : -1,
+		config:           cfg,
+		ethState:         state,
+		updateConfigFlag: -1,
 	}
 }
 
@@ -42,7 +42,15 @@ func (app *TendermintApplication) InitChain(req types.RequestInitChain) types.Re
 }
 
 func (app *TendermintApplication) Info(req types.RequestInfo) types.ResponseInfo {
-	return types.ResponseInfo{Data: "nothing"}
+	//return types.ResponseInfo{Data: "nothing"}
+	//fmt.Println(req)
+	blockheight := int64(app.ethState.GetblockNumber())
+	apphash := make([]byte, 32)
+	binary.PutVarint(apphash, blockheight)
+	return types.ResponseInfo{
+		LastBlockHeight:  blockheight,
+		LastBlockAppHash: apphash,
+	}
 }
 
 func (app *TendermintApplication) SetOption(req types.RequestSetOption) types.ResponseSetOption {
@@ -111,7 +119,7 @@ func (app *TendermintApplication) EndBlock(req types.RequestEndBlock) types.Resp
 	if app.onReplaying {
 		return types.ResponseEndBlock{}
 	}
-	if app.updateConfigFlag < 0 && app.validator == nil  {
+	if app.updateConfigFlag < 0 && app.validator == nil {
 		//read config
 		file := app.config.GenesisFile()
 		fileinfo, er := os.Stat(file)
@@ -125,13 +133,13 @@ func (app *TendermintApplication) EndBlock(req types.RequestEndBlock) types.Resp
 			return types.ResponseEndBlock{}
 		}
 		app.validator = make(map[*tendTypes.GenesisValidator]struct{})
-		for _, val := range genesisDoc.Validators{
+		for _, val := range genesisDoc.Validators {
 			app.validator[&val] = struct{}{}
 		}
 		app.updateConfigFlag = updateConfigInterval
 		fileSize = fileinfo.Size()
 		return types.ResponseEndBlock{}
-	}else if app.updateConfigFlag == 0 {
+	} else if app.updateConfigFlag == 0 {
 		//Update and verify config
 		fileinfo, err := os.Stat(app.config.GenesisFile())
 		if err != nil && os.IsNotExist(err) {
@@ -139,7 +147,7 @@ func (app *TendermintApplication) EndBlock(req types.RequestEndBlock) types.Resp
 			return types.ResponseEndBlock{}
 		}
 		app.updateConfigFlag = updateConfigInterval
-		if fileinfo.Size() == fileSize{
+		if fileinfo.Size() == fileSize {
 			return types.ResponseEndBlock{}
 		}
 		genesisDoc, err := tendTypes.GenesisDocFromFile(app.config.GenesisFile())
@@ -148,7 +156,7 @@ func (app *TendermintApplication) EndBlock(req types.RequestEndBlock) types.Resp
 			return types.ResponseEndBlock{}
 		}
 		app.validator = make(map[*tendTypes.GenesisValidator]struct{})
-		var validatorUpdates []types.ValidatorUpdate = make([]types.ValidatorUpdate,0)
+		var validatorUpdates []types.ValidatorUpdate = make([]types.ValidatorUpdate, 0)
 		for _, val := range genesisDoc.Validators {
 			app.validator[&val] = struct{}{}
 
@@ -156,13 +164,13 @@ func (app *TendermintApplication) EndBlock(req types.RequestEndBlock) types.Resp
 			pub.Data = val.PubKey.Bytes()
 			pub.Type = types.PubKeyEd25519
 			validator := types.ValidatorUpdate{
-				PubKey:pub,
-				Power:val.Power,
+				PubKey: pub,
+				Power:  val.Power,
 			}
 			validatorUpdates = append(validatorUpdates, validator)
 		}
 		fileSize = fileinfo.Size()
-		return types.ResponseEndBlock{ValidatorUpdates : validatorUpdates}
+		return types.ResponseEndBlock{ValidatorUpdates: validatorUpdates}
 	}
 	app.updateConfigFlag--
 
@@ -186,4 +194,3 @@ func (app *TendermintApplication) Commit() (resp types.ResponseCommit) {
 	}
 	return types.ResponseCommit{Data: apphash[:]}
 }
-
