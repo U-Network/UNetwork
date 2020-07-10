@@ -45,6 +45,9 @@ func (app *TendermintApplication) Info(req types.RequestInfo) types.ResponseInfo
 	//return types.ResponseInfo{Data: "nothing"}
 	//fmt.Println(req)
 	blockheight := int64(app.ethState.GetblockNumber())
+	if blockheight == 0 {
+		return types.ResponseInfo{Data: "nothing"}
+	}
 	apphash := make([]byte, 32)
 	binary.PutVarint(apphash, blockheight)
 	return types.ResponseInfo{
